@@ -1,0 +1,12 @@
+---
+version: "2"
+
+formatters:
+  enable:
+    - goimports
+    - golines
+    - gofumpt
+
+  settings:
+    golines:
+      max-len: 100

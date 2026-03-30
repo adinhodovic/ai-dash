@@ -1,0 +1,5 @@
+{"timestamp":"2026-03-17T11:34:43.501Z","type":"session_meta","payload":{"id":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee","timestamp":"2026-03-17T11:34:35.307Z","cwd":"/workspace/example/services/api","originator":"codex_cli_rs","cli_version":"0.104.0","source":"cli","model_provider":"openai"}}
+{"timestamp":"2026-03-17T11:34:43.502Z","type":"event_msg","payload":{"type":"task_started","turn_id":"turn-001","model_context_window":258400,"collaboration_mode_kind":"default"}}
+{"timestamp":"2026-03-17T11:34:43.502Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"Ship the rollout cleanup change and exit."}]}}
+{"timestamp":"2026-03-17T11:34:43.525Z","type":"turn_context","payload":{"turn_id":"turn-001","cwd":"/workspace/example/services/api","approval_policy":"on-request","model":"gpt-5.2-codex","personality":"pragmatic","effort":"medium","summary":"auto"}}
+{"timestamp":"2026-03-17T11:34:44.114Z","type":"event_msg","payload":{"type":"turn_aborted","turn_id":"turn-001","reason":"interrupted"}}

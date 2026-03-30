@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Configuration for the ai-dash TUI",
+  "properties": {
+    "max_age": {
+      "default": "14d",
+      "description": "Maximum age of sessions to display (e.g. 14d, 30d, 720h)",
+      "type": "string"
+    },
+    "poll_interval": {
+      "default": "10s",
+      "description": "How often to reload sessions (Go duration, e.g. 10s, 30s, 1m)",
+      "type": "string"
+    },
+    "terminal": {
+      "default": "",
+      "description": "Terminal emulator to use when opening sessions (e.g. ghostty, kitty, alacritty)",
+      "type": "string"
+    }
+  },
+  "title": "ai-dash configuration",
+  "type": "object"
+}

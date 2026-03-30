@@ -1,0 +1,55 @@
+{
+  "sessions": [
+    {
+      "id": "oc_001",
+      "tool": "opencode",
+      "project": "ai-dash",
+      "repo": "/home/adin/oss/ai-dash",
+      "branch": "main",
+      "status": "active",
+      "started_at": "2026-03-29T14:00:00Z",
+      "ended_at": "2026-03-29T14:42:00Z",
+      "model": "gpt-5.4",
+      "summary": "Explored whether a unified dashboard exists and started an MVP TUI.",
+      "transcript_path": "/tmp/opencode-oc_001.md",
+      "tokens_in": 4200,
+      "tokens_out": 2100,
+      "cost_usd": 0.22,
+      "tags": ["mvp", "research"]
+    },
+    {
+      "id": "cx_014",
+      "tool": "codex",
+      "project": "payments-service",
+      "repo": "/home/adin/oss/payments-service",
+      "branch": "feat/refund-audit",
+      "status": "completed",
+      "started_at": "2026-03-28T10:12:00Z",
+      "ended_at": "2026-03-28T11:09:00Z",
+      "model": "gpt-5-codex",
+      "summary": "Added refund audit logging and tightened error handling in webhook retries.",
+      "transcript_path": "/tmp/codex-cx_014.md",
+      "tokens_in": 14800,
+      "tokens_out": 6200,
+      "cost_usd": 0.91,
+      "tags": ["payments", "backend"]
+    },
+    {
+      "id": "cl_221",
+      "tool": "claude",
+      "project": "design-system",
+      "repo": "/home/adin/oss/design-system",
+      "branch": "chore/docs-nav",
+      "status": "completed",
+      "started_at": "2026-03-27T08:30:00Z",
+      "ended_at": "2026-03-27T09:18:00Z",
+      "model": "claude-sonnet-4",
+      "summary": "Reworked docs navigation labels and reduced duplication in component examples.",
+      "transcript_path": "/tmp/claude-cl_221.md",
+      "tokens_in": 8600,
+      "tokens_out": 4100,
+      "cost_usd": 0.48,
+      "tags": ["docs", "ui"]
+    }
+  ]
+}

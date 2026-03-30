@@ -1,0 +1,25 @@
+{
+  "id": "ses_aaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "slug": "quiet-river",
+  "version": "1.1.53",
+  "projectID": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "directory": "/workspace/example/ops",
+  "parentID": "ses_parentbbbbbbbbbbbbbbbbbbbbbb",
+  "title": "Find rollout API structure (@explore subagent)",
+  "permission": [
+    {
+      "permission": "todowrite",
+      "action": "deny",
+      "pattern": "*"
+    }
+  ],
+  "time": {
+    "created": 1770555395688,
+    "updated": 1770555470551
+  },
+  "summary": {
+    "additions": 0,
+    "deletions": 0,
+    "files": 0
+  }
+}
