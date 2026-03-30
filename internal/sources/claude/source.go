@@ -1,36 +1,47 @@
 package claude
 
 import (
-	"fmt"
+	"bufio"
+	"encoding/json"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/adin/ai-dash/internal/config"
 	"github.com/adin/ai-dash/internal/session"
 	"github.com/adin/ai-dash/internal/sources/shared"
 )
 
-type Source struct{}
+type Source struct {
+	pathOverride string
+}
 
-func New() Source { return Source{} }
+var (
+	_ shared.SessionProvider    = Source{}
+	_ shared.SubagentClassifier = Source{}
+)
+
+func New(cfg config.Config) Source {
+	return Source{pathOverride: cfg.SourcePath("claude", "")}
+}
 
 func (Source) Name() string { return "claude" }
 
-func (Source) Discover() (shared.Result, error) {
+func (s Source) Discover() (shared.Result, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return shared.Result{}, err
 	}
 
-	statePath := shared.EnvOrDefault("AIDASH_CLAUDE_STATE", filepath.Join(home, ".claude.json"))
-	settingsPath := shared.EnvOrDefault("AIDASH_CLAUDE_SETTINGS", filepath.Join(home, ".claude/settings.json"))
-	projectsPath := shared.EnvOrDefault("AIDASH_CLAUDE_PROJECTS_DIR", filepath.Join(home, ".claude/projects"))
+	projectsPath := filepath.Join(home, ".claude/projects")
+	if s.pathOverride != "" {
+		projectsPath = s.pathOverride
+	}
 
 	result := shared.Result{
 		Sources: []shared.Source{
-			shared.NewSource("claude", "json", statePath, "Claude Code global state"),
-			shared.NewSource("claude", "json", settingsPath, "Claude Code user settings"),
 			shared.NewSource("claude", "jsonl", projectsPath, "Claude Code transcripts"),
 		},
 	}
@@ -50,6 +61,14 @@ func (Source) ImportSessions(result shared.Result) ([]session.Session, error) {
 
 func (Source) ResumeArgs(sessionID string) []string {
 	return []string{"claude", "--resume", sessionID}
+}
+
+func (Source) NewSessionArgs(projectDir string) []string {
+	return []string{"claude", "--cwd", projectDir}
+}
+
+func (Source) ParentSessionID(s session.Session) string {
+	return subagentParentID(s.TranscriptPath)
 }
 
 func discoverTranscripts(root string) ([]shared.TranscriptFile, error) {
@@ -104,48 +123,237 @@ func sanitizeProjectName(value string) string {
 	if original == "" {
 		return "unknown"
 	}
-	if strings.HasPrefix(value, "-") || strings.Contains(original, "-home-") || strings.Contains(original, "-workspace-") {
-		parts := strings.Split(original, "-")
-		if len(parts) > 0 {
-			last := parts[len(parts)-1]
-			if last != "" {
-				return last
-			}
-		}
+	// Claude encodes project paths by replacing / with -.
+	// e.g. /home/adin/oss/ai-dash -> -home-adin-oss-ai-dash
+	// We can't perfectly reverse this (- is ambiguous), but we can match
+	// against the home directory slug to strip the known prefix.
+	if !strings.HasPrefix(value, "-") {
+		return original
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return original
+	}
+	homeSlug := strings.ReplaceAll(strings.TrimPrefix(home, "/"), "/", "-")
+	if rest, ok := strings.CutPrefix(original, homeSlug+"-"); ok {
+		return rest
 	}
 	return original
 }
 
+// claudeLine represents a single JSONL entry in a Claude Code transcript.
+type claudeLine struct {
+	Type      string `json:"type"`
+	SessionID string `json:"sessionId"`
+	Slug      string `json:"slug"`
+	Version   string `json:"version"`
+	Cwd       string `json:"cwd"`
+	GitBranch string `json:"gitBranch"`
+	Timestamp string `json:"timestamp"`
+	Message   *struct {
+		Role       string `json:"role"`
+		Model      string `json:"model"`
+		Content    any    `json:"content"`
+		StopReason string `json:"stop_reason"`
+		Usage      *struct {
+			InputTokens  int `json:"input_tokens"`
+			OutputTokens int `json:"output_tokens"`
+		} `json:"usage"`
+	} `json:"message"`
+}
+
 func importTranscriptSessions(transcripts []shared.TranscriptFile) []session.Session {
-	parsed := shared.ImportGenericSessions("claude", transcriptPaths(transcripts))
-	if len(parsed) > 0 {
-		return parsed
-	}
 	sessions := make([]session.Session, 0, len(transcripts))
-	for i, transcript := range transcripts {
-		project := transcript.Project
-		if project == "" {
-			project = "unknown"
-		}
-		sessions = append(sessions, session.Session{
-			ID:             fmt.Sprintf("%s-%03d", transcript.Tool, i+1),
-			Tool:           transcript.Tool,
-			Project:        project,
-			Status:         "discovered",
-			StartedAt:      transcript.ModTime,
-			EndedAt:        transcript.ModTime,
-			Summary:        "Auto-discovered transcript file from documented local storage.",
-			TranscriptPath: transcript.Path,
-			Tags:           []string{"auto-discovered"},
-		})
+	for _, transcript := range transcripts {
+		s := parseClaudeTranscript(transcript)
+		sessions = append(sessions, s)
 	}
 	return sessions
 }
 
-func transcriptPaths(transcripts []shared.TranscriptFile) []string {
-	paths := make([]string, 0, len(transcripts))
-	for _, transcript := range transcripts {
-		paths = append(paths, transcript.Path)
+func parseClaudeTranscript(transcript shared.TranscriptFile) session.Session {
+	sessionID := sessionIDFromPath(transcript.Path)
+	project := transcript.Project
+	if project == "" {
+		project = "unknown"
 	}
-	return paths
+
+	s := session.Session{
+		ID:             sessionID,
+		Slug:           sessionID,
+		Tool:           "claude",
+		Project:        project,
+		Status:         "completed",
+		StartedAt:      transcript.ModTime,
+		EndedAt:        transcript.ModTime,
+		TranscriptPath: transcript.Path,
+		Tags:           []string{"auto-imported"},
+	}
+
+	file, err := os.Open(transcript.Path)
+	if err != nil {
+		return s
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 2*1024*1024)
+
+	var (
+		firstUserMsg   string
+		startedAt      time.Time
+		endedAt        time.Time
+		lastStopReason string
+		tokensIn       int
+		tokensOut      int
+	)
+
+	for scanner.Scan() {
+		var line claudeLine
+		if err := json.Unmarshal(scanner.Bytes(), &line); err != nil {
+			continue
+		}
+
+		if ts := parseTimestamp(line.Timestamp); !ts.IsZero() {
+			if startedAt.IsZero() || ts.Before(startedAt) {
+				startedAt = ts
+			}
+			if endedAt.IsZero() || ts.After(endedAt) {
+				endedAt = ts
+			}
+		}
+
+		if line.SessionID != "" && s.ID == sessionID {
+			s.ID = line.SessionID
+		}
+		if line.Slug != "" {
+			s.Slug = line.Slug
+		}
+		if line.Version != "" {
+			s.Model = line.Version
+		}
+		if line.Cwd != "" {
+			s.Repo = line.Cwd
+		}
+		if line.GitBranch != "" {
+			s.Branch = line.GitBranch
+		}
+
+		if line.Type == "user" && line.Message != nil && line.Message.Role == "user" && firstUserMsg == "" {
+			firstUserMsg = extractTextContent(line.Message.Content)
+		}
+
+		if line.Type == "assistant" && line.Message != nil {
+			if line.Message.Model != "" {
+				s.Model = line.Message.Model
+			}
+			if line.Message.StopReason != "" {
+				lastStopReason = line.Message.StopReason
+			}
+			if line.Message.Usage != nil {
+				tokensIn += line.Message.Usage.InputTokens
+				tokensOut += line.Message.Usage.OutputTokens
+			}
+		}
+	}
+
+	if !startedAt.IsZero() {
+		s.StartedAt = startedAt
+	}
+	if !endedAt.IsZero() {
+		s.EndedAt = endedAt
+	}
+	s.TokensIn = tokensIn
+	s.TokensOut = tokensOut
+
+	// Use cwd for project name — it's the actual path, not slug-encoded.
+	if s.Repo != "" {
+		s.Project = s.Repo
+	}
+
+	if firstUserMsg != "" {
+		s.Summary = summarizeUserMessage(firstUserMsg)
+	} else {
+		s.Summary = "Imported session"
+	}
+
+	// Active if last assistant response didn't finish or file modified recently.
+	if lastStopReason != "" && lastStopReason != "end_turn" {
+		s.Status = "active"
+	} else if time.Since(s.EndedAt) < 5*time.Minute {
+		s.Status = "active"
+	}
+
+	s.Meta = map[string]string{}
+	if s.Model != "" {
+		s.Meta["model"] = s.Model
+	}
+	if lastStopReason != "" {
+		s.Meta["stop_reason"] = lastStopReason
+	}
+	if s.Branch != "" {
+		s.Meta["branch"] = s.Branch
+	}
+
+	return s
+}
+
+func extractTextContent(content any) string {
+	switch c := content.(type) {
+	case string:
+		return strings.TrimSpace(c)
+	case []any:
+		for _, item := range c {
+			if m, ok := item.(map[string]any); ok {
+				if m["type"] == "text" {
+					if text, ok := m["text"].(string); ok {
+						return strings.TrimSpace(text)
+					}
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func summarizeUserMessage(msg string) string {
+	// Collapse whitespace
+	msg = strings.Join(strings.Fields(msg), " ")
+	// Skip system-like messages
+	if strings.HasPrefix(msg, "<") || strings.Contains(msg, "AGENTS.md") {
+		return "Imported session"
+	}
+	runes := []rune(msg)
+	if len(runes) > 120 {
+		return string(runes[:119]) + "~"
+	}
+	return msg
+}
+
+func parseTimestamp(value string) time.Time {
+	if value == "" {
+		return time.Time{}
+	}
+	for _, layout := range []string{time.RFC3339, time.RFC3339Nano} {
+		if ts, err := time.Parse(layout, value); err == nil {
+			return ts
+		}
+	}
+	return time.Time{}
+}
+
+func subagentParentID(path string) string {
+	parts := strings.Split(filepath.Clean(path), string(filepath.Separator))
+	for i, part := range parts {
+		if part == "subagents" && i > 0 {
+			return parts[i-1]
+		}
+	}
+	return ""
+}
+
+func sessionIDFromPath(path string) string {
+	base := filepath.Base(path)
+	return strings.TrimSuffix(base, filepath.Ext(base))
 }

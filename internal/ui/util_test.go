@@ -41,11 +41,12 @@ func TestCleanProjectName(t *testing.T) {
 	tests := []struct {
 		input, want string
 	}{
-		{homeSlug + "oss-ai-dash", "~/oss/ai/dash"},
-		{"-workspace-myproject", "~/myproject"},
+		{"/home/adin/oss/ai-dash", "~/oss/ai-dash"},
+		{"~/myproject", "~/myproject"},
 		{"", "unknown"},
-		{"  -  ", "unknown"},
+		{"  ", "unknown"},
 		{"dotfiles", "dotfiles"},
+		{"oss-ai-dash", "oss-ai-dash"},
 	}
 	for _, tt := range tests {
 		got := cleanProjectName(tt.input)
@@ -144,8 +145,8 @@ func TestContentHeight(t *testing.T) {
 	tests := []struct {
 		termH, want int
 	}{
-		{24, 20}, // 24 - 4
-		{10, 6},  // 10 - 4
+		{24, 22}, // 24 - 2
+		{10, 8},  // 10 - 2
 		{3, 4},   // clamped
 		{0, 4},   // clamped
 	}
@@ -158,13 +159,13 @@ func TestContentHeight(t *testing.T) {
 }
 
 func TestNextPrevSortField(t *testing.T) {
-	got := nextSortField(session.SortStarted)
-	if got != session.SortUpdated {
-		t.Errorf("next after started = %v, want updated", got)
+	got := nextSortField(session.SortUpdated)
+	if got != session.SortTool {
+		t.Errorf("next after updated = %v, want tool", got)
 	}
-	got = prevSortField(session.SortStarted)
-	if got != session.SortStatus {
-		t.Errorf("prev before started = %v, want status", got)
+	got = prevSortField(session.SortUpdated)
+	if got != session.SortSummary {
+		t.Errorf("prev before updated = %v, want summary", got)
 	}
 }
 

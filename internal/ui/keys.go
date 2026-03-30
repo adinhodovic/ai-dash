@@ -3,7 +3,6 @@ package ui
 import (
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/table"
-	"charm.land/lipgloss/v2"
 )
 
 type keyMap struct {
@@ -20,12 +19,15 @@ type keyMap struct {
 	SortPrev      key.Binding
 	SortToggle    key.Binding
 	Tool          key.Binding
-	Status        key.Binding
+	Sort          key.Binding
 	Project       key.Binding
 	SavePreset    key.Binding
 	LoadPreset    key.Binding
-	OpenSession   key.Binding
+	ResumeSession   key.Binding
 	ToggleDetails key.Binding
+	NewSession    key.Binding
+	AgeRange      key.Binding
+	ToggleAgents  key.Binding
 	Sources       key.Binding
 	Clear         key.Binding
 	Quit          key.Binding
@@ -46,12 +48,15 @@ func defaultKeyMap() keyMap {
 		SortPrev:      key.NewBinding(key.WithKeys("[")),
 		SortToggle:    key.NewBinding(key.WithKeys("="), key.WithHelp("=", "sort dir")),
 		Tool:          key.NewBinding(key.WithKeys("f"), key.WithHelp("f", "tool")),
-		Status:        key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "status")),
+		Sort:          key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "sort")),
 		Project:       key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "project")),
 		SavePreset:    key.NewBinding(key.WithKeys("w"), key.WithHelp("w", "save preset")),
 		LoadPreset:    key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "load preset")),
-		OpenSession:   key.NewBinding(key.WithKeys("enter", "o"), key.WithHelp("enter", "open")),
+		ResumeSession:   key.NewBinding(key.WithKeys("o"), key.WithHelp("o", "resume")),
 		ToggleDetails: key.NewBinding(key.WithKeys("v"), key.WithHelp("v", "details")),
+		NewSession:    key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "new session")),
+		AgeRange:      key.NewBinding(key.WithKeys("D"), key.WithHelp("D", "age range")),
+		ToggleAgents:  key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "agents")),
 		Sources:       key.NewBinding(key.WithKeys("S"), key.WithHelp("S", "sources")),
 		Clear:         key.NewBinding(key.WithKeys("c"), key.WithHelp("c", "clear")),
 		Quit:          key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
@@ -59,14 +64,25 @@ func defaultKeyMap() keyMap {
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Up, k.Down, k.Help, k.Focus, k.Search, k.OpenSession, k.Tool, k.Status, k.Project, k.Sources, k.Clear, k.Quit}
+	return []key.Binding{k.Up, k.Down, k.Help, k.Focus, k.Search, k.Tool, k.Sort, k.Project, k.Clear, k.Quit}
+}
+
+func (k keyMap) shortHelpForFocus(focus focusArea) []key.Binding {
+	base := []key.Binding{k.Up, k.Down, k.Help, k.Focus, k.Search}
+	switch focus {
+	case focusList:
+		base = append(base, k.ResumeSession, k.NewSession)
+	case focusFilters:
+		base = append(base, k.NewSession)
+	}
+	return append(base, k.Tool, k.Sort, k.Project, k.AgeRange, k.Clear, k.Quit)
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down, k.GoTop, k.PageUp, k.PageDown},
-		{k.Help, k.Focus, k.Search, k.OpenSession, k.ToggleDetails, k.Clear, k.Quit},
-		{k.Tool, k.Status, k.Project, k.Sources},
+		{k.Help, k.Focus, k.Search, k.ResumeSession, k.NewSession, k.ToggleDetails, k.Clear, k.Quit},
+		{k.Tool, k.Sort, k.Project, k.AgeRange, k.ToggleAgents, k.Sources},
 		{k.SortNext, k.SortToggle, k.SavePreset, k.LoadPreset},
 	}
 }
@@ -83,18 +99,6 @@ func newTable(columns []table.Column) table.Model {
 		table.WithFocused(true),
 	)
 	t.SetStyles(tableStyles())
-	return t
-}
-
-func newHeaderlessTable(columns []table.Column) table.Model {
-	t := table.New(
-		table.WithColumns(columns),
-		table.WithRows([]table.Row{}),
-		table.WithFocused(false),
-	)
-	s := tableStyles()
-	s.Header = lipgloss.NewStyle().Height(0)
-	t.SetStyles(s)
 	return t
 }
 

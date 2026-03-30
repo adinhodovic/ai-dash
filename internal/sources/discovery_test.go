@@ -5,29 +5,33 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/adin/ai-dash/internal/config"
 	"github.com/adin/ai-dash/internal/session"
 )
 
 func TestDiscoverUsesEnvOverrides(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "custom-config.toml")
+	root := t.TempDir()
+	configPath := filepath.Join(root, "custom-config.toml")
+	sessionsDir := filepath.Join(root, "sessions")
+	if err := os.MkdirAll(sessionsDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
 	if err := os.WriteFile(configPath, []byte("model = \"gpt-5.4\"\n"), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
-	t.Setenv("AIDASH_CODEX_CONFIG", configPath)
-
-	discovery, err := Discover()
+	discovery, err := Discover(config.Config{CodexPath: configPath})
 	if err != nil {
 		t.Fatalf("discover: %v", err)
 	}
 
 	found := false
 	for _, source := range discovery.Sources {
-		if source.Tool == "codex" && source.Path == configPath && source.Exists {
+		if source.Tool == "codex" && source.Path == sessionsDir && source.Exists {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatalf("expected codex env override source to be present")
+		t.Fatalf("expected codex sessions directory source to be present")
 	}
 }
 
@@ -41,9 +45,7 @@ func TestDiscoverClaudeTranscripts(t *testing.T) {
 	if err := os.WriteFile(transcriptPath, []byte("{}\n"), 0o644); err != nil {
 		t.Fatalf("write transcript: %v", err)
 	}
-	t.Setenv("AIDASH_CLAUDE_PROJECTS_DIR", root)
-
-	discovery, err := Discover()
+	discovery, err := Discover(config.Config{ClaudePath: root})
 	if err != nil {
 		t.Fatalf("discover: %v", err)
 	}

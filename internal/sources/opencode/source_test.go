@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/adin/ai-dash/internal/config"
 	_ "modernc.org/sqlite"
 )
 
@@ -44,12 +45,30 @@ func createTestDB(t *testing.T) string {
 		t.Fatalf("create table: %v", err)
 	}
 
+	_, err = db.Exec(`CREATE TABLE message (
+		id TEXT PRIMARY KEY,
+		session_id TEXT NOT NULL,
+		time_created INTEGER NOT NULL,
+		time_updated INTEGER NOT NULL,
+		data TEXT NOT NULL
+	)`)
+	if err != nil {
+		t.Fatalf("create message table: %v", err)
+	}
+
 	now := time.Now().UnixMilli()
 	_, err = db.Exec(`INSERT INTO session (id, project_id, slug, directory, title, version, time_created, time_updated)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		"ses_test123", "proj1", "cool-slug", "/home/user/myproject", "Fix the bug", "1.0.0", now-60000, now)
 	if err != nil {
-		t.Fatalf("insert: %v", err)
+		t.Fatalf("insert session: %v", err)
+	}
+
+	_, err = db.Exec(`INSERT INTO message (id, session_id, time_created, time_updated, data)
+		VALUES (?, ?, ?, ?, ?)`,
+		"msg_1", "ses_test123", now-60000, now, `{"role":"user","model":{"providerID":"anthropic","modelID":"claude-sonnet-4-6"}}`)
+	if err != nil {
+		t.Fatalf("insert message: %v", err)
 	}
 	return dbFile
 }
@@ -70,6 +89,9 @@ func TestLoadFromDB(t *testing.T) {
 	if s.Project != "/home/user/myproject" {
 		t.Errorf("project = %q", s.Project)
 	}
+	if s.Model != "claude-sonnet-4-6" {
+		t.Errorf("model = %q, want claude-sonnet-4-6", s.Model)
+	}
 	if s.Summary != "Fix the bug" {
 		t.Errorf("summary = %q", s.Summary)
 	}
@@ -80,9 +102,8 @@ func TestLoadFromDB(t *testing.T) {
 
 func TestDiscoverUsesEnvOverride(t *testing.T) {
 	dbFile := createTestDB(t)
-	t.Setenv("AIDASH_OPENCODE_DB", dbFile)
 
-	result, err := New().Discover()
+	result, err := New(config.Config{OpencodePath: dbFile}).Discover()
 	if err != nil {
 		t.Fatalf("discover: %v", err)
 	}
@@ -105,23 +126,23 @@ func TestLoadFromDBMissing(t *testing.T) {
 }
 
 func TestResumeArgs(t *testing.T) {
-	args := New().ResumeArgs("ses_abc")
+	args := New(config.Config{}).ResumeArgs("ses_abc")
 	if len(args) != 3 || args[0] != "opencode" || args[1] != "-s" || args[2] != "ses_abc" {
 		t.Errorf("unexpected args: %v", args)
 	}
 }
 
-func TestDbPathEnvOverride(t *testing.T) {
-	t.Setenv("AIDASH_OPENCODE_DB", "/custom/path.db")
-	if got := dbPath(); got != "/custom/path.db" {
-		t.Errorf("dbPath() = %q", got)
+func TestDbPathConfigOverride(t *testing.T) {
+	s := New(config.Config{OpencodePath: "/custom/path.db"})
+	if got := s.dbPath(); got != "/custom/path.db" {
+		t.Errorf("dbPath() = %q, want /custom/path.db", got)
 	}
 }
 
 func TestDbPathDefault(t *testing.T) {
 	t.Setenv("AIDASH_OPENCODE_DB", "")
 	t.Setenv("XDG_DATA_HOME", "/tmp/testdata")
-	got := dbPath()
+	got := (Source{}).dbPath()
 	want := "/tmp/testdata/opencode/opencode.db"
 	if got != want {
 		t.Errorf("dbPath() = %q, want %q", got, want)
@@ -131,7 +152,7 @@ func TestDbPathDefault(t *testing.T) {
 func TestDbPathDefaultHome(t *testing.T) {
 	t.Setenv("AIDASH_OPENCODE_DB", "")
 	t.Setenv("XDG_DATA_HOME", "")
-	got := dbPath()
+	got := (Source{}).dbPath()
 	home, _ := os.UserHomeDir()
 	want := filepath.Join(home, ".local", "share", "opencode", "opencode.db")
 	if got != want {

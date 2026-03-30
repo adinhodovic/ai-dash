@@ -9,11 +9,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/adin/ai-dash/internal/config"
 	"github.com/adin/ai-dash/internal/session"
 	"github.com/adin/ai-dash/internal/sources/shared"
 )
 
-type Source struct{}
+type Source struct {
+	pathOverride string
+}
 
 type sessionMetaPayload struct {
 	ID            string `json:"id"`
@@ -50,17 +53,24 @@ type logLine struct {
 	Payload   json.RawMessage `json:"payload"`
 }
 
-func New() Source { return Source{} }
+var _ shared.SessionProvider = Source{}
+
+func New(cfg config.Config) Source {
+	return Source{pathOverride: cfg.SourcePath("codex", "")}
+}
 
 func (Source) Name() string { return "codex" }
 
-func (Source) Discover() (shared.Result, error) {
+func (s Source) Discover() (shared.Result, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return shared.Result{}, err
 	}
 
-	configPath := shared.EnvOrDefault("AIDASH_CODEX_CONFIG", filepath.Join(home, ".codex/config.toml"))
+	configPath := filepath.Join(home, ".codex/config.toml")
+	if s.pathOverride != "" {
+		configPath = s.pathOverride
+	}
 	baseDir := filepath.Dir(configPath)
 	logDir := filepath.Join(baseDir, "logs")
 	sessionsDir := filepath.Join(baseDir, "sessions")
@@ -73,7 +83,6 @@ func (Source) Discover() (shared.Result, error) {
 
 	return shared.Result{
 		Sources: []shared.Source{
-			shared.NewSource("codex", "jsonl", configPath, "Codex config"),
 			shared.NewSource("codex", "jsonl", sessionsDir, "Codex sessions directory"),
 		},
 		Sessions: parsed,
@@ -86,6 +95,10 @@ func (Source) ImportSessions(result shared.Result) ([]session.Session, error) {
 
 func (Source) ResumeArgs(sessionID string) []string {
 	return []string{"codex", "resume", sessionID}
+}
+
+func (Source) NewSessionArgs(projectDir string) []string {
+	return []string{"codex", "--cwd", projectDir}
 }
 
 func discoverCandidates(roots []string) ([]string, error) {
@@ -210,6 +223,17 @@ func parseCodexSession(path string) (session.Session, bool) {
 		tags = append(tags, "cli-"+meta.CliVersion)
 	}
 
+	meta2 := map[string]string{}
+	if meta.CliVersion != "" {
+		meta2["cli_version"] = meta.CliVersion
+	}
+	if meta.ModelProvider != "" {
+		meta2["model_provider"] = meta.ModelProvider
+	}
+	if ctx.Effort != "" {
+		meta2["effort"] = ctx.Effort
+	}
+
 	return session.Session{
 		ID:             firstNonEmpty(meta.ID, sessionIDFromPath(path)),
 		Slug:           sessionIDFromPath(path),
@@ -223,6 +247,7 @@ func parseCodexSession(path string) (session.Session, bool) {
 		Summary:        summary,
 		TranscriptPath: path,
 		Tags:           tags,
+		Meta:           meta2,
 	}, true
 }
 

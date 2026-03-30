@@ -2,24 +2,32 @@ package opencode
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	_ "modernc.org/sqlite"
 
+	"github.com/adin/ai-dash/internal/config"
 	"github.com/adin/ai-dash/internal/session"
 	"github.com/adin/ai-dash/internal/sources/shared"
 )
 
-type Source struct{}
+type Source struct {
+	pathOverride string
+}
 
-func New() Source { return Source{} }
+var _ shared.SessionProvider = Source{}
+
+func New(cfg config.Config) Source {
+	return Source{pathOverride: cfg.SourcePath("opencode", "")}
+}
 
 func (Source) Name() string { return "opencode" }
 
-func (Source) Discover() (shared.Result, error) {
-	dbPath := dbPath()
+func (s Source) Discover() (shared.Result, error) {
+	dbPath := s.dbPath()
 	return shared.Result{
 		Sources: []shared.Source{
 			shared.NewSource("opencode", "sqlite", dbPath, "OpenCode SQLite database"),
@@ -36,9 +44,13 @@ func (Source) ResumeArgs(sessionID string) []string {
 	return []string{"opencode", "-s", sessionID}
 }
 
-func dbPath() string {
-	if override := os.Getenv("AIDASH_OPENCODE_DB"); override != "" {
-		return override
+func (Source) NewSessionArgs(projectDir string) []string {
+	return []string{"sh", "-c", fmt.Sprintf("cd %q && opencode", projectDir)}
+}
+
+func (s Source) dbPath() string {
+	if s.pathOverride != "" {
+		return s.pathOverride
 	}
 	dataDir := os.Getenv("XDG_DATA_HOME")
 	if dataDir == "" {
@@ -59,10 +71,16 @@ func loadFromDB(path string) []session.Session {
 	defer db.Close()
 
 	rows, err := db.Query(`
-		SELECT id, COALESCE(parent_id,''), slug, directory, title, version,
-		       time_created, time_updated
-		FROM session
-		ORDER BY time_updated DESC
+		SELECT s.id, COALESCE(s.parent_id,''), s.slug, s.directory, s.title, s.version,
+		       COALESCE(s.summary_additions,0), COALESCE(s.summary_deletions,0), COALESCE(s.summary_files,0),
+		       s.time_created, s.time_updated,
+		       COALESCE((
+		           SELECT json_extract(m.data, '$.model.modelID')
+		           FROM message m WHERE m.session_id = s.id
+		           ORDER BY m.time_created ASC LIMIT 1
+		       ), '')
+		FROM session s
+		ORDER BY s.time_updated DESC
 	`)
 	if err != nil {
 		return nil
@@ -72,10 +90,11 @@ func loadFromDB(path string) []session.Session {
 	var sessions []session.Session
 	for rows.Next() {
 		var (
-			id, parentID, slug, dir, title, version string
-			created, updated                        int64
+			id, parentID, slug, dir, title, version, modelID string
+			additions, deletions, files                       int
+			created, updated                                  int64
 		)
-		if err := rows.Scan(&id, &parentID, &slug, &dir, &title, &version, &created, &updated); err != nil {
+		if err := rows.Scan(&id, &parentID, &slug, &dir, &title, &version, &additions, &deletions, &files, &created, &updated, &modelID); err != nil {
 			continue
 		}
 		startedAt := time.UnixMilli(created)
@@ -83,6 +102,18 @@ func loadFromDB(path string) []session.Session {
 		status := "completed"
 		if time.Since(endedAt) < 5*time.Minute {
 			status = "active"
+		}
+
+		model := modelID
+		if model == "" {
+			model = version
+		}
+
+		meta := map[string]string{
+			"app_version": version,
+		}
+		if additions+deletions > 0 {
+			meta["changes"] = fmt.Sprintf("+%d -%d in %d files", additions, deletions, files)
 		}
 
 		sessions = append(sessions, session.Session{
@@ -95,9 +126,10 @@ func loadFromDB(path string) []session.Session {
 			Status:    status,
 			StartedAt: startedAt,
 			EndedAt:   endedAt,
-			Model:     version,
-			Summary:   title,
-			Tags:      []string{"opencode"},
+			Model:   model,
+			Summary: title,
+			Tags:    []string{"opencode"},
+			Meta:    meta,
 		})
 	}
 	return sessions

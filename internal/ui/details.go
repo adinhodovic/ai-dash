@@ -11,44 +11,50 @@ import (
 
 func detailPaneSectionHeights(termHeight int) (summary, detail, related int) {
 	bodyH := paneBodyHeight(bottomPaneHeight(termHeight))
-	related = 4
-	summary = 3
-	detail = max(3, bodyH-summary-related-4)
+	// Layout: summaryLabel(1) + summaryText(1) + divider(1) + detailTable + divider(1) + relatedLabel(1) + relatedTable
+	summary = 2
+	related = 6
+	fixed := summary + 2 + 2 + related // summary section + 2 divider/label lines + 2 table join newlines
+	detail = max(3, bodyH-fixed)
 	return summary, detail, related
 }
 
 func (m *Model) resizeDetailTable(filtered []session.Session) {
-	if m.width == 0 || len(filtered) == 0 || m.selected < 0 || m.selected >= len(filtered) {
+	sel := m.sessionTable.Cursor()
+	if m.width == 0 || len(filtered) == 0 || sel < 0 || sel >= len(filtered) {
 		m.detailTable.SetRows(nil)
+		m.detailTable.UpdateViewport()
 		return
 	}
-	detailW := m.width - m.width*60/100 // 40% of screen
+	detailW := m.width - m.width*70/100
+	innerW := max(10, detailW-2) // subtract pane border
 	_, detailH, _ := detailPaneSectionHeights(m.height)
-	keyW := 10
-	valW := max(10, detailW-keyW-4)
+	keyW := 14
+	valW := max(10, innerW-keyW-4) // subtract cell padding (1 each side × 2 cols)
 	m.detailTable.SetColumns([]table.Column{
-		{Title: "Field", Width: keyW},
-		{Title: "Value", Width: valW},
+		{Title: "", Width: keyW},
+		{Title: "", Width: valW},
 	})
-	m.detailTable.SetWidth(detailW)
-	items := m.detailItems(filtered[m.selected])
+	m.detailTable.SetWidth(innerW)
+	items := m.detailItems(filtered[sel])
 	rows := make([]table.Row, 0, len(items))
 	for _, item := range items {
 		rows = append(rows, table.Row{item.title, truncate(item.desc, valW)})
 	}
 	m.detailTable.SetRows(rows)
 	m.detailTable.SetHeight(detailH)
+	m.detailTable.UpdateViewport()
 }
 
 func (m *Model) resizeRelatedTable(filtered []session.Session) {
-	detailW := m.width - m.width*60/100
-	width := max(30, detailW-4)
+	detailW := m.width - m.width*70/100
+	width := max(30, detailW-2) // subtract pane border
 	_, _, relatedH := detailPaneSectionHeights(m.height)
 	m.relatedTable.SetColumns([]table.Column{
 		{Title: "Tool", Width: 7},
 		{Title: "Project", Width: 12},
 		{Title: "Relation", Width: 8},
-		{Title: "Summary", Width: max(8, width-31)},
+		{Title: "Summary", Width: max(8, width-35)},
 	})
 	m.relatedTable.SetWidth(width)
 	m.relatedTable.SetHeight(relatedH)
@@ -57,11 +63,12 @@ func (m *Model) resizeRelatedTable(filtered []session.Session) {
 
 func (m *Model) syncRelatedTable(filtered []session.Session) {
 	rows := make([]table.Row, 0)
-	if len(filtered) == 0 || m.selected >= len(filtered) {
+	sel := m.sessionTable.Cursor()
+	if len(filtered) == 0 || sel < 0 || sel >= len(filtered) {
 		m.relatedTable.SetRows(rows)
 		return
 	}
-	selected := filtered[m.selected]
+	selected := filtered[sel]
 	for _, candidate := range m.sessions {
 		if candidate.ID == selected.ID {
 			continue
@@ -74,10 +81,12 @@ func (m *Model) syncRelatedTable(filtered []session.Session) {
 	}
 	m.relatedTable.SetRows(rows)
 	m.relatedTable.SetCursor(0)
+	m.relatedTable.UpdateViewport()
 }
 
 func (m *Model) jumpToRelated(filtered []session.Session) bool {
-	if len(filtered) == 0 || m.selected < 0 || m.selected >= len(filtered) {
+	sel := m.sessionTable.Cursor()
+	if len(filtered) == 0 || sel < 0 || sel >= len(filtered) {
 		return false
 	}
 	rows := m.relatedTable.Rows()
@@ -85,14 +94,13 @@ func (m *Model) jumpToRelated(filtered []session.Session) bool {
 	if len(rows) == 0 || cursor >= len(rows) || len(rows[cursor]) < 4 {
 		return false
 	}
-	selected := filtered[m.selected]
+	selected := filtered[sel]
 	row := rows[cursor]
 	for i, candidate := range m.filteredSessions() {
 		if candidate.ID == selected.ID {
 			continue
 		}
 		if candidate.Tool == row[0] && cleanProjectName(candidate.Project) == row[1] && candidate.Summary == row[3] {
-			m.selected = i
 			m.sessionTable.SetCursor(i)
 			m.statusMessage = fmt.Sprintf("Jumped to %s session", strings.ToLower(candidate.Tool))
 			return true

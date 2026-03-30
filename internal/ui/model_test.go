@@ -100,18 +100,14 @@ func TestCycleForward(t *testing.T) {
 	if m.focus != focusList {
 		t.Fatal("should start at focusList")
 	}
-	// Tab order: Sessions -> Details -> Overview (filters)
-	m.cycleForward()
-	if m.focus != focusDetail {
-		t.Errorf("after 1 tab: got %d, want focusDetail(%d)", m.focus, focusDetail)
-	}
+	// Tab order: Sessions -> Projects
 	m.cycleForward()
 	if m.focus != focusFilters {
-		t.Errorf("after 2 tab: got %d, want focusFilters(%d)", m.focus, focusFilters)
+		t.Errorf("after 1 tab: got %d, want focusFilters(%d)", m.focus, focusFilters)
 	}
 	m.cycleForward()
 	if m.focus != focusList {
-		t.Errorf("after 3 tab: got %d, want focusList(%d)", m.focus, focusList)
+		t.Errorf("after 2 tab: got %d, want focusList(%d)", m.focus, focusList)
 	}
 }
 
@@ -210,7 +206,7 @@ func TestViewNoMatchingFilters(t *testing.T) {
 func TestSyncTableKeepsSelectedCursor(t *testing.T) {
 	m := testModel()
 	m = resize(m, 120, 40)
-	m.selected = 2
+	m.sessionTable.SetCursor(2)
 	filtered := m.filteredSessions()
 	m.syncTable(filtered)
 	if got := m.sessionTable.Cursor(); got != 2 {
@@ -233,7 +229,7 @@ func TestLayoutHeightsStayStableAcrossSelection(t *testing.T) {
 	firstDetail := m.detailTable.Height()
 	firstRelated := m.relatedTable.Height()
 
-	m.selected = 1
+	m.sessionTable.SetCursor(1)
 	m.syncAllTables(filtered)
 
 	if got := m.overviewTable.Height(); got != firstOverview {
@@ -249,27 +245,14 @@ func TestLayoutHeightsStayStableAcrossSelection(t *testing.T) {
 
 func TestDetailPaneSectionHeightsAreStable(t *testing.T) {
 	summary, detail, related := detailPaneSectionHeights(40)
-	if summary != 3 {
-		t.Fatalf("summary height = %d, want 3", summary)
+	if summary != 2 {
+		t.Fatalf("summary height = %d, want 2", summary)
 	}
-	if related != 4 {
-		t.Fatalf("related height = %d, want 4", related)
+	if related != 6 {
+		t.Fatalf("related height = %d, want 6", related)
 	}
 	if detail < 3 {
 		t.Fatalf("detail height = %d, want at least 3", detail)
-	}
-}
-
-func TestClampSelection(t *testing.T) {
-	m := testModel()
-	m.selected = 100
-	m.clampSelection(4)
-	if m.selected != 3 {
-		t.Errorf("clamp to 4: got %d, want 3", m.selected)
-	}
-	m.clampSelection(0)
-	if m.selected != 0 {
-		t.Errorf("clamp to 0: got %d, want 0", m.selected)
 	}
 }
 

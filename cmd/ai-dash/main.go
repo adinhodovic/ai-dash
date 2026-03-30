@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/adin/ai-dash/internal/config"
+	"github.com/adin/ai-dash/internal/ui/icon"
 	"github.com/adin/ai-dash/internal/sources"
 	"github.com/adin/ai-dash/internal/ui"
 )
@@ -44,8 +45,9 @@ func main() {
 func runDashboard(cmd *cobra.Command, args []string) error {
 	config.Init()
 	cfg := config.Load()
+	icon.Init(cfg.NerdFont)
 
-	discovery, discoveryErr := sources.Discover()
+	discovery, discoveryErr := sources.Discover(cfg)
 	sessions, err := sources.LoadDefaultSessions(discovery)
 	if err == nil && len(sessions) == 0 {
 		err = fmt.Errorf("no sessions found from JSON files or discovered sources")

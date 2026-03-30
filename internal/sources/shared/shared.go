@@ -45,6 +45,15 @@ type SessionProvider interface {
 	DiscoveryProvider
 	ImportSessions(Result) ([]session.Session, error)
 	ResumeArgs(sessionID string) []string
+	NewSessionArgs(projectDir string) []string
+}
+
+// SubagentClassifier is optionally implemented by sources that can identify
+// parent-child relationships between sessions. Each tool has different
+// conventions for subagent/child sessions (e.g. Claude uses a subagents/
+// directory, OpenCode stores parent_id in its database).
+type SubagentClassifier interface {
+	ParentSessionID(s session.Session) string
 }
 
 func (d Discovery) ExistingSources() int {
@@ -75,12 +84,6 @@ func NewSource(tool, kind, path, note string) Source {
 	return Source{Tool: tool, Kind: kind, Path: path, Exists: err == nil, Note: note}
 }
 
-func EnvOrDefault(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return fallback
-}
 
 func SortTranscripts(transcripts []TranscriptFile) {
 	sort.Slice(transcripts, func(i, j int) bool {

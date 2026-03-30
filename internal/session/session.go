@@ -23,8 +23,9 @@ type Session struct {
 	TranscriptPath string    `json:"transcript_path"`
 	TokensIn       int       `json:"tokens_in"`
 	TokensOut      int       `json:"tokens_out"`
-	CostUSD        float64   `json:"cost_usd"`
-	Tags           []string  `json:"tags"`
+	CostUSD        float64           `json:"cost_usd"`
+	Tags           []string          `json:"tags"`
+	Meta           map[string]string `json:"meta,omitempty"`
 }
 
 type SortField string
@@ -35,6 +36,7 @@ const (
 	SortProject SortField = "project"
 	SortTool    SortField = "tool"
 	SortStatus  SortField = "status"
+	SortSummary SortField = "summary"
 )
 
 type File struct {
@@ -74,6 +76,11 @@ func compareSessions(left, right Session, field SortField) bool {
 			return left.StartedAt.Before(right.StartedAt)
 		}
 		return left.Status < right.Status
+	case SortSummary:
+		if left.Summary == right.Summary {
+			return left.StartedAt.Before(right.StartedAt)
+		}
+		return left.Summary < right.Summary
 	default:
 		return left.StartedAt.Before(right.StartedAt)
 	}

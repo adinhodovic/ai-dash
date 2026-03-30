@@ -8,12 +8,19 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/lipgloss/v2"
 	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 
+	"github.com/adin/ai-dash/internal/config"
 	"github.com/adin/ai-dash/internal/session"
 	"github.com/adin/ai-dash/internal/sources"
 )
+
+func humanizeKey(s string) string {
+	s = strings.ReplaceAll(s, "_", " ")
+	return capitalize(s)
+}
 
 func capitalize(s string) string {
 	if s == "" {
@@ -42,12 +49,6 @@ func truncateForCell(value string, width int) string {
 }
 
 var homeDir, _ = os.UserHomeDir()
-var homeSlug = func() string {
-	if homeDir == "" {
-		return ""
-	}
-	return strings.ReplaceAll(homeDir, "/", "-") + "-"
-}()
 
 // shortenPath replaces the user's home directory with ~ in any path string.
 func shortenPath(value string) string {
@@ -59,19 +60,14 @@ func shortenPath(value string) string {
 
 func cleanProjectName(value string) string {
 	value = strings.TrimSpace(value)
-	// Handle slug-encoded paths (e.g. -home-adin-oss-foo)
-	if homeSlug != "" {
-		value = strings.ReplaceAll(value, homeSlug, "~/")
-	}
-	value = strings.ReplaceAll(value, "-workspace-", "~/")
-	value = strings.Trim(value, "-")
 	if value == "" {
 		return "unknown"
 	}
-	// Convert slug separators back to path separators
-	value = strings.ReplaceAll(value, "-", "/")
-	// Also handle raw absolute paths
-	return shortenPath(value)
+	// Raw absolute paths or ~ paths — just shorten
+	if strings.HasPrefix(value, "/") || strings.HasPrefix(value, "~") {
+		return shortenPath(value)
+	}
+	return value
 }
 
 func cleanSummary(value string) string {
@@ -82,7 +78,9 @@ func cleanSummary(value string) string {
 	if looksLikeRequestID(value) || looksLikeUUID(value) {
 		return "Imported session"
 	}
-	return value
+	// Collapse to single line — multi-line summaries break table row height.
+	value = strings.ReplaceAll(value, "\n", " ")
+	return strings.Join(strings.Fields(value), " ")
 }
 
 func looksLikeRequestID(value string) bool {
@@ -161,10 +159,6 @@ func toolOptions(sessions []session.Session) []string {
 	return append([]string{""}, uniqueSortedValues(sessions, func(s session.Session) string { return s.Tool })...)
 }
 
-func statusOptions(sessions []session.Session) []string {
-	return append([]string{""}, uniqueSortedValues(sessions, func(s session.Session) string { return s.Status })...)
-}
-
 func projectOptions(sessions []session.Session) []string {
 	return append([]string{""}, uniqueSortedValues(sessions, func(s session.Session) string { return s.Project })...)
 }
@@ -180,13 +174,12 @@ func uniqueSortedValues(sessions []session.Session, pick func(session.Session) s
 
 // contentHeight returns the available height for panes (total minus top bar and footer).
 func contentHeight(termHeight int) int {
-	// JoinVertical layout: top + content + footer.
-	// Each join adds one separator, so the fixed overhead is top(1) + footer(1) + separators(2) = 4.
-	return max(4, termHeight-4)
+	// JoinVertical layout: top(1) + content + footer(1) = termHeight.
+	return max(4, termHeight-2)
 }
 
 func topPaneHeight(termHeight int) int {
-	return max(4, contentHeight(termHeight)*30/100)
+	return max(4, contentHeight(termHeight)*28/100)
 }
 
 func bottomPaneHeight(termHeight int) int {
@@ -197,18 +190,38 @@ func paneBodyHeight(paneHeight int) int {
 	return max(1, paneHeight-4)
 }
 
+// renderPane renders a bordered panel with a title and body, constrained to the given dimensions.
+// height is the total pane height including borders. Width is total including borders.
+func renderPane(border, header lipgloss.Style, title, body string, width, height int) string {
+	titleLine := header.PaddingRight(1).PaddingLeft(1).MarginBottom(1).Render(title)
+	content := lipgloss.JoinVertical(lipgloss.Left, titleLine, body)
+	return border.
+		Width(width).
+		Height(height).
+		MaxHeight(height).
+		Render(content)
+}
+
+// panelStyle returns the active or inactive border style for a pane.
+func panelStyle(s styles, active bool) lipgloss.Style {
+	if active {
+		return s.active
+	}
+	return s.panel
+}
+
 func nextSortField(current session.SortField) session.SortField {
-	fields := []session.SortField{session.SortStarted, session.SortUpdated, session.SortProject, session.SortTool, session.SortStatus}
+	fields := []session.SortField{session.SortUpdated, session.SortTool, session.SortProject, session.SortSummary}
 	for i, field := range fields {
 		if field == current {
 			return fields[(i+1)%len(fields)]
 		}
 	}
-	return session.SortStarted
+	return session.SortUpdated
 }
 
 func prevSortField(current session.SortField) session.SortField {
-	fields := []session.SortField{session.SortStarted, session.SortUpdated, session.SortProject, session.SortTool, session.SortStatus}
+	fields := []session.SortField{session.SortUpdated, session.SortTool, session.SortProject, session.SortSummary}
 	for i, field := range fields {
 		if field == current {
 			return fields[(i-1+len(fields))%len(fields)]
@@ -217,8 +230,8 @@ func prevSortField(current session.SortField) session.SortField {
 	return session.SortStarted
 }
 
-func sessionCommand(s session.Session) *exec.Cmd {
-	args := sources.ResumeArgs(s.Tool, s.ID)
+func sessionCommand(s session.Session, cfg config.Config) *exec.Cmd {
+	args := sources.ResumeArgs(cfg, s.Tool, s.ID)
 	if len(args) == 0 {
 		return nil
 	}

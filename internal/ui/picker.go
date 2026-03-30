@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"charm.land/bubbles/v2/list"
+	"charm.land/lipgloss/v2"
 
 	"github.com/adin/ai-dash/internal/presets"
 	"github.com/adin/ai-dash/internal/session"
@@ -40,12 +41,46 @@ func newPicker(label string, options []string, current string, searchable bool) 
 		}
 		items = append(items, pickerItem{value: opt, display: display})
 	}
-	height := min(len(items)+4, 20)
-	l := list.New(items, list.NewDefaultDelegate(), 40, height)
+	delegate := list.NewDefaultDelegate()
+	delegate.ShowDescription = false
+	delegate.SetHeight(1)
+	delegate.SetSpacing(0)
+	delegate.Styles.NormalTitle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(colorStrong)).
+		Padding(0, 0, 0, 2)
+	delegate.Styles.SelectedTitle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(colorSelectFg)).
+		Background(lipgloss.Color(colorSelectBg)).
+		Padding(0, 0, 0, 1).
+		Border(lipgloss.NormalBorder(), false, false, false, true).
+		BorderForeground(lipgloss.Color(colorActive))
+	delegate.Styles.DimmedTitle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(colorMuted)).
+		Padding(0, 0, 0, 2)
+
+	maxH := 20
+	if searchable {
+		maxH = 30
+	}
+	height := max(10, min(len(items)+6, maxH))
+	l := list.New(items, delegate, 50, height)
 	l.Title = fmt.Sprintf("Filter: %s", label)
+	l.Styles.TitleBar = lipgloss.NewStyle().Padding(0, 0, 1, 2)
+	l.Styles.Title = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(colorHeaderFg)).
+		Background(lipgloss.Color(colorHeaderBg)).
+		Padding(0, 1)
+	l.Styles.ActivePaginationDot = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(colorActive))
+	l.Styles.InactivePaginationDot = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(colorBorder))
+	l.Styles.NoItems = lipgloss.NewStyle().
+		Foreground(lipgloss.Color(colorMuted)).
+		Padding(0, 0, 0, 2)
 	l.SetShowStatusBar(false)
 	l.SetShowPagination(true)
 	l.SetFilteringEnabled(searchable)
+	l.SetShowFilter(searchable)
 	l.DisableQuitKeybindings()
 	l.Select(selectedIdx)
 	return filterPicker{active: true, label: label, list: l}
@@ -63,7 +98,7 @@ func (m *Model) applyFilterChange(value, label string) {
 	case "project":
 		m.filters.project = value
 	}
-	m.selected = 0
+	m.sessionTable.SetCursor(0)
 	m.statusMessage = fmt.Sprintf("Updated %s filter", label)
 }
 
@@ -97,6 +132,6 @@ func (m *Model) restorePreset(filtered []session.Session) {
 	}
 	m.filters = filters{tool: preset.Tool, status: preset.Status, project: preset.Project}
 	m.searchInput.SetValue(preset.Search)
-	m.selected = 0
+	m.sessionTable.SetCursor(0)
 	m.statusMessage = fmt.Sprintf("Restored preset for %s", project)
 }

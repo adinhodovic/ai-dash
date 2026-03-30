@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/adin/ai-dash/internal/session"
+	"github.com/adin/ai-dash/internal/ui/icon"
 )
 
 func (m Model) View() tea.View {
@@ -21,28 +22,24 @@ func (m Model) View() tea.View {
 
 	filtered := m.filteredSessions()
 
-	// Layout budget: topBar(1) + content(variable) + footer(2: rule+keys) = m.height
-	contentH := m.height - 3
-	if contentH < 4 {
-		contentH = 4
-	}
-
-	top := ansi.Truncate(m.renderTopBar(filtered), m.width, "")
-	footer := m.renderFooter(filtered)
+	// Layout budget: topBar(1) + content(variable) + footer(1) = m.height
+	contentH := contentHeight(m.height)
+	top := " " + ansi.Truncate(m.renderTopBar(filtered), m.width-2, "")
+	footer := " " + m.renderFooter(filtered)
 
 	if len(m.sessions) == 0 {
-		body := m.renderPane(m.styles.panel, "Sessions", "No sessions loaded.", m.width, contentH)
+		body := renderPane(m.styles.panel, m.styles.header, "Sessions", "No sessions loaded.", m.width, contentH)
 		return altView(m.composePageStr(top, body, footer))
 	}
 	if len(filtered) == 0 {
-		body := m.renderPane(m.styles.panel, "Sessions", m.styles.muted.Render("No matches. Press c to clear or / to search."), m.width, contentH)
+		body := renderPane(m.styles.panel, m.styles.header, "Sessions", m.styles.muted.Render("No matches. Press c to clear or / to search."), m.width, contentH)
 		return altView(m.composePageStr(top, body, footer))
 	}
 
 	if m.detailCollapsed {
 		previewH := 2
 		tableH := contentH - previewH
-		tablePane := m.renderPane(m.panelStyle(m.focus == focusList), "Sessions", m.renderSessionPane(filtered), m.width, tableH)
+		tablePane := renderPane(panelStyle(m.styles, m.focus == focusList), m.styles.header, "Sessions", m.renderSessionPane(filtered), m.width, tableH)
 		preview := ansi.Truncate(m.renderCollapsedPreview(filtered), m.width, "")
 		// Stitch without extra newline: replace last empty line of table pane with preview
 		tLines := strings.Split(tablePane, "\n")
@@ -60,12 +57,16 @@ func (m Model) View() tea.View {
 	// Layout: top row = projects, bottom row = sessions + details
 	topH := topPaneHeight(m.height)
 	botH := bottomPaneHeight(m.height)
-	leftW := max(40, m.width*60/100)
+	leftW := max(40, m.width*70/100)
 	rightW := m.width - leftW
 
-	projects := m.renderPane(m.panelStyle(m.focus == focusFilters), "Projects", m.overviewTable.View(), m.width, topH)
-	sessions := m.renderPane(m.panelStyle(m.focus == focusList), "Sessions", m.renderSessionPane(filtered), leftW, botH)
-	detail := m.renderPane(m.panelStyle(m.focus == focusDetail), "Details", m.renderDetailPane(), rightW, botH)
+	projW := leftW
+	overviewW := rightW
+	projPane := renderPane(panelStyle(m.styles, m.focus == focusFilters), m.styles.header, "Projects", m.overviewTable.View(), projW, topH)
+	overviewPane := renderPane(m.styles.panel, m.styles.header, "Overview", m.renderOverviewStats(filtered, overviewW, topH), overviewW, topH)
+	projects := lipgloss.JoinHorizontal(lipgloss.Top, projPane, overviewPane)
+	sessions := renderPane(panelStyle(m.styles, m.focus == focusList), m.styles.header, "Sessions", m.renderSessionPane(filtered), leftW, botH)
+	detail := renderPane(panelStyle(m.styles, m.focus == focusDetail), m.styles.header, "Details", m.renderDetailPane(), rightW, botH)
 
 	botRow := lipgloss.JoinHorizontal(lipgloss.Top, sessions, detail)
 	content := lipgloss.JoinVertical(lipgloss.Left, projects, botRow)
@@ -100,12 +101,17 @@ func (m Model) renderFooter(_ []session.Session) string {
 	}
 	h := m.help
 	h.SetWidth(w)
-	return ansi.Truncate(strings.ReplaceAll(h.ShortHelpView(m.keys.ShortHelp()), "\n", " "), w, "")
+	line := h.ShortHelpView(m.keys.shortHelpForFocus(m.focus))
+	// Ensure footer is exactly one line so layout math stays consistent.
+	if i := strings.Index(line, "\n"); i >= 0 {
+		line = line[:i]
+	}
+	return line
 }
 
 func (m Model) overlayPicker(_ string) string {
-	width := max(30, m.width*40/100)
-	height := min(m.picker.list.Height()+4, m.height-4)
+	width := max(40, m.width*50/100)
+	height := min(m.picker.list.Height()+6, m.height-4)
 	overlay := m.styles.overlay.Width(width).Height(height).Render(m.picker.list.View())
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, overlay)
 }
@@ -133,21 +139,20 @@ func (m Model) overlayHelp(_ string) string {
 }
 
 func (m Model) renderSessionPane(filtered []session.Session) string {
-	return lipgloss.JoinVertical(lipgloss.Left, m.renderActiveFilters(), m.sessionTable.View())
+	return m.sessionTable.View()
 }
 
 func (m Model) renderDetailPane() string {
-	detailW := m.width - m.width*60/100
-	innerW := max(10, detailW-4)
+	detailW := m.width - m.width*70/100
+	innerW := max(10, detailW-2) // subtract pane border
 	divider := m.styles.muted.Render(strings.Repeat("─", max(1, innerW)))
-	summaryH, _, _ := detailPaneSectionHeights(m.height)
 
 	summary := m.selectedSummary()
 	if len(summary) > 500 {
 		summary = summary[:497] + "..."
 	}
-	summaryLabel := m.styles.muted.Render("Summary")
-	summaryText := lipgloss.NewStyle().Width(innerW).Height(summaryH - 1).MaxHeight(summaryH - 1).Render(summary)
+	summaryLabel := m.styles.highlight.Render("Summary")
+	summaryText := lipgloss.NewStyle().Width(innerW).Render(summary)
 
 	relatedLabel := m.styles.highlight.Render("Related Sessions")
 
@@ -164,17 +169,19 @@ func (m Model) renderDetailPane() string {
 
 func (m Model) selectedSummary() string {
 	filtered := m.filteredSessions()
-	if len(filtered) == 0 || m.selected < 0 || m.selected >= len(filtered) {
+	sel := m.sessionTable.Cursor()
+	if len(filtered) == 0 || sel < 0 || sel >= len(filtered) {
 		return ""
 	}
-	return filtered[m.selected].Summary
+	return filtered[sel].Summary
 }
 
 func (m Model) renderCollapsedPreview(filtered []session.Session) string {
-	if len(filtered) == 0 || m.selected >= len(filtered) {
-		return m.styles.muted.Render("  No session selected")
+	sel := m.sessionTable.Cursor()
+	if len(filtered) == 0 || sel < 0 || sel >= len(filtered) {
+		return m.styles.muted.PaddingLeft(2).Render("No session selected")
 	}
-	s := filtered[m.selected]
+	s := filtered[sel]
 	parts := []string{
 		m.styles.highlight.Render(s.Project),
 		s.Tool,
@@ -197,104 +204,133 @@ func (m Model) renderCollapsedPreview(filtered []session.Session) string {
 	return m.styles.subpanel.Width(max(40, m.width-2)).Render(content)
 }
 
+func spacer() detailItem { return detailItem{"", ""} }
+
 func (m Model) detailItems(s session.Session) []detailItem {
+	// Identity
 	items := []detailItem{
-		{"Tool", s.Tool},
-		{"Project", cleanProjectName(s.Project)},
-		{"Status", s.Status},
-		{"Model", valueOrUnknown(s.Model)},
-		{"Started", s.StartedAt.Format("2006-01-02 15:04:05")},
-		{"Ended", session.EndedLabel(s.EndedAt, s.Status)},
-		{"Duration", durationLabel(s)},
+		{icon.Tool + " Tool", s.Tool},
+		{icon.Project + " Project", cleanProjectName(s.Project)},
+		{icon.Active + " Status", s.Status},
+		{icon.Model + " Model", valueOrUnknown(s.Model)},
 	}
+
+	// Time
+	items = append(items, spacer())
+	items = append(items,
+		detailItem{icon.Clock + " Active", timeAgo(lastActive(s))},
+		detailItem{icon.Clock + " Started", s.StartedAt.Format("2006-01-02 15:04:05")},
+		detailItem{icon.Clock + " Ended", session.EndedLabel(s.EndedAt, s.Status)},
+		detailItem{icon.Clock + " Duration", durationLabel(s)},
+	)
+
+	// Source
+	var sourceItems []detailItem
 	if s.Repo != "" {
-		items = append(items, detailItem{"Repo", shortenPath(s.Repo)})
+		sourceItems = append(sourceItems, detailItem{icon.Repo + " Repo", shortenPath(s.Repo)})
 	}
 	if s.Branch != "" {
-		items = append(items, detailItem{"Branch", s.Branch})
+		sourceItems = append(sourceItems, detailItem{icon.Branch + " Branch", s.Branch})
 	}
-	if s.Slug != "" {
-		items = append(items, detailItem{"Slug", s.Slug})
+	if len(sourceItems) > 0 {
+		items = append(items, spacer())
+		items = append(items, sourceItems...)
 	}
-	if s.ParentID != "" {
-		items = append(items, detailItem{"Parent", s.ParentID})
-	}
+
+	// Usage
+	var usageItems []detailItem
 	if s.TokensIn+s.TokensOut > 0 {
-		items = append(items, detailItem{"Tokens", formatTokens(s.TokensIn, s.TokensOut)})
+		usageItems = append(usageItems, detailItem{icon.Token + " Tokens", formatTokens(s.TokensIn, s.TokensOut)})
 	}
 	if s.CostUSD > 0 {
-		items = append(items, detailItem{"Cost", formatCost(s.CostUSD)})
+		usageItems = append(usageItems, detailItem{icon.Cost + " Cost", formatCost(s.CostUSD)})
+	}
+	if len(usageItems) > 0 {
+		items = append(items, spacer())
+		items = append(items, usageItems...)
+	}
+
+	// IDs
+	items = append(items, spacer())
+	if s.Slug != "" {
+		items = append(items, detailItem{icon.Session + " Slug", s.Slug})
+	}
+	if s.ParentID != "" {
+		items = append(items, detailItem{icon.Parent + " Parent", s.ParentID})
 	}
 	if len(s.Tags) > 0 {
-		items = append(items, detailItem{"Tags", strings.Join(s.Tags, ", ")})
+		items = append(items, detailItem{icon.Tag + " Tags", strings.Join(s.Tags, ", ")})
 	}
-	items = append(items, detailItem{"ID", s.ID})
+	items = append(items, detailItem{icon.ID + " ID", s.ID})
+
+	// Metadata
+	skip := map[string]bool{"model": true, "branch": true, "version": true}
+	var metaItems []detailItem
+	for k, v := range s.Meta {
+		if !skip[k] {
+			metaItems = append(metaItems, detailItem{"  " + humanizeKey(k), v})
+		}
+	}
+	if len(metaItems) > 0 {
+		items = append(items, spacer())
+		items = append(items, detailItem{icon.Meta + " Metadata", ""})
+		items = append(items, metaItems...)
+	}
 	return items
 }
 
-func (m Model) renderPane(style lipgloss.Style, title, body string, width, height int) string {
-	innerW := max(1, width-2)
-	innerH := max(1, height-4) // border top(1) + border bottom(1) + title(1) + gap(1)
-
-	// Title + body, truncated to exact dimensions
-	titleLine := m.styles.header.PaddingRight(1).PaddingLeft(1).MarginBottom(1).Render(title)
-	full := lipgloss.JoinVertical(lipgloss.Left, titleLine, body)
-	lines := strings.Split(full, "\n")
-	if len(lines) > innerH {
-		lines = lines[:innerH]
-	}
-	for len(lines) < innerH {
-		lines = append(lines, "")
-	}
-	for i, line := range lines {
-		lines[i] = ansi.Truncate(line, innerW, "")
-	}
-
-	return style.
-		Width(innerW).
-		Height(innerH).
-		Render(strings.Join(lines, "\n"))
-}
-
-func (m Model) renderActiveFilters() string {
-	var chips []string
-	if m.filters.tool != "" {
-		chips = append(chips, m.styles.badge.Render("tool:"+m.filters.tool))
-	}
-	if m.filters.status != "" {
-		chips = append(chips, m.styles.badge.Render("status:"+m.filters.status))
-	}
-	if m.filters.project != "" {
-		chips = append(chips, m.styles.badge.Render("project:"+cleanProjectName(m.filters.project)))
-	}
-	if len(chips) == 0 {
-		return m.styles.muted.Render("no filters active")
-	}
-	return strings.Join(chips, " ") + "  " + m.styles.muted.Render("c to clear")
-}
 
 func (m Model) renderTopBar(filtered []session.Session) string {
-	search := strings.TrimSpace(m.searchQuery())
-	if search == "" {
-		search = "all"
+	sep := m.styles.muted.Padding(0, 1).Render("│")
+	var searchPart string
+	if m.focus == focusSearch {
+		searchPart = lipgloss.NewStyle().Foreground(lipgloss.Color(nord13)).Bold(true).Render(icon.Search+" ") + m.searchInput.View()
+	} else {
+		search := strings.TrimSpace(m.searchQuery())
+		if search == "" {
+			searchPart = m.styles.muted.Render(icon.Search + " all")
+		} else {
+			searchPart = m.styles.highlight.Render(icon.Search+" ") + m.styles.selected.Underline(true).Render(search)
+		}
 	}
-	sep := m.styles.muted.Render(" │ ")
-	left := strings.Join([]string{
-		m.styles.muted.Render("search ") + m.styles.selected.Render(search),
-		m.styles.muted.Render("sort ") + m.styles.selected.Render(m.sortLabel()),
+	parts := []string{
+		searchPart,
 		m.styles.selected.Render(fmt.Sprintf("%d/%d", len(filtered), len(m.sessions))),
-	}, sep)
+	}
+	if chips := m.filterChips(); chips != "" {
+		parts = append(parts, chips)
+	}
+	left := strings.Join(parts, sep)
 
-	title := m.styles.header.Render(" AI Dashboard ")
-	gap := max(1, m.width-lipgloss.Width(left)-lipgloss.Width(title))
-	return left + strings.Repeat(" ", gap) + title
+	title := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color(nord6)).
+		Background(lipgloss.Color(nord10)).
+		Padding(0, 2).
+		Render("AI Dash")
+	return lipgloss.NewStyle().Width(m.width - 2).Render(
+		lipgloss.JoinHorizontal(lipgloss.Top,
+			left,
+			lipgloss.NewStyle().Width(m.width-2-lipgloss.Width(left)-lipgloss.Width(title)).Render(""),
+			title,
+		),
+	)
 }
 
-func (m Model) panelStyle(active bool) lipgloss.Style {
-	if active {
-		return m.styles.active
+func (m Model) filterChips() string {
+	var chips []string
+	chip := m.styles.badge.Padding(0, 1)
+	chips = append(chips, chip.Render("last "+ageLabel(maxSessionAge)))
+	if m.filters.tool != "" {
+		chips = append(chips, chip.Render(m.filters.tool))
 	}
-	return m.styles.panel
+	if m.filters.project != "" {
+		chips = append(chips, chip.Render(cleanProjectName(m.filters.project)))
+	}
+	if !m.showSubagents {
+		chips = append(chips, chip.Render("no subagents"))
+	}
+	return strings.Join(chips, " ") + " " + m.styles.muted.Render("c to clear")
 }
 
 func (m Model) sortLabel() string {
@@ -305,12 +341,22 @@ func (m Model) sortLabel() string {
 	return fmt.Sprintf("%s %s", m.sortField, dir)
 }
 
-func (m Model) sortHeader(label string, field session.SortField) string {
+func (m Model) sortHeader(label string, field session.SortField, _ int) string {
 	if m.sortField != field {
 		return label
 	}
 	if m.sortDescending {
-		return label + " v"
+		return label + " " + icon.SortDesc
 	}
-	return label + " ^"
+	return label + " " + icon.SortAsc
+}
+
+func (m Model) projSortHeader(label, field string, _ int) string {
+	if m.projSortField != field {
+		return label
+	}
+	if m.projSortDesc {
+		return label + " " + icon.SortDesc
+	}
+	return label + " " + icon.SortAsc
 }
