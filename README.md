@@ -132,6 +132,3 @@ Add the `$schema` line to get autocompletion in your editor. You can also run `a
 | `w` / `r` | Save / restore filter preset for current project |
 | `q` | Quit |
 
-## License
-
-MIT
