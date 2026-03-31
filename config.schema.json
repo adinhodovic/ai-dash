@@ -33,14 +33,14 @@
       "description": "Path to Codex config directory (default: ~/.codex/config.toml)",
       "type": "string"
     },
+    "default_age_filter": {
+      "default": "14d",
+      "description": "Default age filter applied to sessions on load and when clearing filters (e.g. 14d, 30d, 720h)",
+      "type": "string"
+    },
     "default_tool": {
       "default": "",
       "description": "Default tool for new sessions (e.g. claude, codex, opencode)",
-      "type": "string"
-    },
-    "max_age": {
-      "default": "14d",
-      "description": "Maximum age of sessions to display (e.g. 14d, 30d, 720h)",
       "type": "string"
     },
     "nerd_font": {

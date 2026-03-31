@@ -1,10 +1,8 @@
 # AI Dash
 
-See what your AI agents have been up to.
-
 ![AI Dash](./docs/images/preview.png)
 
-A lightweight terminal browser for multi-agent coding sessions. Reads from Claude Code, Codex, and OpenCode out of the box. Adding new providers is straightforward -- each is a self-contained package implementing a shared interface. Everything stays local.
+A terminal UI for browsing coding sessions across multiple tools from local transcripts, session logs, and databases. It currently supports Claude Code, Codex, and OpenCode.
 
 ## What it does
 
@@ -38,36 +36,28 @@ curl -L https://github.com/adinhodovic/ai-dash/releases/latest/download/ai-dash-
 chmod +x ai-dash
 ```
 
-## Sources
-
-Sessions are discovered from these default paths:
-
-| Tool | Path | Format |
-|------|------|--------|
-| OpenCode | `~/.local/share/opencode/opencode.db` | SQLite |
-| Codex | `~/.codex/sessions/` | JSONL |
-| Claude Code | `~/.claude/projects/` | JSONL |
-
-Override in `~/.config/ai-dash/config.json`:
-
-```json
-{
-  "opencode_path": "/custom/path/opencode.db",
-  "codex_path": "/custom/path/config.toml",
-  "claude_path": "/custom/path/projects"
-}
-```
-
 ## Configuration
 
 Config file: `~/.config/ai-dash/config.json`
+
+### Sources
+
+Sessions are discovered from default paths. Override them if needed:
+
+| Tool | Default path | Config key |
+|------|-------------|------------|
+| OpenCode | `~/.local/share/opencode/opencode.db` | `opencode_path` |
+| Codex | `~/.codex/config.toml` | `codex_path` |
+| Claude Code | `~/.claude/projects/` | `claude_path` |
+
+### Options
 
 ```json
 {
   "$schema": "https://raw.githubusercontent.com/adinhodovic/ai-dash/main/config.schema.json",
   "terminal": "ghostty",
   "poll_interval": "10s",
-  "max_age": "14d",
+  "default_age_filter": "14d",
   "default_tool": "claude",
   "auto_select_tool": false,
   "nerd_font": null,
@@ -79,7 +69,7 @@ Config file: `~/.config/ai-dash/config.json`
 |--------|-------------|---------|
 | `terminal` | Terminal emulator used to open sessions | `$TERMINAL` |
 | `poll_interval` | How often sessions reload | `10s` |
-| `max_age` | Only show sessions newer than this | `14d` |
+| `default_age_filter` | Default age filter used on load and when clearing filters | `14d` |
 | `default_tool` | Pre-selected tool when pressing `n` | none |
 | `auto_select_tool` | Skip the tool picker for new sessions | `false` |
 | `nerd_font` | Force Nerd Font on/off, `null` auto-detects | auto |

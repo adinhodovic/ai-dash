@@ -92,7 +92,7 @@ Guidance for agents working in `ai-dash`.
 - Config file: `~/.config/ai-dash/config.json` (viper auto-discovery)
 - Env vars: `AIDASH_` prefix auto-bound by viper (e.g. `AIDASH_OPENCODE_PATH`)
 - `$TERMINAL` controls which terminal opens sessions
-- `max_age` supports day shorthand (`14d`) and Go durations (`336h`)
+- `default_age_filter` supports day shorthand (`14d`) and Go durations (`336h`)
 - `age_presets` configures the `D` key cycle options
 - `nerd_font: null` means auto-detect; set `false` to opt out
 - `./ai-dash schema` generates JSON Schema for editor autocompletion
