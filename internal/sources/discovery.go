@@ -34,10 +34,10 @@ func NewSessionArgs(cfg config.Config, tool, projectDir string) []string {
 	return nil
 }
 
-func ResumeArgs(cfg config.Config, tool, sessionID string) []string {
+func ResumeArgs(cfg config.Config, tool, sessionID, projectDir string) []string {
 	for _, p := range providers(cfg) {
 		if p.Name() == tool {
-			return p.ResumeArgs(sessionID)
+			return p.ResumeArgs(sessionID, projectDir)
 		}
 	}
 	return nil

@@ -246,7 +246,7 @@ func prevSortField(current session.SortField) session.SortField {
 }
 
 func sessionCommand(s session.Session, cfg config.Config) *exec.Cmd {
-	args := sources.ResumeArgs(cfg, s.Tool, s.ID)
+	args := sources.ResumeArgs(cfg, s.Tool, s.ID, s.Repo)
 	if len(args) == 0 {
 		return nil
 	}

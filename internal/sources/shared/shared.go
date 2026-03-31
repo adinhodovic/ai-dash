@@ -44,7 +44,7 @@ type DiscoveryProvider interface {
 type SessionProvider interface {
 	DiscoveryProvider
 	ImportSessions(Result) ([]session.Session, error)
-	ResumeArgs(sessionID string) []string
+	ResumeArgs(sessionID, projectDir string) []string
 	NewSessionArgs(projectDir string) []string
 }
 

@@ -141,9 +141,16 @@ func TestLoadFromDBMissing(t *testing.T) {
 }
 
 func TestResumeArgs(t *testing.T) {
-	args := New(config.Config{}).ResumeArgs("ses_abc")
-	if len(args) != 3 || args[0] != "opencode" || args[1] != "-s" || args[2] != "ses_abc" {
+	args := New(config.Config{}).ResumeArgs("ses_abc", "/home/user/project")
+	if len(args) != 3 || args[0] != "sh" {
 		t.Errorf("unexpected args: %v", args)
+	}
+}
+
+func TestResumeArgsNoDir(t *testing.T) {
+	args := New(config.Config{}).ResumeArgs("ses_abc", "")
+	if len(args) != 1 {
+		t.Errorf("expected single command, got: %v", args)
 	}
 }
 
