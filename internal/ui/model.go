@@ -219,7 +219,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.showSources = false
 				m.showHelp = false
 				defTool := m.meta.Config.DefaultTool
-				m.picker = newPicker("new session (tool)", toolOptions(m.sessions), defTool, false)
+				m.picker = newPicker(
+					"new session (tool)",
+					toolOptions(m.sessions),
+					defTool,
+					false,
+				)
 				m.picker.label = "new-session"
 			}
 		case "]":

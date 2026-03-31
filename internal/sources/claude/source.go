@@ -60,15 +60,14 @@ func (Source) ImportSessions(result shared.Result) ([]session.Session, error) {
 }
 
 func (Source) ResumeArgs(sessionID, projectDir string) []string {
-	cmd := "claude --resume " + sessionID
 	if projectDir != "" {
-		return []string{"sh", "-c", "cd " + projectDir + " && " + cmd}
+		return []string{"cd", projectDir, "&&", "claude", "--resume", sessionID}
 	}
-	return []string{cmd}
+	return []string{"claude", "--resume", sessionID}
 }
 
 func (Source) NewSessionArgs(projectDir string) []string {
-	return []string{"sh", "-c", "cd " + projectDir + " && claude"}
+	return []string{"cd", projectDir, "&&", "claude"}
 }
 
 func (Source) ParentSessionID(s session.Session) string {

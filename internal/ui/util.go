@@ -245,8 +245,18 @@ func prevSortField(current session.SortField) session.SortField {
 	return session.SortUpdated
 }
 
+func sessionDir(s session.Session) string {
+	if s.Repo != "" && s.Repo != "/" {
+		return s.Repo
+	}
+	if s.Project != "" && (strings.HasPrefix(s.Project, "/") || strings.HasPrefix(s.Project, "~")) {
+		return s.Project
+	}
+	return ""
+}
+
 func sessionCommand(s session.Session, cfg config.Config) *exec.Cmd {
-	args := sources.ResumeArgs(cfg, s.Tool, s.ID, s.Repo)
+	args := sources.ResumeArgs(cfg, s.Tool, s.ID, sessionDir(s))
 	if len(args) == 0 {
 		return nil
 	}
