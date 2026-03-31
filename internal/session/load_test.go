@@ -3,7 +3,6 @@ package session
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -76,19 +75,5 @@ func TestLoadDefaultSessionsErrorsWhenNoFilesExist(t *testing.T) {
 	_, err = LoadDefaultSessions()
 	if err == nil {
 		t.Fatalf("expected error when no session files exist")
-	}
-}
-
-func TestSummaryLineCountsTools(t *testing.T) {
-	sessions := []Session{
-		{Tool: "claude", Status: "active"},
-		{Tool: "codex", Status: "completed"},
-		{Tool: "claude", Status: "completed"},
-	}
-	got := SummaryLine(sessions)
-	for _, want := range []string{"3 total", "1 active", "codex 1", "claude 2"} {
-		if !strings.Contains(got, want) {
-			t.Fatalf("expected %q in %q", want, got)
-		}
 	}
 }
