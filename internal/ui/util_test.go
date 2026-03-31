@@ -38,10 +38,11 @@ func TestTruncateForCell(t *testing.T) {
 }
 
 func TestCleanProjectName(t *testing.T) {
+	home := homeDir
 	tests := []struct {
 		input, want string
 	}{
-		{"/home/adin/oss/ai-dash", "~/oss/ai-dash"},
+		{home + "/oss/ai-dash", "~/oss/ai-dash"},
 		{"~/myproject", "~/myproject"},
 		{"", "unknown"},
 		{"  ", "unknown"},
