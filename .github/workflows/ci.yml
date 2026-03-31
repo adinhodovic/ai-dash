@@ -7,19 +7,26 @@ on:
   pull_request:
     branches:
       - main
+  release:
+    types:
+      - published
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
 
       - name: Setup Go
+        id: go
         uses: actions/setup-go@v5
         with:
           go-version: ^1.25
@@ -36,14 +43,30 @@ jobs:
       - name: Run unit tests
         run: go test ./... -v -covermode=count -coverprofile=coverage.txt
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'release'
+    needs:
+      - test
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Test
-        uses: docker/build-push-action@v6
+      - name: Setup Go
+        id: go
+        uses: actions/setup-go@v5
         with:
-          push: false
-          tags: ai-dash:latest
+          go-version: ^1.25
+
+      - name: Build Binaries
+        run: make build-all
+
+      - name: Upload Artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          files: |
+            ai-dash-linux-amd64
+            ai-dash-linux-arm64

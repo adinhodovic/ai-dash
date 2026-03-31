@@ -24,7 +24,3 @@ func LoadFile(path string) ([]Session, error) {
 func LoadDefaultSessions() ([]Session, error) {
 	return LoadFile("sessions.json")
 }
-
-func LoadSampleSessions() ([]Session, error) {
-	return LoadFile("sessions.sample.json")
-}

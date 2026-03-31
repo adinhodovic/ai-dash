@@ -78,35 +78,6 @@ func TestLoadDefaultSessionsErrorsWhenNoFilesExist(t *testing.T) {
 	}
 }
 
-func TestLoadSampleSessionsLoadsSampleFile(t *testing.T) {
-	dir := t.TempDir()
-	oldwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldwd) }()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-
-	content := `{
-		"sessions": [
-			{"id":"sample","tool":"opencode","project":"demo","status":"completed","started_at":"2026-03-29T12:00:00Z"}
-		]
-	}`
-	if err := os.WriteFile(filepath.Join(dir, "sessions.sample.json"), []byte(content), 0o644); err != nil {
-		t.Fatalf("write sample sessions file: %v", err)
-	}
-
-	sessions, err := LoadSampleSessions()
-	if err != nil {
-		t.Fatalf("load sample sessions: %v", err)
-	}
-	if len(sessions) != 1 || sessions[0].ID != "sample" {
-		t.Fatalf("expected sample session, got %#v", sessions)
-	}
-}
-
 func TestSummaryLineCountsTools(t *testing.T) {
 	sessions := []Session{{Tool: "claude", Status: "active"}, {Tool: "codex", Status: "completed"}, {Tool: "claude", Status: "completed"}}
 	got := SummaryLine(sessions)

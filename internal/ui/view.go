@@ -50,7 +50,7 @@ func (m Model) View() tea.View {
 		if len(tLines) > contentH {
 			tLines = tLines[:contentH]
 		}
-		content := strings.Join(tLines, "\n")
+		content := lipgloss.JoinVertical(lipgloss.Left, tLines...)
 		return altView(m.composePageStr(top, content, footer))
 	}
 
@@ -195,7 +195,12 @@ func (m Model) renderCollapsedPreview(filtered []session.Session) string {
 	if s.TokensIn+s.TokensOut > 0 {
 		parts = append(parts, formatTokens(s.TokensIn, s.TokensOut))
 	}
-	line := strings.Join(parts, "  ")
+	spacer := lipgloss.NewStyle().MarginRight(2).Render
+	styledParts := make([]string, len(parts))
+	for i, p := range parts {
+		styledParts[i] = spacer(p)
+	}
+	line := lipgloss.JoinHorizontal(lipgloss.Top, styledParts...)
 	summary := s.Summary
 	if len(summary) > 60 {
 		summary = summary[:57] + "..."
@@ -268,7 +273,7 @@ func (m Model) detailItems(s session.Session) []detailItem {
 	var metaItems []detailItem
 	for k, v := range s.Meta {
 		if !skip[k] {
-			metaItems = append(metaItems, detailItem{"  " + humanizeKey(k), v})
+			metaItems = append(metaItems, detailItem{humanizeKey(k), v})
 		}
 	}
 	if len(metaItems) > 0 {
@@ -319,7 +324,7 @@ func (m Model) renderTopBar(filtered []session.Session) string {
 
 func (m Model) filterChips() string {
 	var chips []string
-	chip := m.styles.badge.Padding(0, 1)
+	chip := m.styles.badge.Padding(0, 1).MarginRight(1)
 	chips = append(chips, chip.Render("last "+ageLabel(maxSessionAge)))
 	if m.filters.tool != "" {
 		chips = append(chips, chip.Render(m.filters.tool))
@@ -330,7 +335,8 @@ func (m Model) filterChips() string {
 	if !m.showSubagents {
 		chips = append(chips, chip.Render("no subagents"))
 	}
-	return strings.Join(chips, " ") + " " + m.styles.muted.Render("c to clear")
+	chips = append(chips, m.styles.muted.Render("c to clear"))
+	return lipgloss.JoinHorizontal(lipgloss.Top, chips...)
 }
 
 func (m Model) sortLabel() string {

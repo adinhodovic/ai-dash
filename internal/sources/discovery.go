@@ -71,11 +71,6 @@ func LoadDefaultSessions(discovery Discovery) ([]session.Session, error) {
 		return sessions, nil
 	}
 
-	sample, sampleErr := session.LoadSampleSessions()
-	if sampleErr == nil {
-		return sample, nil
-	}
-
 	if importErr != nil {
 		return nil, importErr
 	}

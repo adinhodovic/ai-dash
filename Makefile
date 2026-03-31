@@ -1,6 +1,6 @@
-AI_DASHBOARD := $(shell git describe --tags --always --dirty 2>/dev/null || printf 'dev')
+AI_DASH := $(shell git describe --tags --always --dirty 2>/dev/null || printf 'dev')
 LDFLAGS += -X "main.buildTimestamp=$(shell date -u '+%Y-%m-%d %H:%M:%S')"
-LDFLAGS += -X "main.aiDashVersion=$(AI_DASHBOARD)"
+LDFLAGS += -X "main.aiDashVersion=$(AI_DASH)"
 LDFLAGS += -X "main.goVersion=$(shell go version | sed -E 's/go version go([^ ]+) .*/\1/')"
 
 GO := GO111MODULE=on CGO_ENABLED=0 go

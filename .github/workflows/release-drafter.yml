@@ -1,0 +1,51 @@
+# yamllint disable rule:line-length rule:truthy
+---
+name: Release Drafter
+
+on:
+  push:
+    branches:
+      - main
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited]
+
+permissions: read-all
+
+jobs:
+  update_pr_labels:
+    name: Update PR Labels
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: release-drafter/release-drafter@v6
+        with:
+          disable-autolabeler: false
+          disable-releaser: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update_release_draft:
+    name: Update Release Draft
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    env:
+      PUBLISH_DRAFT: false
+    steps:
+      - name: Check if a version is cut
+        if: "contains(github.event.head_commit.message, 'chore(prerelease): Cut Version')"
+        run: |
+          echo "PUBLISH_DRAFT=true" >> $GITHUB_ENV
+
+      - uses: release-drafter/release-drafter@v6
+        with:
+          disable-autolabeler: true
+          disable-releaser: false
+          publish: ${{ env.PUBLISH_DRAFT }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

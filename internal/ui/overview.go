@@ -114,10 +114,10 @@ func (m Model) renderOverviewStats(filtered []session.Session, _, _ int) string 
 
 	if tokensIn+tokensOut > 0 {
 		lines = append(lines, "")
-		lines = append(lines, dim.Render(icon.Token+" Tokens ")+val.Render(formatTokens(tokensIn, tokensOut)))
+		lines = append(lines, dim.MarginRight(1).Render(icon.Token+" Tokens")+val.Render(formatTokens(tokensIn, tokensOut)))
 	}
 	if totalCost > 0 {
-		lines = append(lines, dim.Render(icon.Cost+" Cost   ")+val.Render(formatCost(totalCost)))
+		lines = append(lines, dim.MarginRight(1).Render(icon.Cost+" Cost")+val.Render(formatCost(totalCost)))
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
