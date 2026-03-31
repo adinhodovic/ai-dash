@@ -20,13 +20,6 @@ A lightweight terminal browser for multi-agent coding sessions. Reads from Claud
 
 ## Install
 
-### Binary
-
-```bash
-curl -L https://github.com/adinhodovic/ai-dash/releases/latest/download/ai-dash-linux-amd64 -o ai-dash
-chmod +x ai-dash
-```
-
 ### From source
 
 ```bash
@@ -34,6 +27,15 @@ git clone https://github.com/adinhodovic/ai-dash.git
 cd ai-dash
 make build
 ./ai-dash
+```
+
+### Binary
+
+Pre-built binaries are available on the [releases page](https://github.com/adinhodovic/ai-dash/releases).
+
+```bash
+curl -L https://github.com/adinhodovic/ai-dash/releases/latest/download/ai-dash-linux-amd64 -o ai-dash
+chmod +x ai-dash
 ```
 
 ## Sources
