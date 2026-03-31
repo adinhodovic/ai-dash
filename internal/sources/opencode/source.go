@@ -41,15 +41,14 @@ func (Source) ImportSessions(result shared.Result) ([]session.Session, error) {
 }
 
 func (Source) ResumeArgs(sessionID, projectDir string) []string {
-	cmd := "opencode -s " + sessionID
 	if projectDir != "" {
-		return []string{"sh", "-c", "cd " + projectDir + " && " + cmd}
+		return []string{"cd", projectDir, "&&", "opencode", "-s", sessionID}
 	}
-	return []string{cmd}
+	return []string{"opencode", "-s", sessionID}
 }
 
 func (Source) NewSessionArgs(projectDir string) []string {
-	return []string{"sh", "-c", "cd " + projectDir + " && opencode"}
+	return []string{"cd", projectDir, "&&", "opencode"}
 }
 
 func (s Source) dbPath() string {

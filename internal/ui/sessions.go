@@ -75,13 +75,24 @@ func (m *Model) openNewSession(tool string) tea.Cmd {
 		m.statusMessage = "No tool selected"
 		return nil
 	}
-	// Get the project dir from the selected project in the overview table
-	cursor := m.overviewTable.Cursor()
-	if cursor < 0 || cursor >= len(m.projectPaths) {
+	// Get project dir from focused table
+	var projectDir string
+	if m.focus == focusFilters {
+		cursor := m.overviewTable.Cursor()
+		if cursor >= 0 && cursor < len(m.projectPaths) {
+			projectDir = m.projectPaths[cursor]
+		}
+	} else {
+		filtered := m.filteredSessions()
+		sel := m.sessionTable.Cursor()
+		if sel >= 0 && sel < len(filtered) {
+			projectDir = sessionDir(filtered[sel])
+		}
+	}
+	if projectDir == "" {
 		m.statusMessage = "No project selected"
 		return nil
 	}
-	projectDir := m.projectPaths[cursor]
 	args := sources.NewSessionArgs(m.meta.Config, tool, projectDir)
 	if len(args) == 0 {
 		m.statusMessage = fmt.Sprintf("No new session support for %s", tool)

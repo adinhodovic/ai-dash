@@ -94,15 +94,14 @@ func (Source) ImportSessions(result shared.Result) ([]session.Session, error) {
 }
 
 func (Source) ResumeArgs(sessionID, projectDir string) []string {
-	cmd := "codex resume " + sessionID
 	if projectDir != "" {
-		return []string{"sh", "-c", "cd " + projectDir + " && " + cmd}
+		return []string{"cd", projectDir, "&&", "codex", "resume", sessionID}
 	}
-	return []string{cmd}
+	return []string{"codex", "resume", sessionID}
 }
 
 func (Source) NewSessionArgs(projectDir string) []string {
-	return []string{"sh", "-c", "cd " + projectDir + " && codex"}
+	return []string{"cd", projectDir, "&&", "codex"}
 }
 
 func discoverCandidates(roots []string) ([]string, error) {
