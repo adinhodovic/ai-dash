@@ -8,9 +8,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/adin/ai-dash/internal/config"
-	"github.com/adin/ai-dash/internal/ui/icon"
 	"github.com/adin/ai-dash/internal/sources"
 	"github.com/adin/ai-dash/internal/ui"
+	"github.com/adin/ai-dash/internal/ui/icon"
 )
 
 var (

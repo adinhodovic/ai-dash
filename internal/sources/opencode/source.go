@@ -68,7 +68,7 @@ func loadFromDB(path string) []session.Session {
 	if err != nil {
 		return nil
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	rows, err := db.Query(`
 		SELECT s.id, COALESCE(s.parent_id,''), s.slug, s.directory, s.title, s.version,
@@ -85,16 +85,20 @@ func loadFromDB(path string) []session.Session {
 	if err != nil {
 		return nil
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var sessions []session.Session
 	for rows.Next() {
 		var (
 			id, parentID, slug, dir, title, version, modelID string
-			additions, deletions, files                       int
-			created, updated                                  int64
+			additions, deletions, files                      int
+			created, updated                                 int64
 		)
-		if err := rows.Scan(&id, &parentID, &slug, &dir, &title, &version, &additions, &deletions, &files, &created, &updated, &modelID); err != nil {
+		if err := rows.Scan(
+			&id, &parentID, &slug, &dir, &title, &version,
+			&additions, &deletions, &files,
+			&created, &updated, &modelID,
+		); err != nil {
 			continue
 		}
 		startedAt := time.UnixMilli(created)
@@ -126,10 +130,10 @@ func loadFromDB(path string) []session.Session {
 			Status:    status,
 			StartedAt: startedAt,
 			EndedAt:   endedAt,
-			Model:   model,
-			Summary: title,
-			Tags:    []string{"opencode"},
-			Meta:    meta,
+			Model:     model,
+			Summary:   title,
+			Tags:      []string{"opencode"},
+			Meta:      meta,
 		})
 	}
 	return sessions

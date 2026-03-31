@@ -88,7 +88,10 @@ func (m Model) renderOverviewStats(filtered []session.Session, _, _ int) string 
 		dim.Render(fmt.Sprintf("%d", total)) +
 		dim.PaddingLeft(1).Render("sessions")
 	if active > 0 {
-		statsLine += val.MarginLeft(2).Render(fmt.Sprintf("%d", active)) + dim.PaddingLeft(1).Render("active")
+		statsLine += val.MarginLeft(2).
+			Render(fmt.Sprintf("%d", active)) +
+			dim.PaddingLeft(1).
+				Render("active")
 	}
 
 	toolKeys := make([]string, 0, len(tools))
@@ -106,7 +109,10 @@ func (m Model) renderOverviewStats(filtered []session.Session, _, _ int) string 
 	lines := []string{statsLine}
 
 	if subagents > 0 {
-		lines = append(lines, dim.Render(fmt.Sprintf("%d subagent sessions (press a to show)", subagents)))
+		lines = append(
+			lines,
+			dim.Render(fmt.Sprintf("%d subagent sessions (press a to show)", subagents)),
+		)
 	}
 
 	lines = append(lines, "")
@@ -114,10 +120,20 @@ func (m Model) renderOverviewStats(filtered []session.Session, _, _ int) string 
 
 	if tokensIn+tokensOut > 0 {
 		lines = append(lines, "")
-		lines = append(lines, dim.MarginRight(1).Render(icon.Token+" Tokens")+val.Render(formatTokens(tokensIn, tokensOut)))
+		lines = append(
+			lines,
+			dim.MarginRight(1).
+				Render(icon.Token+" Tokens")+
+				val.Render(
+					formatTokens(tokensIn, tokensOut),
+				),
+		)
 	}
 	if totalCost > 0 {
-		lines = append(lines, dim.MarginRight(1).Render(icon.Cost+" Cost")+val.Render(formatCost(totalCost)))
+		lines = append(
+			lines,
+			dim.MarginRight(1).Render(icon.Cost+" Cost")+val.Render(formatCost(totalCost)),
+		)
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left, lines...)

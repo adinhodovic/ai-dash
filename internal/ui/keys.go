@@ -23,7 +23,7 @@ type keyMap struct {
 	Project       key.Binding
 	SavePreset    key.Binding
 	LoadPreset    key.Binding
-	ResumeSession   key.Binding
+	ResumeSession key.Binding
 	ToggleDetails key.Binding
 	NewSession    key.Binding
 	AgeRange      key.Binding
@@ -35,12 +35,18 @@ type keyMap struct {
 
 func defaultKeyMap() keyMap {
 	return keyMap{
-		Up:            key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
-		Down:          key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
-		GoTop:         key.NewBinding(key.WithKeys("g"), key.WithHelp("g/G", "top/bottom")),
-		GoBottom:      key.NewBinding(key.WithKeys("G")),
-		PageUp:        key.NewBinding(key.WithKeys("pgup", "ctrl+u"), key.WithHelp("pgup", "page up")),
-		PageDown:      key.NewBinding(key.WithKeys("pgdown", "ctrl+d"), key.WithHelp("pgdn", "page down")),
+		Up:       key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
+		Down:     key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
+		GoTop:    key.NewBinding(key.WithKeys("g"), key.WithHelp("g/G", "top/bottom")),
+		GoBottom: key.NewBinding(key.WithKeys("G")),
+		PageUp: key.NewBinding(
+			key.WithKeys("pgup", "ctrl+u"),
+			key.WithHelp("pgup", "page up"),
+		),
+		PageDown: key.NewBinding(
+			key.WithKeys("pgdown", "ctrl+d"),
+			key.WithHelp("pgdn", "page down"),
+		),
 		Focus:         key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "focus")),
 		Help:          key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
 		Search:        key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "search")),
@@ -52,7 +58,7 @@ func defaultKeyMap() keyMap {
 		Project:       key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "project")),
 		SavePreset:    key.NewBinding(key.WithKeys("w"), key.WithHelp("w", "save preset")),
 		LoadPreset:    key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "load preset")),
-		ResumeSession:   key.NewBinding(key.WithKeys("o"), key.WithHelp("o", "resume")),
+		ResumeSession: key.NewBinding(key.WithKeys("o"), key.WithHelp("o", "resume")),
 		ToggleDetails: key.NewBinding(key.WithKeys("v"), key.WithHelp("v", "details")),
 		NewSession:    key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "new session")),
 		AgeRange:      key.NewBinding(key.WithKeys("D"), key.WithHelp("D", "age range")),
@@ -64,7 +70,18 @@ func defaultKeyMap() keyMap {
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Up, k.Down, k.Help, k.Focus, k.Search, k.Tool, k.Sort, k.Project, k.Clear, k.Quit}
+	return []key.Binding{
+		k.Up,
+		k.Down,
+		k.Help,
+		k.Focus,
+		k.Search,
+		k.Tool,
+		k.Sort,
+		k.Project,
+		k.Clear,
+		k.Quit,
+	}
 }
 
 func (k keyMap) shortHelpForFocus(focus focusArea) []key.Binding {
@@ -81,7 +98,16 @@ func (k keyMap) shortHelpForFocus(focus focusArea) []key.Binding {
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down, k.GoTop, k.PageUp, k.PageDown},
-		{k.Help, k.Focus, k.Search, k.ResumeSession, k.NewSession, k.ToggleDetails, k.Clear, k.Quit},
+		{
+			k.Help,
+			k.Focus,
+			k.Search,
+			k.ResumeSession,
+			k.NewSession,
+			k.ToggleDetails,
+			k.Clear,
+			k.Quit,
+		},
 		{k.Tool, k.Sort, k.Project, k.AgeRange, k.ToggleAgents, k.Sources},
 		{k.SortNext, k.SortToggle, k.SavePreset, k.LoadPreset},
 	}

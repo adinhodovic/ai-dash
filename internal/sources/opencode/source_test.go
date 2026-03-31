@@ -18,7 +18,7 @@ func createTestDB(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	_, err = db.Exec(`CREATE TABLE session (
 		id TEXT PRIMARY KEY,
@@ -57,16 +57,31 @@ func createTestDB(t *testing.T) string {
 	}
 
 	now := time.Now().UnixMilli()
-	_, err = db.Exec(`INSERT INTO session (id, project_id, slug, directory, title, version, time_created, time_updated)
+	_, err = db.Exec(
+		`INSERT INTO session (id, project_id, slug, directory, title, version, time_created, time_updated)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		"ses_test123", "proj1", "cool-slug", "/home/user/myproject", "Fix the bug", "1.0.0", now-60000, now)
+		"ses_test123",
+		"proj1",
+		"cool-slug",
+		"/home/user/myproject",
+		"Fix the bug",
+		"1.0.0",
+		now-60000,
+		now,
+	)
 	if err != nil {
 		t.Fatalf("insert session: %v", err)
 	}
 
-	_, err = db.Exec(`INSERT INTO message (id, session_id, time_created, time_updated, data)
+	_, err = db.Exec(
+		`INSERT INTO message (id, session_id, time_created, time_updated, data)
 		VALUES (?, ?, ?, ?, ?)`,
-		"msg_1", "ses_test123", now-60000, now, `{"role":"user","model":{"providerID":"anthropic","modelID":"claude-sonnet-4-6"}}`)
+		"msg_1",
+		"ses_test123",
+		now-60000,
+		now,
+		`{"role":"user","model":{"providerID":"anthropic","modelID":"claude-sonnet-4-6"}}`,
+	)
 	if err != nil {
 		t.Fatalf("insert message: %v", err)
 	}

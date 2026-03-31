@@ -13,10 +13,41 @@ import (
 func testSessions() []session.Session {
 	now := time.Now()
 	return []session.Session{
-		{ID: "1", Tool: "claude", Project: "alpha", Status: "active", StartedAt: now, Summary: "working on tests"},
-		{ID: "2", Tool: "codex", Project: "alpha", Status: "completed", StartedAt: now.Add(-time.Hour), EndedAt: now, Summary: "refactored auth"},
-		{ID: "3", Tool: "opencode", Project: "beta", Status: "completed", StartedAt: now.Add(-2 * time.Hour), EndedAt: now.Add(-time.Hour), Summary: "fixed bug"},
-		{ID: "4", Tool: "claude", Project: "gamma", Status: "aborted", StartedAt: now.Add(-3 * time.Hour), EndedAt: now.Add(-2 * time.Hour), Summary: "abandoned approach"},
+		{
+			ID:        "1",
+			Tool:      "claude",
+			Project:   "alpha",
+			Status:    "active",
+			StartedAt: now,
+			Summary:   "working on tests",
+		},
+		{
+			ID:        "2",
+			Tool:      "codex",
+			Project:   "alpha",
+			Status:    "completed",
+			StartedAt: now.Add(-time.Hour),
+			EndedAt:   now,
+			Summary:   "refactored auth",
+		},
+		{
+			ID:        "3",
+			Tool:      "opencode",
+			Project:   "beta",
+			Status:    "completed",
+			StartedAt: now.Add(-2 * time.Hour),
+			EndedAt:   now.Add(-time.Hour),
+			Summary:   "fixed bug",
+		},
+		{
+			ID:        "4",
+			Tool:      "claude",
+			Project:   "gamma",
+			Status:    "aborted",
+			StartedAt: now.Add(-3 * time.Hour),
+			EndedAt:   now.Add(-2 * time.Hour),
+			Summary:   "abandoned approach",
+		},
 	}
 }
 
@@ -218,8 +249,28 @@ func TestLayoutHeightsStayStableAcrossSelection(t *testing.T) {
 	now := time.Now()
 	m := NewModel(Options{
 		Sessions: []session.Session{
-			{ID: "1", Tool: "claude", Project: "alpha", Status: "active", StartedAt: now, Summary: "short"},
-			{ID: "2", Tool: "codex", Project: "alpha", Status: "completed", StartedAt: now.Add(-time.Hour), EndedAt: now, Summary: "a much longer summary that should not change pane heights even when the selected session has more detail fields", Repo: "/tmp/repo", Branch: "main", Slug: "slug", ParentID: "parent", Tags: []string{"one", "two"}},
+			{
+				ID:        "1",
+				Tool:      "claude",
+				Project:   "alpha",
+				Status:    "active",
+				StartedAt: now,
+				Summary:   "short",
+			},
+			{
+				ID:        "2",
+				Tool:      "codex",
+				Project:   "alpha",
+				Status:    "completed",
+				StartedAt: now.Add(-time.Hour),
+				EndedAt:   now,
+				Summary:   "a much longer summary that should not change pane heights even when the selected session has more detail fields",
+				Repo:      "/tmp/repo",
+				Branch:    "main",
+				Slug:      "slug",
+				ParentID:  "parent",
+				Tags:      []string{"one", "two"},
+			},
 		},
 		Version: "test",
 	})

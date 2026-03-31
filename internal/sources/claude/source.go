@@ -194,7 +194,7 @@ func parseClaudeTranscript(transcript shared.TranscriptFile) session.Session {
 	if err != nil {
 		return s
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	scanner := bufio.NewScanner(file)
 	buf := make([]byte, 0, 64*1024)
@@ -240,7 +240,8 @@ func parseClaudeTranscript(transcript shared.TranscriptFile) session.Session {
 			s.Branch = line.GitBranch
 		}
 
-		if line.Type == "user" && line.Message != nil && line.Message.Role == "user" && firstUserMsg == "" {
+		if line.Type == "user" && line.Message != nil && line.Message.Role == "user" &&
+			firstUserMsg == "" {
 			firstUserMsg = extractTextContent(line.Message.Content)
 		}
 

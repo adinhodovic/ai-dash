@@ -10,15 +10,15 @@ import (
 // https://www.nordtheme.com/docs/colors-and-palettes
 const (
 	// Polar Night — dark base tones
-	nord0  = "#2e3440"
-	nord1  = "#3b4252"
-	nord2  = "#434c5e"
-	nord3  = "#4c566a"
+	nord0 = "#2e3440"
+	nord1 = "#3b4252"
+	nord2 = "#434c5e"
+	nord3 = "#4c566a"
 
 	// Snow Storm — light text tones
-	nord4  = "#d8dee9"
-	nord5  = "#e5e9f0"
-	nord6  = "#eceff4"
+	nord4 = "#d8dee9"
+	nord5 = "#e5e9f0"
+	nord6 = "#eceff4"
 
 	// Frost — blue accents
 	nord7  = "#8fbcbb"

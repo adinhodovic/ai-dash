@@ -94,16 +94,18 @@ func NewModel(opts Options) Model {
 
 	store, err := presets.Load()
 	m := Model{
-		sessions:      opts.Sessions,
-		err:           opts.Err,
-		styles:        newStyles(),
-		meta:          opts,
-		searchInput:   input,
-		sessionTable:  newSessionTable(),
-		sourceTable:   newSourceTable(),
-		relatedTable:  newRelatedTable(),
-		detailTable:   newTable([]table.Column{{Title: "", Width: 10}, {Title: "", Width: 30}}),
-		overviewTable: newTable([]table.Column{{Title: "Metric", Width: 16}, {Title: "Value", Width: 20}}),
+		sessions:     opts.Sessions,
+		err:          opts.Err,
+		styles:       newStyles(),
+		meta:         opts,
+		searchInput:  input,
+		sessionTable: newSessionTable(),
+		sourceTable:  newSourceTable(),
+		relatedTable: newRelatedTable(),
+		detailTable:  newTable([]table.Column{{Title: "", Width: 10}, {Title: "", Width: 30}}),
+		overviewTable: newTable(
+			[]table.Column{{Title: "Metric", Width: 16}, {Title: "Value", Width: 20}},
+		),
 		help: func() help.Model {
 			h := help.New()
 			applyHelpStyles(&h)
@@ -216,7 +218,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.picker.active = false
 				m.showSources = false
 				m.showHelp = false
-				m.picker = newPicker("new session (tool)", toolOptions(m.sessions), m.meta.Config.DefaultTool, false)
+				defTool := m.meta.Config.DefaultTool
+				m.picker = newPicker("new session (tool)", toolOptions(m.sessions), defTool, false)
 				m.picker.label = "new-session"
 			}
 		case "]":
@@ -323,7 +326,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.sessions = msg.sessions
 			m.meta.Discovery = msg.discovery
 			if len(m.sessions) != prev {
-				m.statusMessage = fmt.Sprintf("Reloaded: %d sessions (was %d)", len(m.sessions), prev)
+				m.statusMessage = fmt.Sprintf(
+					"Reloaded: %d sessions (was %d)", len(m.sessions), prev,
+				)
 			}
 			filtered = m.filteredSessions()
 			m.syncAllTables(filtered)
@@ -440,7 +445,16 @@ func (m Model) filteredSessions() []session.Session {
 }
 
 func matchesQuery(s session.Session, query string) bool {
-	fields := []string{s.Tool, s.Project, s.Repo, s.Branch, s.Status, s.Model, s.Summary, strings.Join(s.Tags, " ")}
+	fields := []string{
+		s.Tool,
+		s.Project,
+		s.Repo,
+		s.Branch,
+		s.Status,
+		s.Model,
+		s.Summary,
+		strings.Join(s.Tags, " "),
+	}
 	// Try exact substring first (fast path).
 	lower := strings.ToLower(strings.Join(fields, " "))
 	if strings.Contains(lower, query) {

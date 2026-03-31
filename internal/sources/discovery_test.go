@@ -68,11 +68,17 @@ func TestLoadDefaultSessionsPrefersDiscoveredSessionsOverSample(t *testing.T) {
 		t.Fatalf("chdir: %v", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(dir, "sessions.sample.json"), []byte(`{"sessions":[{"id":"sample","tool":"opencode","project":"demo","status":"completed","started_at":"2026-03-29T12:00:00Z"}]}`), 0o644); err != nil {
+	sampleData := `{"sessions":[{"id":"sample","tool":"opencode","project":"demo","status":"completed","started_at":"2026-03-29T12:00:00Z"}]}`
+	samplePath := filepath.Join(dir, "sessions.sample.json")
+	if err := os.WriteFile(samplePath, []byte(sampleData), 0o644); err != nil {
 		t.Fatalf("write sample: %v", err)
 	}
 
-	discovery := Discovery{Sessions: []session.Session{{ID: "real", Tool: "codex", Project: "repo", Status: "completed"}}}
+	discovery := Discovery{
+		Sessions: []session.Session{
+			{ID: "real", Tool: "codex", Project: "repo", Status: "completed"},
+		},
+	}
 	sessions, err := LoadDefaultSessions(discovery)
 	if err != nil {
 		t.Fatalf("load default sessions: %v", err)

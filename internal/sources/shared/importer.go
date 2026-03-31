@@ -29,7 +29,9 @@ func DiscoverCandidateFilesWithPatterns(root string, extraPatterns []string) ([]
 	}
 
 	var matches []string
-	patterns := append([]string{"session", "history", "transcript", "chat", "conversation", "messages"}, extraPatterns...)
+	patterns := append(
+		[]string{"session", "history", "transcript", "chat", "conversation", "messages"},
+		extraPatterns...)
 	err = filepath.WalkDir(root, func(path string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
@@ -42,7 +44,9 @@ func DiscoverCandidateFilesWithPatterns(root string, extraPatterns []string) ([]
 		if ext != ".json" && ext != ".jsonl" {
 			return nil
 		}
-		if strings.Contains(base, "config") || strings.Contains(base, "settings") || strings.Contains(base, "theme") || strings.Contains(base, "keybind") {
+		if strings.Contains(base, "config") || strings.Contains(base, "settings") ||
+			strings.Contains(base, "theme") ||
+			strings.Contains(base, "keybind") {
 			return nil
 		}
 		if ext == ".jsonl" || containsAny(base, patterns) {
@@ -153,7 +157,16 @@ func collectStrings(v any) []string {
 
 func looksLikeSession(values []string) bool {
 	joined := strings.ToLower(strings.Join(values, " "))
-	markers := []string{"assistant", "user", "message", "prompt", "transcript", "conversation", "session", "model"}
+	markers := []string{
+		"assistant",
+		"user",
+		"message",
+		"prompt",
+		"transcript",
+		"conversation",
+		"session",
+		"model",
+	}
 	count := 0
 	for _, marker := range markers {
 		if strings.Contains(joined, marker) {
@@ -166,7 +179,9 @@ func looksLikeSession(values []string) bool {
 func detectModel(values []string) string {
 	for _, value := range values {
 		lower := strings.ToLower(value)
-		if strings.Contains(lower, "gpt-") || strings.Contains(lower, "claude") || strings.Contains(lower, "opus") || strings.Contains(lower, "sonnet") {
+		if strings.Contains(lower, "gpt-") || strings.Contains(lower, "claude") ||
+			strings.Contains(lower, "opus") ||
+			strings.Contains(lower, "sonnet") {
 			return value
 		}
 	}
@@ -176,7 +191,9 @@ func detectModel(values []string) string {
 func detectSummary(values []string) string {
 	for _, value := range values {
 		trimmed := strings.TrimSpace(value)
-		if len(trimmed) >= 24 && len(trimmed) <= 180 && !looksLikeTimestamp(trimmed) && !strings.Contains(trimmed, "/") && !looksLikeIdentifier(trimmed) {
+		if len(trimmed) >= 24 && len(trimmed) <= 180 && !looksLikeTimestamp(trimmed) &&
+			!strings.Contains(trimmed, "/") &&
+			!looksLikeIdentifier(trimmed) {
 			return trimmed
 		}
 	}
@@ -224,7 +241,12 @@ func detectTimes(values []string, fallback time.Time) (time.Time, time.Time) {
 }
 
 func parseTime(value string) (time.Time, bool) {
-	layouts := []string{time.RFC3339, time.RFC3339Nano, "2006-01-02 15:04:05", "2006-01-02T15:04:05"}
+	layouts := []string{
+		time.RFC3339,
+		time.RFC3339Nano,
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+	}
 	for _, layout := range layouts {
 		if ts, err := time.Parse(layout, strings.TrimSpace(value)); err == nil {
 			return ts, true
@@ -240,7 +262,8 @@ func looksLikeTimestamp(value string) bool {
 
 func inferProject(path string) string {
 	base := filepath.Base(filepath.Dir(path))
-	if base == ".codex" || base == "opencode" || base == ".claude" || base == "projects" || base == ".config" {
+	if base == ".codex" || base == "opencode" || base == ".claude" || base == "projects" ||
+		base == ".config" {
 		return "unknown"
 	}
 	if base == "." || base == string(filepath.Separator) || base == "" {

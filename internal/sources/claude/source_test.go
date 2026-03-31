@@ -62,7 +62,12 @@ func TestImportSessionsBuildsDiscoveredSession(t *testing.T) {
 
 func TestParseClaudeTranscriptFromFixture(t *testing.T) {
 	path := filepath.Join("testdata", "session.jsonl")
-	transcript := shared.TranscriptFile{Tool: "claude", Path: path, Project: "webapp", ModTime: time.Now()}
+	transcript := shared.TranscriptFile{
+		Tool:    "claude",
+		Path:    path,
+		Project: "webapp",
+		ModTime: time.Now(),
+	}
 	s := parseClaudeTranscript(transcript)
 
 	if s.Summary != "add rate limiting to the login endpoint" {
@@ -127,10 +132,12 @@ func TestDiscoverIncludesSubagentTranscripts(t *testing.T) {
 	if err := os.MkdirAll(subagentDir, 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(projectDir, "parent-session.jsonl"), []byte("{}\n"), 0o644); err != nil {
+	parentPath := filepath.Join(projectDir, "parent-session.jsonl")
+	if err := os.WriteFile(parentPath, []byte("{}\n"), 0o644); err != nil {
 		t.Fatalf("write parent transcript: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(subagentDir, "agent-123.jsonl"), []byte("{}\n"), 0o644); err != nil {
+	agentPath := filepath.Join(subagentDir, "agent-123.jsonl")
+	if err := os.WriteFile(agentPath, []byte("{}\n"), 0o644); err != nil {
 		t.Fatalf("write subagent transcript: %v", err)
 	}
 	result, err := New(config.Config{ClaudePath: root}).Discover()

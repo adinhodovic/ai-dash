@@ -8,21 +8,21 @@ import (
 )
 
 type Session struct {
-	ID             string    `json:"id"`
-	ParentID       string    `json:"parent_id"`
-	Slug           string    `json:"slug"`
-	Tool           string    `json:"tool"`
-	Project        string    `json:"project"`
-	Repo           string    `json:"repo"`
-	Branch         string    `json:"branch"`
-	Status         string    `json:"status"`
-	StartedAt      time.Time `json:"started_at"`
-	EndedAt        time.Time `json:"ended_at"`
-	Model          string    `json:"model"`
-	Summary        string    `json:"summary"`
-	TranscriptPath string    `json:"transcript_path"`
-	TokensIn       int       `json:"tokens_in"`
-	TokensOut      int       `json:"tokens_out"`
+	ID             string            `json:"id"`
+	ParentID       string            `json:"parent_id"`
+	Slug           string            `json:"slug"`
+	Tool           string            `json:"tool"`
+	Project        string            `json:"project"`
+	Repo           string            `json:"repo"`
+	Branch         string            `json:"branch"`
+	Status         string            `json:"status"`
+	StartedAt      time.Time         `json:"started_at"`
+	EndedAt        time.Time         `json:"ended_at"`
+	Model          string            `json:"model"`
+	Summary        string            `json:"summary"`
+	TranscriptPath string            `json:"transcript_path"`
+	TokensIn       int               `json:"tokens_in"`
+	TokensOut      int               `json:"tokens_out"`
 	CostUSD        float64           `json:"cost_usd"`
 	Tags           []string          `json:"tags"`
 	Meta           map[string]string `json:"meta,omitempty"`
@@ -147,7 +147,10 @@ func ProjectOverviewRows(sessions []Session) [][2]string {
 	}
 	sort.Strings(keys)
 
-	rows := [][2]string{{"Projects", fmt.Sprintf("%d", len(projects))}, {"Total tokens", fmt.Sprintf("%d", tokens)}}
+	rows := [][2]string{
+		{"Projects", fmt.Sprintf("%d", len(projects))},
+		{"Total tokens", fmt.Sprintf("%d", tokens)},
+	}
 	for _, key := range keys {
 		rows = append(rows, [2]string{key, fmt.Sprintf("%d session(s)", projects[key])})
 	}

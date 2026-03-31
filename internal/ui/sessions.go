@@ -17,12 +17,13 @@ func (m *Model) resizeTable(filtered []session.Session) {
 	}
 	// Subtract pane border (2) for inner width; header join (1) for height.
 	tableW := max(40, width-2)
+	summaryW := max(16, tableW-60)
 	height := max(2, paneBodyHeight(bottomPaneHeight(m.height))-1)
 	m.sessionTable.SetColumns([]table.Column{
 		{Title: m.sortHeader("Last Active", session.SortUpdated, 14), Width: 14},
 		{Title: m.sortHeader("Tool", session.SortTool, 9), Width: 9},
 		{Title: m.sortHeader("Project", session.SortProject, 28), Width: 28},
-		{Title: m.sortHeader("Summary", session.SortSummary, max(16, tableW-60)), Width: max(16, tableW-60)},
+		{Title: m.sortHeader("Summary", session.SortSummary, summaryW), Width: summaryW},
 	})
 	m.sessionTable.SetWidth(tableW)
 	m.sessionTable.SetHeight(height)
@@ -91,7 +92,9 @@ func (m *Model) openNewSession(tool string) tea.Cmd {
 		m.statusMessage = "Set $TERMINAL to open sessions (e.g. export TERMINAL=ghostty)"
 		return nil
 	}
-	m.statusMessage = fmt.Sprintf("Opening new %s session in %s...", tool, cleanProjectName(projectDir))
+	m.statusMessage = fmt.Sprintf(
+		"Opening new %s session in %s...", tool, cleanProjectName(projectDir),
+	)
 	return func() tea.Msg {
 		if err := cmd.Start(); err != nil {
 			return statusMsg{message: fmt.Sprintf("Failed to open terminal: %v", err)}

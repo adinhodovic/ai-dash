@@ -127,9 +127,29 @@ func TestDurationLabel(t *testing.T) {
 	}{
 		{"active", session.Session{Status: "active"}, "running"},
 		{"zero end", session.Session{Status: "done", StartedAt: now}, "unknown"},
-		{"30 seconds", session.Session{Status: "done", StartedAt: now, EndedAt: now.Add(30 * time.Second)}, "30s"},
-		{"5 minutes", session.Session{Status: "done", StartedAt: now, EndedAt: now.Add(5*time.Minute + 30*time.Second)}, "5m 30s"},
-		{"2 hours", session.Session{Status: "done", StartedAt: now, EndedAt: now.Add(2*time.Hour + 15*time.Minute)}, "2h 15m"},
+		{
+			"30 seconds",
+			session.Session{Status: "done", StartedAt: now, EndedAt: now.Add(30 * time.Second)},
+			"30s",
+		},
+		{
+			"5 minutes",
+			session.Session{
+				Status:    "done",
+				StartedAt: now,
+				EndedAt:   now.Add(5*time.Minute + 30*time.Second),
+			},
+			"5m 30s",
+		},
+		{
+			"2 hours",
+			session.Session{
+				Status:    "done",
+				StartedAt: now,
+				EndedAt:   now.Add(2*time.Hour + 15*time.Minute),
+			},
+			"2h 15m",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

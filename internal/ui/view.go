@@ -28,18 +28,39 @@ func (m Model) View() tea.View {
 	footer := " " + m.renderFooter(filtered)
 
 	if len(m.sessions) == 0 {
-		body := renderPane(m.styles.panel, m.styles.header, "Sessions", "No sessions loaded.", m.width, contentH)
+		body := renderPane(
+			m.styles.panel,
+			m.styles.header,
+			"Sessions",
+			"No sessions loaded.",
+			m.width,
+			contentH,
+		)
 		return altView(m.composePageStr(top, body, footer))
 	}
 	if len(filtered) == 0 {
-		body := renderPane(m.styles.panel, m.styles.header, "Sessions", m.styles.muted.Render("No matches. Press c to clear or / to search."), m.width, contentH)
+		body := renderPane(
+			m.styles.panel,
+			m.styles.header,
+			"Sessions",
+			m.styles.muted.Render("No matches. Press c to clear or / to search."),
+			m.width,
+			contentH,
+		)
 		return altView(m.composePageStr(top, body, footer))
 	}
 
 	if m.detailCollapsed {
 		previewH := 2
 		tableH := contentH - previewH
-		tablePane := renderPane(panelStyle(m.styles, m.focus == focusList), m.styles.header, "Sessions", m.renderSessionPane(filtered), m.width, tableH)
+		tablePane := renderPane(
+			panelStyle(m.styles, m.focus == focusList),
+			m.styles.header,
+			"Sessions",
+			m.renderSessionPane(filtered),
+			m.width,
+			tableH,
+		)
 		preview := ansi.Truncate(m.renderCollapsedPreview(filtered), m.width, "")
 		// Stitch without extra newline: replace last empty line of table pane with preview
 		tLines := strings.Split(tablePane, "\n")
@@ -62,11 +83,39 @@ func (m Model) View() tea.View {
 
 	projW := leftW
 	overviewW := rightW
-	projPane := renderPane(panelStyle(m.styles, m.focus == focusFilters), m.styles.header, "Projects", m.overviewTable.View(), projW, topH)
-	overviewPane := renderPane(m.styles.panel, m.styles.header, "Overview", m.renderOverviewStats(filtered, overviewW, topH), overviewW, topH)
+	projPane := renderPane(
+		panelStyle(m.styles, m.focus == focusFilters),
+		m.styles.header,
+		"Projects",
+		m.overviewTable.View(),
+		projW,
+		topH,
+	)
+	overviewPane := renderPane(
+		m.styles.panel,
+		m.styles.header,
+		"Overview",
+		m.renderOverviewStats(filtered, overviewW, topH),
+		overviewW,
+		topH,
+	)
 	projects := lipgloss.JoinHorizontal(lipgloss.Top, projPane, overviewPane)
-	sessions := renderPane(panelStyle(m.styles, m.focus == focusList), m.styles.header, "Sessions", m.renderSessionPane(filtered), leftW, botH)
-	detail := renderPane(panelStyle(m.styles, m.focus == focusDetail), m.styles.header, "Details", m.renderDetailPane(), rightW, botH)
+	sessions := renderPane(
+		panelStyle(m.styles, m.focus == focusList),
+		m.styles.header,
+		"Sessions",
+		m.renderSessionPane(filtered),
+		leftW,
+		botH,
+	)
+	detail := renderPane(
+		panelStyle(m.styles, m.focus == focusDetail),
+		m.styles.header,
+		"Details",
+		m.renderDetailPane(),
+		rightW,
+		botH,
+	)
 
 	botRow := lipgloss.JoinHorizontal(lipgloss.Top, sessions, detail)
 	content := lipgloss.JoinVertical(lipgloss.Left, projects, botRow)
@@ -131,9 +180,17 @@ func (m Model) overlayHelp(_ string) string {
 	height := min(20, m.height-6)
 	h := m.help
 	h.SetWidth(width - 6)
-	title := m.styles.header.PaddingLeft(1).PaddingRight(1).MarginBottom(1).Render("Keyboard Shortcuts")
+	title := m.styles.header.PaddingLeft(1).
+		PaddingRight(1).
+		MarginBottom(1).
+		Render("Keyboard Shortcuts")
 	helpText := lipgloss.NewStyle().MarginBottom(1).Render(h.FullHelpView(m.keys.FullHelp()))
-	body := lipgloss.JoinVertical(lipgloss.Left, title, helpText, m.styles.muted.Render("Press ? to close"))
+	body := lipgloss.JoinVertical(
+		lipgloss.Left,
+		title,
+		helpText,
+		m.styles.muted.Render("Press ? to close"),
+	)
 	overlay := m.styles.overlay.Width(width).Height(height).Render(body)
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, overlay)
 }
@@ -245,7 +302,10 @@ func (m Model) detailItems(s session.Session) []detailItem {
 	// Usage
 	var usageItems []detailItem
 	if s.TokensIn+s.TokensOut > 0 {
-		usageItems = append(usageItems, detailItem{icon.Token + " Tokens", formatTokens(s.TokensIn, s.TokensOut)})
+		usageItems = append(
+			usageItems,
+			detailItem{icon.Token + " Tokens", formatTokens(s.TokensIn, s.TokensOut)},
+		)
 	}
 	if s.CostUSD > 0 {
 		usageItems = append(usageItems, detailItem{icon.Cost + " Cost", formatCost(s.CostUSD)})
@@ -284,18 +344,23 @@ func (m Model) detailItems(s session.Session) []detailItem {
 	return items
 }
 
-
 func (m Model) renderTopBar(filtered []session.Session) string {
 	sep := m.styles.muted.Padding(0, 1).Render("│")
 	var searchPart string
 	if m.focus == focusSearch {
-		searchPart = lipgloss.NewStyle().Foreground(lipgloss.Color(nord13)).Bold(true).Render(icon.Search+" ") + m.searchInput.View()
+		searchPart = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(nord13)).
+			Bold(true).
+			Render(icon.Search+" ") +
+			m.searchInput.View()
 	} else {
 		search := strings.TrimSpace(m.searchQuery())
 		if search == "" {
 			searchPart = m.styles.muted.Render(icon.Search + " all")
 		} else {
-			searchPart = m.styles.highlight.Render(icon.Search+" ") + m.styles.selected.Underline(true).Render(search)
+			prefix := m.styles.highlight.Render(icon.Search + " ")
+			term := m.styles.selected.Underline(true).Render(search)
+			searchPart = prefix + term
 		}
 	}
 	parts := []string{
@@ -314,9 +379,12 @@ func (m Model) renderTopBar(filtered []session.Session) string {
 		Padding(0, 2).
 		Render("AI Dash")
 	return lipgloss.NewStyle().Width(m.width - 2).Render(
-		lipgloss.JoinHorizontal(lipgloss.Top,
+		lipgloss.JoinHorizontal(
+			lipgloss.Top,
 			left,
-			lipgloss.NewStyle().Width(m.width-2-lipgloss.Width(left)-lipgloss.Width(title)).Render(""),
+			lipgloss.NewStyle().
+				Width(m.width-2-lipgloss.Width(left)-lipgloss.Width(title)).
+				Render(""),
 			title,
 		),
 	)

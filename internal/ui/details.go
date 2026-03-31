@@ -1,9 +1,6 @@
 package ui
 
 import (
-	"fmt"
-	"strings"
-
 	"charm.land/bubbles/v2/table"
 
 	"github.com/adin/ai-dash/internal/session"
@@ -77,34 +74,17 @@ func (m *Model) syncRelatedTable(filtered []session.Session) {
 		if relation == "" {
 			continue
 		}
-		rows = append(rows, table.Row{candidate.Tool, cleanProjectName(candidate.Project), relation, candidate.Summary})
+		rows = append(
+			rows,
+			table.Row{
+				candidate.Tool,
+				cleanProjectName(candidate.Project),
+				relation,
+				candidate.Summary,
+			},
+		)
 	}
 	m.relatedTable.SetRows(rows)
 	m.relatedTable.SetCursor(0)
 	m.relatedTable.UpdateViewport()
-}
-
-func (m *Model) jumpToRelated(filtered []session.Session) bool {
-	sel := m.sessionTable.Cursor()
-	if len(filtered) == 0 || sel < 0 || sel >= len(filtered) {
-		return false
-	}
-	rows := m.relatedTable.Rows()
-	cursor := m.relatedTable.Cursor()
-	if len(rows) == 0 || cursor >= len(rows) || len(rows[cursor]) < 4 {
-		return false
-	}
-	selected := filtered[sel]
-	row := rows[cursor]
-	for i, candidate := range m.filteredSessions() {
-		if candidate.ID == selected.ID {
-			continue
-		}
-		if candidate.Tool == row[0] && cleanProjectName(candidate.Project) == row[1] && candidate.Summary == row[3] {
-			m.sessionTable.SetCursor(i)
-			m.statusMessage = fmt.Sprintf("Jumped to %s session", strings.ToLower(candidate.Tool))
-			return true
-		}
-	}
-	return false
 }

@@ -104,7 +104,10 @@ func (Source) NewSessionArgs(projectDir string) []string {
 func discoverCandidates(roots []string) ([]string, error) {
 	var all []string
 	for _, root := range roots {
-		matches, err := shared.DiscoverCandidateFilesWithPatterns(root, []string{"codex", "thread", "run", "rollout"})
+		matches, err := shared.DiscoverCandidateFilesWithPatterns(
+			root,
+			[]string{"codex", "thread", "run", "rollout"},
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -130,7 +133,7 @@ func parseCodexSession(path string) (session.Session, bool) {
 	if err != nil {
 		return session.Session{}, false
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var (
 		meta        sessionMetaPayload
@@ -164,7 +167,8 @@ func parseCodexSession(path string) (session.Session, bool) {
 		case "session_meta":
 			if json.Unmarshal(line.Payload, &meta) == nil {
 				seenMeta = true
-				if ts, ok := parseTimestamp(meta.Timestamp); ok && (startedAt.IsZero() || ts.Before(startedAt)) {
+				if ts, ok := parseTimestamp(meta.Timestamp); ok &&
+					(startedAt.IsZero() || ts.Before(startedAt)) {
 					startedAt = ts
 				}
 			}
@@ -174,7 +178,8 @@ func parseCodexSession(path string) (session.Session, bool) {
 			}
 		case "response_item":
 			var payload responseItemPayload
-			if json.Unmarshal(line.Payload, &payload) == nil && payload.Type == "message" && payload.Role == "user" {
+			if json.Unmarshal(line.Payload, &payload) == nil && payload.Type == "message" &&
+				payload.Role == "user" {
 				for _, item := range payload.Content {
 					if item.Type == "input_text" {
 						text := sanitizeUserText(item.Text)
@@ -268,7 +273,8 @@ func sanitizeUserText(text string) string {
 	if text == "" {
 		return ""
 	}
-	if strings.HasPrefix(text, "<environment_context>") || strings.HasPrefix(text, "<turn_aborted>") {
+	if strings.HasPrefix(text, "<environment_context>") ||
+		strings.HasPrefix(text, "<turn_aborted>") {
 		return ""
 	}
 	if strings.Contains(text, "AGENTS.md instructions") {

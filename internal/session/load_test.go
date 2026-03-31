@@ -47,7 +47,8 @@ func TestLoadDefaultSessionsLoadsFromWorkingDirectory(t *testing.T) {
 			{"id":"fallback","tool":"claude","project":"demo","status":"completed","started_at":"2026-03-29T12:00:00Z"}
 		]
 	}`
-	if err := os.WriteFile(filepath.Join(dir, "sessions.json"), []byte(content), 0o644); err != nil {
+	path := filepath.Join(dir, "sessions.json")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write sessions file: %v", err)
 	}
 
@@ -79,7 +80,11 @@ func TestLoadDefaultSessionsErrorsWhenNoFilesExist(t *testing.T) {
 }
 
 func TestSummaryLineCountsTools(t *testing.T) {
-	sessions := []Session{{Tool: "claude", Status: "active"}, {Tool: "codex", Status: "completed"}, {Tool: "claude", Status: "completed"}}
+	sessions := []Session{
+		{Tool: "claude", Status: "active"},
+		{Tool: "codex", Status: "completed"},
+		{Tool: "claude", Status: "completed"},
+	}
 	got := SummaryLine(sessions)
 	for _, want := range []string{"3 total", "1 active", "codex 1", "claude 2"} {
 		if !strings.Contains(got, want) {

@@ -85,7 +85,8 @@ func cleanSummary(value string) string {
 
 func looksLikeRequestID(value string) bool {
 	value = strings.ToLower(strings.TrimSpace(value))
-	return strings.HasPrefix(value, "req_") || strings.HasPrefix(value, "ephemeral_") || strings.HasPrefix(value, "cache_creation_")
+	return strings.HasPrefix(value, "req_") || strings.HasPrefix(value, "ephemeral_") ||
+		strings.HasPrefix(value, "cache_creation_")
 }
 
 func looksLikeUUID(value string) bool {
@@ -156,11 +157,15 @@ func valueOrUnknown(value string) string {
 }
 
 func toolOptions(sessions []session.Session) []string {
-	return append([]string{""}, uniqueSortedValues(sessions, func(s session.Session) string { return s.Tool })...)
+	return append(
+		[]string{""},
+		uniqueSortedValues(sessions, func(s session.Session) string { return s.Tool })...)
 }
 
 func projectOptions(sessions []session.Session) []string {
-	return append([]string{""}, uniqueSortedValues(sessions, func(s session.Session) string { return s.Project })...)
+	return append(
+		[]string{""},
+		uniqueSortedValues(sessions, func(s session.Session) string { return s.Project })...)
 }
 
 func uniqueSortedValues(sessions []session.Session, pick func(session.Session) string) []string {
@@ -211,7 +216,12 @@ func panelStyle(s styles, active bool) lipgloss.Style {
 }
 
 func nextSortField(current session.SortField) session.SortField {
-	fields := []session.SortField{session.SortUpdated, session.SortTool, session.SortProject, session.SortSummary}
+	fields := []session.SortField{
+		session.SortUpdated,
+		session.SortTool,
+		session.SortProject,
+		session.SortSummary,
+	}
 	for i, field := range fields {
 		if field == current {
 			return fields[(i+1)%len(fields)]
@@ -221,7 +231,12 @@ func nextSortField(current session.SortField) session.SortField {
 }
 
 func prevSortField(current session.SortField) session.SortField {
-	fields := []session.SortField{session.SortUpdated, session.SortTool, session.SortProject, session.SortSummary}
+	fields := []session.SortField{
+		session.SortUpdated,
+		session.SortTool,
+		session.SortProject,
+		session.SortSummary,
+	}
 	for i, field := range fields {
 		if field == current {
 			return fields[(i-1+len(fields))%len(fields)]

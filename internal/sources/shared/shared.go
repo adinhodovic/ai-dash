@@ -68,13 +68,23 @@ func (d Discovery) ExistingSources() int {
 
 func (d Discovery) SummaryLines() []string {
 	lines := make([]string, 0, len(d.Sources)+1)
-	lines = append(lines, fmt.Sprintf("%d source(s) present, %d transcript(s) discovered", d.ExistingSources(), len(d.Transcripts)))
+	lines = append(
+		lines,
+		fmt.Sprintf(
+			"%d source(s) present, %d transcript(s) discovered",
+			d.ExistingSources(),
+			len(d.Transcripts),
+		),
+	)
 	for _, source := range d.Sources {
 		status := "missing"
 		if source.Exists {
 			status = "present"
 		}
-		lines = append(lines, fmt.Sprintf("%s %s: %s (%s)", source.Tool, source.Kind, source.Path, status))
+		lines = append(
+			lines,
+			fmt.Sprintf("%s %s: %s (%s)", source.Tool, source.Kind, source.Path, status),
+		)
 	}
 	return lines
 }
@@ -83,7 +93,6 @@ func NewSource(tool, kind, path, note string) Source {
 	_, err := os.Stat(path)
 	return Source{Tool: tool, Kind: kind, Path: path, Exists: err == nil, Note: note}
 }
-
 
 func SortTranscripts(transcripts []TranscriptFile) {
 	sort.Slice(transcripts, func(i, j int) bool {

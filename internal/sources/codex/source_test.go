@@ -70,7 +70,8 @@ func TestDiscoverReadsSessionsDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read fixture: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(sessionsDir, "rollout.jsonl"), fixture, 0o644); err != nil {
+	rollout := filepath.Join(sessionsDir, "rollout.jsonl")
+	if err := os.WriteFile(rollout, fixture, 0o644); err != nil {
 		t.Fatalf("write session fixture: %v", err)
 	}
 	result, err := New(config.Config{CodexPath: configPath}).Discover()

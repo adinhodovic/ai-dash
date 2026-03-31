@@ -11,9 +11,11 @@ import (
 	"github.com/adin/ai-dash/internal/sources/shared"
 )
 
-type Discovery = shared.Discovery
-type Source = shared.Source
-type TranscriptFile = shared.TranscriptFile
+type (
+	Discovery      = shared.Discovery
+	Source         = shared.Source
+	TranscriptFile = shared.TranscriptFile
+)
 
 func providers(cfg config.Config) []shared.SessionProvider {
 	return []shared.SessionProvider{

@@ -10,16 +10,16 @@ import (
 )
 
 type Config struct {
-	Terminal       string `mapstructure:"terminal"        json:"terminal"`
-	PollInterval   string `mapstructure:"poll_interval"    json:"poll_interval"`
+	Terminal       string   `mapstructure:"terminal"         json:"terminal"`
+	PollInterval   string   `mapstructure:"poll_interval"    json:"poll_interval"`
 	MaxAge         string   `mapstructure:"max_age"          json:"max_age"`
-	AgePresets     []string `mapstructure:"age_presets"       json:"age_presets"`
-	DefaultTool    string `mapstructure:"default_tool"     json:"default_tool"`
-	AutoSelectTool bool   `mapstructure:"auto_select_tool" json:"auto_select_tool"`
-	NerdFont       *bool  `mapstructure:"nerd_font"        json:"nerd_font,omitempty"`
-	OpencodePath   string `mapstructure:"opencode_path"    json:"opencode_path"`
-	CodexPath      string `mapstructure:"codex_path"       json:"codex_path"`
-	ClaudePath     string `mapstructure:"claude_path"      json:"claude_path"`
+	AgePresets     []string `mapstructure:"age_presets"      json:"age_presets"`
+	DefaultTool    string   `mapstructure:"default_tool"     json:"default_tool"`
+	AutoSelectTool bool     `mapstructure:"auto_select_tool" json:"auto_select_tool"`
+	NerdFont       *bool    `mapstructure:"nerd_font"        json:"nerd_font,omitempty"`
+	OpencodePath   string   `mapstructure:"opencode_path"    json:"opencode_path"`
+	CodexPath      string   `mapstructure:"codex_path"       json:"codex_path"`
+	ClaudePath     string   `mapstructure:"claude_path"      json:"claude_path"`
 }
 
 func Init() {
