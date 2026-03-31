@@ -43,6 +43,12 @@ jobs:
       - name: Run unit tests
         run: go test ./... -v -covermode=count -coverprofile=coverage.txt
 
+      - name: Verify config schema is up to date
+        run: |
+          go run ./cmd/ai-dash schema > config.schema.json.tmp
+          diff config.schema.json config.schema.json.tmp || (echo "config.schema.json is outdated — run 'go run ./cmd/ai-dash schema > config.schema.json'" && exit 1)
+          rm config.schema.json.tmp
+
   release:
     name: Release
     runs-on: ubuntu-latest

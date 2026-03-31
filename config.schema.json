@@ -3,9 +3,53 @@
   "additionalProperties": false,
   "description": "Configuration for the ai-dash TUI",
   "properties": {
+    "age_presets": {
+      "default": [
+        "1h",
+        "1d",
+        "3d",
+        "7d",
+        "14d",
+        "30d"
+      ],
+      "description": "Date range options cycled with D key (e.g. 1h, 1d, 3d, 7d, 14d, 30d)",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "auto_select_tool": {
+      "default": false,
+      "description": "Skip tool picker and use default_tool automatically when creating new sessions",
+      "type": "boolean"
+    },
+    "claude_path": {
+      "default": "",
+      "description": "Path to Claude Code projects directory (default: ~/.claude/projects)",
+      "type": "string"
+    },
+    "codex_path": {
+      "default": "",
+      "description": "Path to Codex config directory (default: ~/.codex/config.toml)",
+      "type": "string"
+    },
+    "default_tool": {
+      "default": "",
+      "description": "Default tool for new sessions (e.g. claude, codex, opencode)",
+      "type": "string"
+    },
     "max_age": {
       "default": "14d",
       "description": "Maximum age of sessions to display (e.g. 14d, 30d, 720h)",
+      "type": "string"
+    },
+    "nerd_font": {
+      "description": "Use Nerd Font icons. Null/omitted means auto-detect via fc-list. Set false to force Unicode fallback.",
+      "type": "boolean"
+    },
+    "opencode_path": {
+      "default": "",
+      "description": "Path to OpenCode SQLite database (default: ~/.local/share/opencode/opencode.db)",
       "type": "string"
     },
     "poll_interval": {

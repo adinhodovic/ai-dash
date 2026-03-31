@@ -2,6 +2,8 @@
 
 Terminal dashboard for AI coding sessions. Shows Claude, Codex, and OpenCode sessions in one place.
 
+![AI Dash](./docs/images/preview.png)
+
 Everything runs locally. No cloud, no accounts, no telemetry.
 
 ## Features
@@ -14,8 +16,7 @@ Everything runs locally. No cloud, no accounts, no telemetry.
 - Detail pane with tokens, cost, metadata, related sessions
 - Subagent detection (Claude subagents, OpenCode parent/child)
 - Nerd Font icons when available, Unicode otherwise
-- Nord colors
-- Resume sessions or start new ones directly from the dashboard
+- Resume sessions or start new ones from the dashboard
 
 ## Install
 
@@ -61,6 +62,7 @@ Config file: `~/.config/ai-dash/config.json`
 
 ```json
 {
+  "$schema": "https://raw.githubusercontent.com/adinhodovic/ai-dash/main/config.schema.json",
   "terminal": "ghostty",
   "poll_interval": "10s",
   "max_age": "14d",
@@ -81,11 +83,7 @@ Config file: `~/.config/ai-dash/config.json`
 | `nerd_font` | Force Nerd Font on/off, `null` auto-detects | auto |
 | `age_presets` | Options when cycling with `D` | `1h,1d,3d,7d,14d,30d` |
 
-Generate a JSON Schema for your editor:
-
-```bash
-ai-dash schema
-```
+Add the `$schema` line to get autocompletion in your editor. You can also run `ai-dash schema` to print it.
 
 ## Keys
 
