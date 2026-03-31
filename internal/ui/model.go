@@ -86,7 +86,7 @@ func NewModel(opts Options) Model {
 	input.Blur()
 
 	reloadInterval = opts.Config.PollDuration()
-	maxSessionAge = opts.Config.MaxAgeDuration()
+	maxSessionAge = opts.Config.DefaultAgeFilterDuration()
 	if presets := opts.Config.AgeDurations(); len(presets) > 0 {
 		agePresets = presets
 	}
@@ -248,7 +248,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.filters = filters{}
 			m.searchInput.SetValue("")
 			m.showSubagents = false
-			maxSessionAge = m.meta.Config.MaxAgeDuration()
+			maxSessionAge = m.meta.Config.DefaultAgeFilterDuration()
 			m.sessionTable.SetCursor(0)
 			m.statusMessage = "Cleared all filters"
 			filtered = m.filteredSessions()

@@ -10,16 +10,16 @@ import (
 )
 
 type Config struct {
-	Terminal       string   `mapstructure:"terminal"         json:"terminal"`
-	PollInterval   string   `mapstructure:"poll_interval"    json:"poll_interval"`
-	MaxAge         string   `mapstructure:"max_age"          json:"max_age"`
-	AgePresets     []string `mapstructure:"age_presets"      json:"age_presets"`
-	DefaultTool    string   `mapstructure:"default_tool"     json:"default_tool"`
-	AutoSelectTool bool     `mapstructure:"auto_select_tool" json:"auto_select_tool"`
-	NerdFont       *bool    `mapstructure:"nerd_font"        json:"nerd_font,omitempty"`
-	OpencodePath   string   `mapstructure:"opencode_path"    json:"opencode_path"`
-	CodexPath      string   `mapstructure:"codex_path"       json:"codex_path"`
-	ClaudePath     string   `mapstructure:"claude_path"      json:"claude_path"`
+	Terminal         string   `mapstructure:"terminal"           json:"terminal"`
+	PollInterval     string   `mapstructure:"poll_interval"      json:"poll_interval"`
+	DefaultAgeFilter string   `mapstructure:"default_age_filter" json:"default_age_filter,omitempty"`
+	AgePresets       []string `mapstructure:"age_presets"        json:"age_presets"`
+	DefaultTool      string   `mapstructure:"default_tool"       json:"default_tool"`
+	AutoSelectTool   bool     `mapstructure:"auto_select_tool"   json:"auto_select_tool"`
+	NerdFont         *bool    `mapstructure:"nerd_font"          json:"nerd_font,omitempty"`
+	OpencodePath     string   `mapstructure:"opencode_path"      json:"opencode_path"`
+	CodexPath        string   `mapstructure:"codex_path"         json:"codex_path"`
+	ClaudePath       string   `mapstructure:"claude_path"        json:"claude_path"`
 }
 
 func Init() {
@@ -30,7 +30,7 @@ func Init() {
 
 	viper.SetDefault("terminal", "")
 	viper.SetDefault("poll_interval", "10s")
-	viper.SetDefault("max_age", "14d")
+	viper.SetDefault("default_age_filter", "14d")
 	viper.SetDefault("default_tool", "")
 	viper.SetDefault("auto_select_tool", false)
 	viper.SetDefault("opencode_path", "")
@@ -59,8 +59,8 @@ func (c Config) PollDuration() time.Duration {
 	return 10 * time.Second
 }
 
-func (c Config) MaxAgeDuration() time.Duration {
-	return parseDurationWithDays(c.MaxAge, 14*24*time.Hour)
+func (c Config) DefaultAgeFilterDuration() time.Duration {
+	return parseDurationWithDays(c.DefaultAgeFilter, 14*24*time.Hour)
 }
 
 func parseDurationWithDays(s string, fallback time.Duration) time.Duration {
@@ -130,9 +130,9 @@ func GenerateSchema() string {
 				"description": "How often to reload sessions (Go duration, e.g. 10s, 30s, 1m)",
 				"default":     "10s",
 			},
-			"max_age": map[string]any{
+			"default_age_filter": map[string]any{
 				"type":        "string",
-				"description": "Maximum age of sessions to display (e.g. 14d, 30d, 720h)",
+				"description": "Default age filter applied to sessions on load and when clearing filters (e.g. 14d, 30d, 720h)",
 				"default":     "14d",
 			},
 			"default_tool": map[string]any{
