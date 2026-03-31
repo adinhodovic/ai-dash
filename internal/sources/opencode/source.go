@@ -40,12 +40,16 @@ func (Source) ImportSessions(result shared.Result) ([]session.Session, error) {
 	return append([]session.Session(nil), result.Sessions...), nil
 }
 
-func (Source) ResumeArgs(sessionID string) []string {
-	return []string{"opencode", "-s", sessionID}
+func (Source) ResumeArgs(sessionID, projectDir string) []string {
+	cmd := "opencode -s " + sessionID
+	if projectDir != "" {
+		return []string{"sh", "-c", "cd " + projectDir + " && " + cmd}
+	}
+	return []string{cmd}
 }
 
 func (Source) NewSessionArgs(projectDir string) []string {
-	return []string{"sh", "-c", fmt.Sprintf("cd %q && opencode", projectDir)}
+	return []string{"sh", "-c", "cd " + projectDir + " && opencode"}
 }
 
 func (s Source) dbPath() string {
