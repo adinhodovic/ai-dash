@@ -1,22 +1,22 @@
 # AI Dash
 
-Terminal dashboard for AI coding sessions. Shows Claude, Codex, and OpenCode sessions in one place.
+See what your AI agents have been up to.
 
 ![AI Dash](./docs/images/preview.png)
 
-Everything runs locally. No cloud, no accounts, no telemetry.
+A lightweight terminal browser for multi-agent coding sessions. Reads from Claude Code, Codex, and OpenCode out of the box. Adding new providers is straightforward -- each is a self-contained package implementing a shared interface. Everything stays local.
 
-## Features
+## What it does
 
-- Reads sessions from Claude Code, Codex, and OpenCode using native parsers (not heuristics)
-- Fuzzy search across all sessions, live as you type
-- Filter by tool, project, date range
-- Sort by last active, tool, project, or summary -- per table
-- Project overview with session counts and tool usage
+- Parses Claude Code JSONL transcripts, Codex session logs, and the OpenCode SQLite database
+- Fuzzy search across sessions, live as you type
+- Filter by tool, project, or date range
+- Sort per table (last active, tool, project, summary)
+- Project overview with session counts and tool breakdown
 - Detail pane with tokens, cost, metadata, related sessions
-- Subagent detection (Claude subagents, OpenCode parent/child)
-- Nerd Font icons when available, Unicode otherwise
-- Resume sessions or start new ones from the dashboard
+- Picks up subagent/child sessions (Claude subagents, OpenCode parent/child)
+- Nerd Font icons when available, falls back to Unicode
+- Resume or start sessions from the dashboard
 
 ## Install
 
@@ -38,7 +38,7 @@ make build
 
 ## Sources
 
-Sessions are auto-discovered from default paths:
+Sessions are discovered from these default paths:
 
 | Tool | Path | Format |
 |------|------|--------|
@@ -46,7 +46,7 @@ Sessions are auto-discovered from default paths:
 | Codex | `~/.codex/sessions/` | JSONL |
 | Claude Code | `~/.claude/projects/` | JSONL |
 
-Override paths in `~/.config/ai-dash/config.json`:
+Override in `~/.config/ai-dash/config.json`:
 
 ```json
 {
@@ -87,48 +87,13 @@ Add the `$schema` line to get autocompletion in your editor. You can also run `a
 
 ## Keys
 
-### Navigation
-
 | Key | Action |
 |-----|--------|
-| `↑/k` `↓/j` | Move selection |
-| `g` / `G` | Top / bottom |
-| `pgup` / `pgdn` | Page up / down |
-| `tab` | Switch focus between Sessions and Projects |
-
-### Sessions
-
-| Key | Action |
-|-----|--------|
-| `o` | Resume session in a new terminal |
-| `n` | New session (pick tool, uses selected project) |
-
-### Search and filter
-
-| Key | Action |
-|-----|--------|
-| `/` | Search (fuzzy, filters live) |
-| `f` | Filter by tool |
-| `p` | Filter by project (`/` to search within the list) |
-| `D` | Cycle date range |
-| `a` | Show/hide subagent sessions |
-| `c` | Clear all filters and search |
-
-### Sort
-
-| Key | Action |
-|-----|--------|
-| `s` | Cycle sort field (applies to focused table) |
-| `[` / `]` | Cycle sort field |
-| `=` | Flip sort direction |
-
-### Other
-
-| Key | Action |
-|-----|--------|
-| `?` | Help |
-| `v` | Toggle detail pane |
-| `S` | Source status |
-| `w` / `r` | Save / restore filter preset for current project |
+| `/` | Search |
+| `o` | Resume session |
+| `n` | New session |
+| `f` / `p` | Filter by tool / project |
+| `s` | Cycle sort |
+| `tab` | Switch focus |
+| `?` | Full help |
 | `q` | Quit |
-
