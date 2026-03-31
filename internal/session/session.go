@@ -1,9 +1,7 @@
 package session
 
 import (
-	"fmt"
 	"sort"
-	"strings"
 	"time"
 )
 
@@ -35,7 +33,6 @@ const (
 	SortUpdated SortField = "updated"
 	SortProject SortField = "project"
 	SortTool    SortField = "tool"
-	SortStatus  SortField = "status"
 	SortSummary SortField = "summary"
 )
 
@@ -71,11 +68,6 @@ func compareSessions(left, right Session, field SortField) bool {
 			return left.StartedAt.Before(right.StartedAt)
 		}
 		return left.Tool < right.Tool
-	case SortStatus:
-		if left.Status == right.Status {
-			return left.StartedAt.Before(right.StartedAt)
-		}
-		return left.Status < right.Status
 	case SortSummary:
 		if left.Summary == right.Summary {
 			return left.StartedAt.Before(right.StartedAt)
@@ -84,84 +76,6 @@ func compareSessions(left, right Session, field SortField) bool {
 	default:
 		return left.StartedAt.Before(right.StartedAt)
 	}
-}
-
-func SummaryLine(sessions []Session) string {
-	active := 0
-	toolCounts := map[string]int{}
-	for _, s := range sessions {
-		if s.Status == "active" {
-			active++
-		}
-		toolCounts[s.Tool]++
-	}
-
-	parts := []string{fmt.Sprintf("%d total", len(sessions)), fmt.Sprintf("%d active", active)}
-	tools := []string{"opencode", "codex", "claude"}
-	for _, tool := range tools {
-		if count := toolCounts[tool]; count > 0 {
-			parts = append(parts, fmt.Sprintf("%s %d", tool, count))
-		}
-	}
-
-	return strings.Join(parts, "  |  ")
-}
-
-func ProjectOverview(sessions []Session) string {
-	projects := map[string]int{}
-	tokens := 0
-	for _, s := range sessions {
-		projects[s.Project]++
-		tokens += s.TokensIn + s.TokensOut
-	}
-
-	keys := make([]string, 0, len(projects))
-	for key := range projects {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
-	parts := []string{
-		fmt.Sprintf("Projects: %d", len(projects)),
-		fmt.Sprintf("Total tokens: %d", tokens),
-	}
-
-	for _, key := range keys {
-		parts = append(parts, fmt.Sprintf("%s: %d session(s)", key, projects[key]))
-	}
-
-	return strings.Join(parts, "\n")
-}
-
-func ProjectOverviewRows(sessions []Session) [][2]string {
-	projects := map[string]int{}
-	tokens := 0
-	for _, s := range sessions {
-		projects[s.Project]++
-		tokens += s.TokensIn + s.TokensOut
-	}
-
-	keys := make([]string, 0, len(projects))
-	for key := range projects {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
-	rows := [][2]string{
-		{"Projects", fmt.Sprintf("%d", len(projects))},
-		{"Total tokens", fmt.Sprintf("%d", tokens)},
-	}
-	for _, key := range keys {
-		rows = append(rows, [2]string{key, fmt.Sprintf("%d session(s)", projects[key])})
-	}
-	return rows
-}
-
-func TimeLabel(start time.Time, status string) string {
-	if status == "active" {
-		return fmt.Sprintf("started %s", start.Format("2006-01-02 15:04"))
-	}
-	return fmt.Sprintf("ran %s", start.Format("2006-01-02 15:04"))
 }
 
 func EndedLabel(end time.Time, status string) string {

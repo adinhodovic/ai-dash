@@ -242,7 +242,7 @@ func prevSortField(current session.SortField) session.SortField {
 			return fields[(i-1+len(fields))%len(fields)]
 		}
 	}
-	return session.SortStarted
+	return session.SortUpdated
 }
 
 func sessionCommand(s session.Session, cfg config.Config) *exec.Cmd {
