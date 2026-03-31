@@ -1,135 +1,139 @@
-# ai-dash
+# AI Dash
 
-Local-first TUI experiment for viewing AI coding sessions across OpenCode, Codex, and Claude in one place.
+Terminal dashboard for AI coding sessions. Shows Claude, Codex, and OpenCode sessions in one place.
 
-## Why Go
+Everything runs locally. No cloud, no accounts, no telemetry.
 
-Go is a strong fit for TUIs when you want something fast to prototype, easy to ship as a single binary, and pleasant to maintain. The Bubble Tea ecosystem gives you solid primitives for layout, keyboard handling, and styling.
+## Features
 
-This project now leans on a few OSS TUI building blocks from Charmbracelet:
+- Reads sessions from Claude Code, Codex, and OpenCode using native parsers (not heuristics)
+- Fuzzy search across all sessions, live as you type
+- Filter by tool, project, date range
+- Sort by last active, tool, project, or summary -- per table
+- Project overview with session counts and tool usage
+- Detail pane with tokens, cost, metadata, related sessions
+- Subagent detection (Claude subagents, OpenCode parent/child)
+- Nerd Font icons when available, Unicode otherwise
+- Nord colors
+- Resume sessions or start new ones directly from the dashboard
 
-- `bubbletea` for the app runtime
-- `bubbles/textinput` for search editing
-- `bubbles/viewport` for scrollable detail panes
-- `bubbles/help` for discoverable key hints
-- `lipgloss` for styling
+## Install
 
-If you want the strongest alternatives:
-
-- Go + Bubble Tea: fastest path to a polished CLI/TUI MVP
-- Rust + ratatui: excellent performance and control, steeper iteration cost
-- Python + Textual: productive and expressive, weaker single-binary distribution story
-
-## MVP
-
-This first pass includes:
-
-- a simple session model shared across tools
-- a TUI split into a session list and details pane
-- support for loading data from `sessions.sample.json` or `sessions.json`
-- lightweight summaries by tool, project, status, and token usage
-- a discovery layer for documented local `OpenCode`, `Codex`, and `Claude Code` config/session roots
-
-## Run
+### Binary
 
 ```bash
-make tidy
-go run ./cmd/ai-dash
+curl -L https://github.com/adinhodovic/ai-dash/releases/latest/download/ai-dash-linux-amd64 -o ai-dash
+chmod +x ai-dash
 ```
 
-## Build
+### From source
 
 ```bash
+git clone https://github.com/adinhodovic/ai-dash.git
+cd ai-dash
 make build
 ./ai-dash
 ```
 
-## Documented Local Sources
+## Sources
 
-The current discovery layer follows documented/default local paths first and supports env overrides:
+Sessions are auto-discovered from default paths:
 
-- `OpenCode`: `~/.config/opencode/opencode.json`, `~/.config/opencode/tui.json`
-- `Codex`: `~/.codex/config.toml`
-- `Claude Code`: `~/.claude.json`, `~/.claude/settings.json`, `~/.claude/projects`
+| Tool | Path | Format |
+|------|------|--------|
+| OpenCode | `~/.local/share/opencode/opencode.db` | SQLite |
+| Codex | `~/.codex/sessions/` | JSONL |
+| Claude Code | `~/.claude/projects/` | JSONL |
 
-Supported overrides:
-
-- `AIDASH_OPENCODE_CONFIG`
-- `AIDASH_OPENCODE_TUI_CONFIG`
-- `AIDASH_CODEX_CONFIG`
-- `AIDASH_CLAUDE_STATE`
-- `AIDASH_CLAUDE_SETTINGS`
-- `AIDASH_CLAUDE_PROJECTS_DIR`
-- `AIDASH_PRESETS_PATH`
-
-The importer layer now does three things:
-
-- parses Claude transcript files under `~/.claude/projects`
-- scans `~/.codex` for likely session/history files and imports them with heuristics
-- scans `~/.config/opencode` for likely session/history files and imports them with heuristics
-
-Docs check note:
-
-- Codex docs clearly document config at `~/.codex/config.toml` and a configurable `log_dir`, but do not clearly document a canonical session-history storage schema.
-- OpenCode docs clearly document config locations like `~/.config/opencode/opencode.json`, `~/.config/opencode/tui.json`, project `opencode.json`, and `.opencode/`, but do not clearly document a canonical local session-history schema.
-
-So OpenCode and Codex still use safe heuristics for now, while Claude uses a stronger transcript import path.
-
-The source layer is organized per tool under:
-
-- `internal/sources/opencode`
-- `internal/sources/codex`
-- `internal/sources/claude`
-
-with shared discovery/import interfaces and result types in `internal/sources/shared`.
-
-## Controls
-
-- `tab` / `shift+tab`: cycle focus between list, filters, and search
-- `j` / `k` or arrow keys: move selection
-- `/`: start search mode
-- `enter`: apply search
-- `esc`: leave search mode
-- `f` / `F`: next or previous tool filter
-- `s` / `S`: next or previous status filter
-- `p` / `P`: next or previous project filter
-- `w`: save the current filter/search preset for the selected project
-- `r`: restore the saved preset for the selected project
-- `v`: collapse or expand the detail pane
-- arrow keys / `pgup` / `pgdown`: scroll the details pane when it is open
-- `pgup` / `pgdown`: scroll the detail viewport
-- `c`: clear all filters
-- `q` or `ctrl+c`: quit
-
-## Session Schema
+Override paths in `~/.config/ai-dash/config.json`:
 
 ```json
 {
-  "sessions": [
-    {
-      "id": "sess_001",
-      "tool": "opencode",
-      "project": "ai-dash",
-      "repo": "/home/adin/oss/ai-dash",
-      "branch": "main",
-      "status": "active",
-      "started_at": "2026-03-29T14:00:00Z",
-      "ended_at": "2026-03-29T14:42:00Z",
-      "model": "gpt-5.4",
-      "summary": "Scaffolded a local-first multi-agent dashboard TUI.",
-      "transcript_path": "/tmp/opencode-session.md",
-      "tokens_in": 4200,
-      "tokens_out": 2100,
-      "cost_usd": 0.22,
-      "tags": ["mvp", "dashboard"]
-    }
-  ]
+  "opencode_path": "/custom/path/opencode.db",
+  "codex_path": "/custom/path/config.toml",
+  "claude_path": "/custom/path/projects"
 }
 ```
 
-## Next Steps
+## Configuration
 
-1. Replace Codex/OpenCode heuristic import with real format-aware parsers.
-2. Add live updates with file watching.
-3. Add richer list widgets and multi-select/filter chips.
-4. Add a small HTTP API so the same data can power a web dashboard later.
+Config file: `~/.config/ai-dash/config.json`
+
+```json
+{
+  "terminal": "ghostty",
+  "poll_interval": "10s",
+  "max_age": "14d",
+  "default_tool": "claude",
+  "auto_select_tool": false,
+  "nerd_font": null,
+  "age_presets": ["1h", "1d", "3d", "7d", "14d", "30d"]
+}
+```
+
+| Option | What it does | Default |
+|--------|-------------|---------|
+| `terminal` | Terminal emulator used to open sessions | `$TERMINAL` |
+| `poll_interval` | How often sessions reload | `10s` |
+| `max_age` | Only show sessions newer than this | `14d` |
+| `default_tool` | Pre-selected tool when pressing `n` | none |
+| `auto_select_tool` | Skip the tool picker for new sessions | `false` |
+| `nerd_font` | Force Nerd Font on/off, `null` auto-detects | auto |
+| `age_presets` | Options when cycling with `D` | `1h,1d,3d,7d,14d,30d` |
+
+Generate a JSON Schema for your editor:
+
+```bash
+ai-dash schema
+```
+
+## Keys
+
+### Navigation
+
+| Key | Action |
+|-----|--------|
+| `↑/k` `↓/j` | Move selection |
+| `g` / `G` | Top / bottom |
+| `pgup` / `pgdn` | Page up / down |
+| `tab` | Switch focus between Sessions and Projects |
+
+### Sessions
+
+| Key | Action |
+|-----|--------|
+| `o` | Resume session in a new terminal |
+| `n` | New session (pick tool, uses selected project) |
+
+### Search and filter
+
+| Key | Action |
+|-----|--------|
+| `/` | Search (fuzzy, filters live) |
+| `f` | Filter by tool |
+| `p` | Filter by project (`/` to search within the list) |
+| `D` | Cycle date range |
+| `a` | Show/hide subagent sessions |
+| `c` | Clear all filters and search |
+
+### Sort
+
+| Key | Action |
+|-----|--------|
+| `s` | Cycle sort field (applies to focused table) |
+| `[` / `]` | Cycle sort field |
+| `=` | Flip sort direction |
+
+### Other
+
+| Key | Action |
+|-----|--------|
+| `?` | Help |
+| `v` | Toggle detail pane |
+| `S` | Source status |
+| `w` / `r` | Save / restore filter preset for current project |
+| `q` | Quit |
+
+## License
+
+MIT

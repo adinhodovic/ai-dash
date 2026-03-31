@@ -8,31 +8,35 @@ Guidance for agents working in `ai-dash`.
 - Core session model/loading: `internal/session`
 - Configuration: `internal/config` (viper + cobra, JSON config file + env vars)
 - Source discovery and importers: `internal/sources`
-- Per-tool parsers live in:
-  - `internal/sources/codex` (JSONL files)
-  - `internal/sources/opencode` (SQLite database)
-  - `internal/sources/claude` (JSON/JSONL files)
+- Per-tool native parsers:
+  - `internal/sources/claude` — JSONL transcript parser with token/model/status extraction
+  - `internal/sources/opencode` — SQLite reader with model extraction from message table
+  - `internal/sources/codex` — JSONL log parser with session metadata
 - Shared source contracts/helpers: `internal/sources/shared`
 - Preset persistence: `internal/presets`
+- Icon system: `internal/ui/icon` (Nerd Font with Unicode fallback, auto-detected)
 - TUI code: `internal/ui` split by concern:
-  - `model.go` — Model struct, Init, Update, message dispatch, focus cycling, session filtering
-  - `view.go` — View rendering, pane layout, overlays, footer, top bar
-  - `sessions.go` — session table resize/sync, open externally
-  - `details.go` — detail table, related table resize/sync
-  - `overview.go` — overview/projects table resize
-  - `picker.go` — filter picker (bubbles list), filter application, presets
-  - `keys.go` — keybindings (keyMap), table factory
-  - `style.go` — centralized color palette and all styles
-  - `util.go` — formatting helpers, path cleaning, time formatting
+  - `model.go` — Model struct, Init, Update, message dispatch, focus cycling, filtering, fuzzy search
+  - `view.go` — View rendering, pane layout, overlays, top bar, footer, detail items
+  - `sessions.go` — Session table, resume session, new session, open transcript
+  - `details.go` — Detail table (key-value), related sessions table
+  - `overview.go` — Projects table, stats panel, per-table sorting
+  - `picker.go` — Filter picker overlay (bubbles list with fuzzy search), Nord-styled
+  - `keys.go` — Keybindings (keyMap), context-aware shorthelp, table factories
+  - `style.go` — Nord color scheme, all styles centralized
+  - `util.go` — Formatting helpers, path cleaning, time formatting, renderPane
 
 ## Current Direction
 
-- Prefer native parsers over heuristics when real local file formats are known.
-- Keep provider-specific parsing logic inside each tool package, not in shared helpers.
-- Each provider implements `ResumeArgs(sessionID)` for opening sessions in a terminal.
+- Native parsers for each tool — no heuristic/generic importers for known formats.
+- Each provider implements `SessionProvider` and optionally `SubagentClassifier`.
+- Each provider implements `NewSessionArgs(projectDir)` and `ResumeArgs(sessionID)`.
+- Source paths configurable via `config.json`, no legacy env var overrides.
 - Prefer OSS Bubble Tea v2 ecosystem components over hand-rolled widgets.
-- Preserve the app as local-first and terminal-first.
-- Use `cobra` for CLI and `viper` for configuration.
+- Local-first and terminal-first. No cloud, no HTTP API.
+- Nord color scheme throughout. All colors in `style.go`.
+- Nerd Font icons auto-detected via `fc-list`, fallback to Unicode. Opt-out via config.
+- Use `cobra` for CLI, `viper` for configuration, `sahilm/fuzzy` for search.
 - Use `humanize` for time/number formatting, `lo` for slice utilities.
 
 ## TUI Conventions
@@ -40,54 +44,58 @@ Guidance for agents working in `ai-dash`.
 ### Component-first rendering
 - Use `charm.land/bubbletea/v2` for runtime. `View()` returns `tea.View` with `AltScreen: true`.
 - Prefer `charm.land/bubbles/v2` components (`table`, `list`, `textinput`, `help`) before building custom UI.
-- Let bubbles components own their state: scrolling, cursor, viewport. Do NOT manually manage cursor, call `SetCursor`, or `SetRows` on every frame — only when data actually changes.
-- Do not build manual height/width arithmetic to size components. Pass the available height and let the component handle its own chrome (headers, borders, scrolling).
+- Let bubbles components own their state: scrolling, cursor, viewport.
+- Call `UpdateViewport()` on tables after `SetRows`/`SetHeight` to ensure rendering is current.
+- Do not shadow the table's cursor with manual `selected int` tracking.
 
 ### Layout composition
-- Use `lipgloss.JoinVertical` and `lipgloss.JoinHorizontal` for all layout composition. Never use `+ "\n" +` to stitch rendered strings.
+- Use `lipgloss.JoinVertical` and `lipgloss.JoinHorizontal` for all layout composition.
 - Use `lipgloss.Place` for centering overlays.
-- Use `Margin`, `Padding`, `MarginBottom`, `MarginTop` for spacing — never manual `"\n\n"` or `"  "`.
-- Do NOT build custom clamp/truncation functions. Trust alt screen mode and component defaults.
+- Use `Margin*()` / `Padding*()` for all spacing — never manual `" "`, `"\n"`, or `strings.Repeat`.
+- `lipgloss.Height(n)` sets total height including borders — not content height. Use `Height(h).MaxHeight(h)` on panes to enforce exact dimensions.
+- `renderPane()` in `util.go` is the standard bordered panel renderer. All panes use it.
 
 ### Charm component usage
-- `help.Model` — use for footer key hints. Keep `ShortHelp()` to 6-8 bindings max so it fits one line. Put everything else in `FullHelp()`.
-- `table.Model` — use for all tabular data. Let the table own its cursor and scrolling state.
-- `list.Model` — use for filter pickers with built-in fuzzy search.
-- `viewport.Model` — use for scrollable content panes instead of manual line slicing.
-- `lipgloss.Height()` / `lipgloss.Width()` — use to measure rendered strings. Never count `\n` manually.
-- `lipgloss.NewStyle().Height(n)` — use to force a rendered block to a fixed height (pads or truncates). Never use `strings.Repeat("\n", ...)` for padding.
-- `lipgloss.Place()` / `lipgloss.PlaceVertical()` / `lipgloss.PlaceHorizontal()` — use for alignment and centering.
-- `style.Margin*()` / `style.Padding*()` — use for spacing between elements. Never use manual `"\n\n"` or `"  "`.
+- `help.Model` — footer key hints. `shortHelpForFocus()` returns context-aware bindings per focused pane.
+- `table.Model` — all tabular data. Column headers include sort indicators via `sortHeader()`.
+- `list.Model` — filter pickers. Forward `FilterMatchesMsg` back to the list by passing unhandled messages when picker is active. Check `FilterState()` to avoid intercepting keys during filtering.
+- `lipgloss.Height()` / `lipgloss.Width()` — measure rendered strings. Never count `\n` manually.
+- `lipgloss.NewStyle().Padding()` — use for spacing. Never use `" "` string concatenation.
 
 ### Styling
-- All colors and styles are centralized in `style.go`. Never hardcode `lipgloss.Color(...)` outside `style.go`.
-- Use `tableStyles()` for consistent table appearance, `applyHelpStyles()` for help component styling.
-- Overlays use `m.styles.overlay` for consistent bordered popups. Popups are mutually exclusive.
-- Footer uses `help.ShortHelpView()` for the key bar.
+- Nord color scheme defined in `style.go`. All semantic colors map to `nord*` constants.
+- Never hardcode `lipgloss.Color(...)` outside `style.go` (except one-off view-specific styles like the title).
+- `tableStyles()` for table appearance, `applyHelpStyles()` for help component.
+- Picker delegate styles set in `newPicker()` to match Nord scheme.
+- Filter chips use `badge` style (yellow background) with `Padding(0, 1).MarginRight(1)`.
 
 ### Layout structure
-- Projects pane (full width, 30% height) on top, sessions (60%) + details (40%) below.
-- Filter pickers use `list.Model` with built-in fuzzy filtering for project picker, no filtering for tool/status.
-- Vim-style navigation: ↑/k, ↓/j for movement, g/G for top/bottom. Add new keybindings to both the keyMap struct and FullHelp output.
+- Top row: Projects table (70%) + Overview stats (30%), sharing `topPaneHeight`.
+- Bottom row: Sessions table (70%) + Details pane (30%), sharing `bottomPaneHeight`.
+- Focus cycles between Sessions and Projects only (detail pane is display-only).
+- Sorting is per-table: `s` cycles sort for the focused table.
 
 ## Source Import Rules
 
-- Start from documented config/storage roots first.
-- Keep discovery separate from parsing/import.
-- Put format-aware parsing in the relevant provider package.
-- Each provider implements `SessionProvider` interface: `Name()`, `Discover()`, `ImportSessions()`, `ResumeArgs()`. Add a compile-time check: `var _ shared.SessionProvider = Source{}`.
-- Providers that can identify parent-child session relationships implement the optional `SubagentClassifier` interface (`ParentSessionID(s session.Session) string`). The discovery layer applies classification after collecting sessions. Each tool has its own conventions (Claude: `subagents/` directory, OpenCode: `parent_id` DB column).
-- Opencode reads from SQLite (`~/.local/share/opencode/opencode.db`), not JSON files.
-- Fallback priority: native parser -> provider-specific structured fallback -> shared heuristic importer -> bundled sample data.
-- Never let bundled sample data override discovered real sessions.
+- Each provider implements `SessionProvider`: `Name()`, `Discover()`, `ImportSessions()`, `ResumeArgs()`, `NewSessionArgs()`.
+- Add compile-time check: `var _ shared.SessionProvider = Source{}`.
+- Optional `SubagentClassifier` interface for parent-child detection. Discovery layer calls it after collecting sessions.
+- Source constructors take `config.Config` for configurable paths.
+- Claude: native JSONL parser extracts first user message as summary, model from assistant messages, tokens from usage, status from `stop_reason`.
+- OpenCode: SQLite with model extracted from `message.data` JSON via `json_extract`. Includes `summary_additions/deletions/files`.
+- Codex: JSONL parser with `session_meta`, `turn_context`, `response_item`, `event_msg` types.
+- `Session.Meta` (`map[string]string`) stores tool-specific metadata displayed in the detail pane.
+- `Session.Project` should be the real path (not slug-encoded). Claude uses `cwd` from transcript.
 
 ## Configuration
 
 - Config file: `~/.config/ai-dash/config.json` (viper auto-discovery)
-- Env vars override file values with `AIDASH_` prefix (e.g. `AIDASH_MAX_AGE`, `AIDASH_POLL_INTERVAL`)
-- `$TERMINAL` env var controls which terminal opens sessions (e.g. `ghostty`, `kitty`)
-- `max_age` supports day shorthand (`14d`) in addition to Go durations (`336h`)
-- `./ai-dash schema` generates JSON Schema for the config file
+- Env vars: `AIDASH_` prefix auto-bound by viper (e.g. `AIDASH_OPENCODE_PATH`)
+- `$TERMINAL` controls which terminal opens sessions
+- `max_age` supports day shorthand (`14d`) and Go durations (`336h`)
+- `age_presets` configures the `D` key cycle options
+- `nerd_font: null` means auto-detect; set `false` to opt out
+- `./ai-dash schema` generates JSON Schema for editor autocompletion
 
 ## Fixture Anonymization
 
@@ -95,22 +103,24 @@ Guidance for agents working in `ai-dash`.
 - Rewrite absolute paths to neutral examples unless the path shape itself is under test.
 - Replace IDs, slugs, titles, and prompts with safe stand-ins.
 - Avoid storing secrets, API keys, internal hostnames, or personal names in fixtures.
+- Use `testdata/` directories within each source package for JSONL fixtures.
 
 ## Testing And Validation
 
 - Run `make fmt`, `make build`, and `make test` after meaningful changes.
+- Run `golangci-lint run ./...` to check for lint issues (errcheck, gofumpt, golines, unused).
 - Add provider-specific tests when touching importer/parser logic.
-- Opencode tests create an in-memory SQLite database via `createTestDB()`.
+- OpenCode tests create an in-memory SQLite database with `session` and `message` tables via `createTestDB()`.
+- Claude tests use `testdata/session.jsonl` fixture with anonymized real-format JSONL.
 - UI tests use `resize()` and `sendKey()` helpers, check `View().Content` for output.
-- Prefer anonymized real-format fixtures over invented formats.
+- `TestViewFitsTerminal` verifies layout doesn't exceed terminal bounds at multiple sizes.
 
 ## Formatting Helpers
 
-- Use `formatCost`, `formatTokens`, `formatCount`, `durationLabel`, `timeAgo` from `util.go`.
-- `formatCount` uses `humanize.Comma` for comma-separated numbers.
+- Use `formatCost`, `formatTokens`, `durationLabel`, `timeAgo` from `util.go`.
 - `timeAgo` uses `humanize.Time` for relative timestamps.
-- `cleanProjectName` converts slug-encoded paths to readable `~/path/form`.
-- `shortenPath` replaces the user's home directory with `~` in raw paths.
+- `cleanProjectName` shortens absolute paths via `shortenPath` (`~` substitution). No slug decoding needed since sources now provide real paths.
+- `humanizeKey` converts `snake_case` meta keys to `Title Case` for display.
 
 ## Style Notes
 
@@ -118,3 +128,4 @@ Guidance for agents working in `ai-dash`.
 - Keep comments sparse and only where they clarify non-obvious behavior.
 - Prefer small helpers and standard library code where it keeps parsing logic clearer.
 - Do not introduce destructive behavior or live external dependencies.
+- Line length enforced by `golines`. Break long lines by extracting variables or using multiline function calls.
