@@ -160,6 +160,16 @@ func GenerateSchema() string {
 				"description": "Path to Claude Code projects directory (default: ~/.claude/projects)",
 				"default":     "",
 			},
+			"nerd_font": map[string]any{
+				"type":        "boolean",
+				"description": "Use Nerd Font icons. Null/omitted means auto-detect via fc-list. Set false to force Unicode fallback.",
+			},
+			"age_presets": map[string]any{
+				"type":        "array",
+				"description": "Date range options cycled with D key (e.g. 1h, 1d, 3d, 7d, 14d, 30d)",
+				"items":       map[string]any{"type": "string"},
+				"default":     []string{"1h", "1d", "3d", "7d", "14d", "30d"},
+			},
 		},
 		"additionalProperties": false,
 	}

@@ -124,7 +124,7 @@ func sanitizeProjectName(value string) string {
 		return "unknown"
 	}
 	// Claude encodes project paths by replacing / with -.
-	// e.g. /home/adin/oss/ai-dash -> -home-adin-oss-ai-dash
+	// e.g. /home/user/projects/myapp -> -home-user-projects-myapp
 	// We can't perfectly reverse this (- is ambiguous), but we can match
 	// against the home directory slug to strip the known prefix.
 	if !strings.HasPrefix(value, "-") {

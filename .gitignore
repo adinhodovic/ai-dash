@@ -4,3 +4,4 @@
 .env
 .envrc
 coverage.txt
+.claude/settings.local.json
