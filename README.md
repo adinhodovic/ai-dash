@@ -1,6 +1,6 @@
 # AI Dash
 
-![AI Dash](./docs/images/preview.png)
+![AI Dash](./docs/images/demo.gif)
 
 A terminal UI for browsing coding sessions across multiple tools from local transcripts, session logs, and databases. It currently supports Claude Code, Codex, and OpenCode.
 
