@@ -89,10 +89,6 @@ func (s Source) Discover() (shared.Result, error) {
 	}, nil
 }
 
-func (Source) ImportSessions(result shared.Result) ([]session.Session, error) {
-	return append([]session.Session(nil), result.Sessions...), nil
-}
-
 func (Source) ResumeArgs(sessionID, projectDir string) []string {
 	if projectDir != "" {
 		return []string{"cd", projectDir, "&&", "codex", "resume", sessionID}
@@ -107,10 +103,7 @@ func (Source) NewSessionArgs(projectDir string) []string {
 func discoverCandidates(roots []string) ([]string, error) {
 	var all []string
 	for _, root := range roots {
-		matches, err := shared.DiscoverCandidateFilesWithPatterns(
-			root,
-			[]string{"codex", "thread", "run", "rollout"},
-		)
+		matches, err := shared.DiscoverCandidateFiles(root)
 		if err != nil {
 			return nil, err
 		}

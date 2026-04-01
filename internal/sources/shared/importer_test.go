@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestDiscoverCandidateFilesWithPatterns(t *testing.T) {
+func TestDiscoverCandidateFiles(t *testing.T) {
 	root := t.TempDir()
 	paths := []string{
 		filepath.Join(root, "session-1.json"),

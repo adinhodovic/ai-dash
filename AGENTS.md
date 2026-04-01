@@ -5,7 +5,7 @@ Guidance for agents working in `ai-dash`.
 ## Project Shape
 
 - Binary entrypoint: `cmd/ai-dash` (cobra CLI)
-- Core session model/loading: `internal/session`
+- Core session model/sorting: `internal/session`
 - Configuration: `internal/config` (viper + cobra, JSON config file + env vars)
 - Source discovery and importers: `internal/sources`
 - Per-tool native parsers:
@@ -13,7 +13,6 @@ Guidance for agents working in `ai-dash`.
   - `internal/sources/opencode` — SQLite reader with model extraction from message table
   - `internal/sources/codex` — JSONL log parser with session metadata
 - Shared source contracts/helpers: `internal/sources/shared`
-- Preset persistence: `internal/presets`
 - Icon system: `internal/ui/icon` (Nerd Font with Unicode fallback, auto-detected)
 - TUI code: `internal/ui` split by concern:
   - `model.go` — Model struct, Init, Update, message dispatch, focus cycling, filtering, fuzzy search
@@ -29,6 +28,7 @@ Guidance for agents working in `ai-dash`.
 ## Current Direction
 
 - Native parsers for each tool — no heuristic/generic importers for known formats.
+- Only official tool provider files are supported. Do not add generic/custom session JSON loaders.
 - Each provider implements `SessionProvider` and optionally `SubagentClassifier`.
 - Each provider implements `NewSessionArgs(projectDir)` and `ResumeArgs(sessionID)`.
 - Source paths configurable via `config.json`, no legacy env var overrides.
@@ -77,7 +77,7 @@ Guidance for agents working in `ai-dash`.
 
 ## Source Import Rules
 
-- Each provider implements `SessionProvider`: `Name()`, `Discover()`, `ImportSessions()`, `ResumeArgs()`, `NewSessionArgs()`.
+- Each provider implements `SessionProvider`: `Name()`, `Discover()`, `ResumeArgs()`, `NewSessionArgs()`.
 - Add compile-time check: `var _ shared.SessionProvider = Source{}`.
 - Optional `SubagentClassifier` interface for parent-child detection. Discovery layer calls it after collecting sessions.
 - Source constructors take `config.Config` for configurable paths.

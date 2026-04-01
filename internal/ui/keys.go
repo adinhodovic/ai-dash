@@ -21,8 +21,6 @@ type keyMap struct {
 	Tool          key.Binding
 	Sort          key.Binding
 	Project       key.Binding
-	SavePreset    key.Binding
-	LoadPreset    key.Binding
 	ResumeSession key.Binding
 	ToggleDetails key.Binding
 	NewSession    key.Binding
@@ -53,12 +51,10 @@ func defaultKeyMap() keyMap {
 		SortNext:      key.NewBinding(key.WithKeys("]"), key.WithHelp("[/]", "sort")),
 		SortPrev:      key.NewBinding(key.WithKeys("[")),
 		SortToggle:    key.NewBinding(key.WithKeys("="), key.WithHelp("=", "sort dir")),
-		Tool:          key.NewBinding(key.WithKeys("f"), key.WithHelp("f", "tool")),
+		Tool:          key.NewBinding(key.WithKeys("t"), key.WithHelp("t", "tool")),
 		Sort:          key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "sort")),
 		Project:       key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "project")),
-		SavePreset:    key.NewBinding(key.WithKeys("w"), key.WithHelp("w", "save preset")),
-		LoadPreset:    key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "load preset")),
-		ResumeSession: key.NewBinding(key.WithKeys("o"), key.WithHelp("o", "resume")),
+		ResumeSession: key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "resume")),
 		ToggleDetails: key.NewBinding(key.WithKeys("v"), key.WithHelp("v", "details")),
 		NewSession:    key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "new session")),
 		AgeRange:      key.NewBinding(key.WithKeys("D"), key.WithHelp("D", "age range")),
@@ -109,7 +105,7 @@ func (k keyMap) FullHelp() [][]key.Binding {
 			k.Quit,
 		},
 		{k.Tool, k.Sort, k.Project, k.AgeRange, k.ToggleAgents, k.Sources},
-		{k.SortNext, k.SortToggle, k.SavePreset, k.LoadPreset},
+		{k.SortNext, k.SortToggle},
 	}
 }
 

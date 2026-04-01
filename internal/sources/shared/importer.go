@@ -8,10 +8,6 @@ import (
 )
 
 func DiscoverCandidateFiles(root string) ([]string, error) {
-	return DiscoverCandidateFilesWithPatterns(root, nil)
-}
-
-func DiscoverCandidateFilesWithPatterns(root string, extraPatterns []string) ([]string, error) {
 	info, err := os.Stat(root)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -24,9 +20,6 @@ func DiscoverCandidateFilesWithPatterns(root string, extraPatterns []string) ([]
 	}
 
 	var matches []string
-	patterns := append(
-		[]string{"session", "history", "transcript", "chat", "conversation", "messages"},
-		extraPatterns...)
 	err = filepath.WalkDir(root, func(path string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
@@ -44,7 +37,14 @@ func DiscoverCandidateFilesWithPatterns(root string, extraPatterns []string) ([]
 			strings.Contains(base, "keybind") {
 			return nil
 		}
-		if ext == ".jsonl" || containsAny(base, patterns) {
+		if ext == ".jsonl" || containsAny(base, []string{
+			"session",
+			"history",
+			"transcript",
+			"chat",
+			"conversation",
+			"messages",
+		}) {
 			matches = append(matches, path)
 		}
 		return nil

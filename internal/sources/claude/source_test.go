@@ -36,19 +36,16 @@ func TestDiscoverFindsTranscriptSessions(t *testing.T) {
 	}
 }
 
-func TestImportSessionsBuildsDiscoveredSession(t *testing.T) {
+func TestImportTranscriptSessionsBuildsDiscoveredSession(t *testing.T) {
 	modTime := time.Date(2026, 3, 29, 12, 0, 0, 0, time.UTC)
-	result := shared.Result{Transcripts: []shared.TranscriptFile{{
+	transcripts := []shared.TranscriptFile{{
 		Tool:    "claude",
 		Path:    "/tmp/transcript.jsonl",
 		Project: "demo",
 		ModTime: modTime,
-	}}}
+	}}
 
-	sessions, err := New(config.Config{}).ImportSessions(result)
-	if err != nil {
-		t.Fatalf("import sessions: %v", err)
-	}
+	sessions := importTranscriptSessions(transcripts)
 	if len(sessions) != 1 {
 		t.Fatalf("expected 1 session, got %d", len(sessions))
 	}

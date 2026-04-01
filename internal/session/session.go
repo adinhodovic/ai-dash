@@ -36,10 +36,6 @@ const (
 	SortSummary SortField = "summary"
 )
 
-type File struct {
-	Sessions []Session `json:"sessions"`
-}
-
 func Sort(sessions []Session) {
 	SortBy(sessions, SortStarted, true)
 }

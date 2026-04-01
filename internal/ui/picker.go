@@ -2,13 +2,9 @@ package ui
 
 import (
 	"fmt"
-	"strings"
 
 	"charm.land/bubbles/v2/list"
 	"charm.land/lipgloss/v2"
-
-	"github.com/adin/ai-dash/internal/presets"
-	"github.com/adin/ai-dash/internal/session"
 )
 
 type filterPicker struct {
@@ -100,38 +96,4 @@ func (m *Model) applyFilterChange(value, label string) {
 	}
 	m.sessionTable.SetCursor(0)
 	m.statusMessage = fmt.Sprintf("Updated %s filter", label)
-}
-
-func (m *Model) savePreset(filtered []session.Session) {
-	project := m.currentProject(filtered)
-	if project == "" {
-		return
-	}
-	m.presetStore.Projects[project] = presets.Preset{
-		Tool:    m.filters.tool,
-		Status:  m.filters.status,
-		Project: m.filters.project,
-		Search:  strings.TrimSpace(m.searchQuery()),
-	}
-	if err := presets.Save(m.presetStore); err != nil {
-		m.statusMessage = fmt.Sprintf("preset save error: %v", err)
-		return
-	}
-	m.statusMessage = fmt.Sprintf("Saved preset for %s", project)
-}
-
-func (m *Model) restorePreset(filtered []session.Session) {
-	project := m.currentProject(filtered)
-	if project == "" {
-		return
-	}
-	preset, ok := m.presetStore.Projects[project]
-	if !ok {
-		m.statusMessage = fmt.Sprintf("No saved preset for %s", project)
-		return
-	}
-	m.filters = filters{tool: preset.Tool, status: preset.Status, project: preset.Project}
-	m.searchInput.SetValue(preset.Search)
-	m.sessionTable.SetCursor(0)
-	m.statusMessage = fmt.Sprintf("Restored preset for %s", project)
 }

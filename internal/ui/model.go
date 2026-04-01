@@ -14,7 +14,6 @@ import (
 	"github.com/sahilm/fuzzy"
 
 	"github.com/adin/ai-dash/internal/config"
-	"github.com/adin/ai-dash/internal/presets"
 	"github.com/adin/ai-dash/internal/session"
 	"github.com/adin/ai-dash/internal/sources"
 )
@@ -66,7 +65,6 @@ type Model struct {
 	overviewTable   table.Model
 	help            help.Model
 	keys            keyMap
-	presetStore     presets.Store
 	sortField       session.SortField
 	sortDescending  bool
 	projSortField   string
@@ -92,7 +90,6 @@ func NewModel(opts Options) Model {
 	}
 	terminalCmd = opts.Config.Terminal
 
-	store, err := presets.Load()
 	m := Model{
 		sessions:     opts.Sessions,
 		err:          opts.Err,
@@ -112,14 +109,10 @@ func NewModel(opts Options) Model {
 			return h
 		}(),
 		keys:           defaultKeyMap(),
-		presetStore:    store,
 		sortField:      session.SortUpdated,
 		sortDescending: true,
 		projSortField:  "last",
 		projSortDesc:   true,
-	}
-	if err != nil {
-		m.statusMessage = fmt.Sprintf("preset load error: %v", err)
 	}
 	return m
 }
@@ -205,7 +198,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "/":
 			m.focus = focusSearch
 			m.searchInput.Focus()
-		case "o":
+		case "r":
 			if cmd := m.openSelectedExternally(filtered); cmd != nil {
 				return m, cmd
 			}
@@ -253,7 +246,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusMessage = "Cleared all filters"
 			filtered = m.filteredSessions()
 			m.syncAllTables(filtered)
-		case "f":
+		case "t":
 			m.picker.active = false
 			m.showSources = false
 			m.showHelp = false
@@ -299,10 +292,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.statusMessage = "Hiding subagent sessions"
 			}
-		case "w":
-			m.savePreset(filtered)
-		case "r":
-			m.restorePreset(filtered)
 		default:
 			if m.focus == focusList {
 				var cmd tea.Cmd
@@ -322,7 +311,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case triggerReloadMsg:
 		return m, tea.Batch(tickReload(), func() tea.Msg {
 			discovery, _ := sources.Discover(m.meta.Config)
-			sessions, err := sources.LoadDefaultSessions(discovery)
+			sessions, err := sources.ImportSessions(discovery)
 			return reloadMsg{sessions: sessions, discovery: discovery, err: err}
 		})
 	case reloadMsg:
@@ -468,17 +457,6 @@ func matchesQuery(s session.Session, query string) bool {
 	// Fall back to fuzzy, but require a decent score.
 	matches := fuzzy.Find(query, []string{lower})
 	return len(matches) > 0 && matches[0].Score > len(query)*2
-}
-
-func (m Model) currentProject(filtered []session.Session) string {
-	sel := m.sessionTable.Cursor()
-	if len(filtered) > 0 && sel < len(filtered) {
-		return filtered[sel].Project
-	}
-	if m.filters.project != "" {
-		return m.filters.project
-	}
-	return ""
 }
 
 func (m Model) searchQuery() string { return m.searchInput.Value() }
