@@ -1,4 +1,4 @@
-package ui
+package util
 
 import (
 	"testing"
@@ -21,18 +21,18 @@ func TestTruncate(t *testing.T) {
 		{"ab", 1, "a"},
 	}
 	for _, tt := range tests {
-		got := truncate(tt.value, tt.limit)
+		got := Truncate(tt.value, tt.limit)
 		if got != tt.want {
-			t.Errorf("truncate(%q, %d) = %q, want %q", tt.value, tt.limit, got, tt.want)
+			t.Errorf("Truncate(%q, %d) = %q, want %q", tt.value, tt.limit, got, tt.want)
 		}
 	}
 }
 
 func TestTruncateForCell(t *testing.T) {
-	if got := truncateForCell("", 10); got != "-" {
+	if got := TruncateForCell("", 10); got != "-" {
 		t.Errorf("empty input should be dash, got %q", got)
 	}
-	if got := truncateForCell("  hello  ", 10); got != "hello" {
+	if got := TruncateForCell("  hello  ", 10); got != "hello" {
 		t.Errorf("should trim whitespace, got %q", got)
 	}
 }
@@ -40,7 +40,8 @@ func TestTruncateForCell(t *testing.T) {
 func TestCleanProjectName(t *testing.T) {
 	home := homeDir
 	tests := []struct {
-		input, want string
+		input string
+		want  string
 	}{
 		{home + "/oss/ai-dash", "~/oss/ai-dash"},
 		{"~/myproject", "~/myproject"},
@@ -50,24 +51,24 @@ func TestCleanProjectName(t *testing.T) {
 		{"oss-ai-dash", "oss-ai-dash"},
 	}
 	for _, tt := range tests {
-		got := cleanProjectName(tt.input)
+		got := CleanProjectName(tt.input)
 		if got != tt.want {
-			t.Errorf("cleanProjectName(%q) = %q, want %q", tt.input, got, tt.want)
+			t.Errorf("CleanProjectName(%q) = %q, want %q", tt.input, got, tt.want)
 		}
 	}
 }
 
 func TestCleanSummary(t *testing.T) {
-	if got := cleanSummary(""); got != "-" {
+	if got := CleanSummary(""); got != "-" {
 		t.Errorf("empty should be dash, got %q", got)
 	}
-	if got := cleanSummary("req_abc123"); got != "Imported session" {
+	if got := CleanSummary("req_abc123"); got != "Imported session" {
 		t.Errorf("request ID should be cleaned, got %q", got)
 	}
-	if got := cleanSummary("a1b2c3d4-e5f6-7890-abcd-ef1234567890"); got != "Imported session" {
+	if got := CleanSummary("a1b2c3d4-e5f6-7890-abcd-ef1234567890"); got != "Imported session" {
 		t.Errorf("UUID should be cleaned, got %q", got)
 	}
-	if got := cleanSummary("fix the bug"); got != "fix the bug" {
+	if got := CleanSummary("fix the bug"); got != "fix the bug" {
 		t.Errorf("normal summary should pass through, got %q", got)
 	}
 }
@@ -83,39 +84,20 @@ func TestFormatCost(t *testing.T) {
 		{100.0, "$100.00"},
 	}
 	for _, tt := range tests {
-		got := formatCost(tt.cost)
+		got := FormatCost(tt.cost)
 		if got != tt.want {
-			t.Errorf("formatCost(%v) = %q, want %q", tt.cost, got, tt.want)
-		}
-	}
-}
-
-func TestFormatCount(t *testing.T) {
-	tests := []struct {
-		n    int
-		want string
-	}{
-		{0, "0"},
-		{999, "999"},
-		{1000, "1,000"},
-		{1500, "1,500"},
-		{1000000, "1,000,000"},
-	}
-	for _, tt := range tests {
-		got := formatCount(tt.n)
-		if got != tt.want {
-			t.Errorf("formatCount(%d) = %q, want %q", tt.n, got, tt.want)
+			t.Errorf("FormatCost(%v) = %q, want %q", tt.cost, got, tt.want)
 		}
 	}
 }
 
 func TestFormatTokens(t *testing.T) {
-	if got := formatTokens(0, 0); got != "n/a" {
+	if got := FormatTokens(0, 0); got != "n/a" {
 		t.Errorf("zero tokens should be n/a, got %q", got)
 	}
-	got := formatTokens(1500, 500)
+	got := FormatTokens(1500, 500)
 	if got != "1,500 in / 500 out" {
-		t.Errorf("formatTokens(1500, 500) = %q", got)
+		t.Errorf("FormatTokens(1500, 500) = %q", got)
 	}
 }
 
@@ -154,22 +136,11 @@ func TestDurationLabel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := durationLabel(tt.s)
+			got := DurationLabel(tt.s)
 			if got != tt.want {
-				t.Errorf("durationLabel() = %q, want %q", got, tt.want)
+				t.Errorf("DurationLabel() = %q, want %q", got, tt.want)
 			}
 		})
-	}
-}
-
-func TestNextPrevSortField(t *testing.T) {
-	got := nextSortField(session.SortUpdated)
-	if got != session.SortTool {
-		t.Errorf("next after updated = %v, want tool", got)
-	}
-	got = prevSortField(session.SortUpdated)
-	if got != session.SortSummary {
-		t.Errorf("prev before updated = %v, want summary", got)
 	}
 }
 
@@ -179,25 +150,25 @@ func TestRelationLabel(t *testing.T) {
 	sibling := session.Session{ID: "sib-1", Project: "proj", Repo: "other"}
 	unrelated := session.Session{ID: "other-1", Project: "other", Repo: "other"}
 
-	if got := relationLabel(parent, child); got != "child" {
+	if got := RelationLabel(parent, child); got != "child" {
 		t.Errorf("child relation = %q", got)
 	}
-	if got := relationLabel(child, parent); got != "parent" {
+	if got := RelationLabel(child, parent); got != "parent" {
 		t.Errorf("parent relation = %q", got)
 	}
-	if got := relationLabel(parent, sibling); got != "project" {
+	if got := RelationLabel(parent, sibling); got != "project" {
 		t.Errorf("project relation = %q", got)
 	}
-	if got := relationLabel(parent, unrelated); got != "" {
+	if got := RelationLabel(parent, unrelated); got != "" {
 		t.Errorf("unrelated should be empty, got %q", got)
 	}
 }
 
 func TestValueOrUnknown(t *testing.T) {
-	if got := valueOrUnknown(""); got != "unknown" {
+	if got := ValueOrUnknown(""); got != "unknown" {
 		t.Errorf("empty = %q", got)
 	}
-	if got := valueOrUnknown("x"); got != "x" {
+	if got := ValueOrUnknown("x"); got != "x" {
 		t.Errorf("non-empty = %q", got)
 	}
 }

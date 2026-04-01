@@ -17,10 +17,3 @@ func BottomPaneHeight(termHeight int) int {
 func PaneBodyHeight(paneHeight int) int {
 	return max(1, paneHeight-4)
 }
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
