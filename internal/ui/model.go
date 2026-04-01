@@ -40,7 +40,6 @@ type Options struct {
 
 type filters struct {
 	tool    string
-	status  string
 	project string
 }
 
@@ -155,9 +154,6 @@ func (m Model) filteredSessions() []session.Session {
 			continue
 		}
 		if m.filters.tool != "" && s.Tool != m.filters.tool {
-			continue
-		}
-		if m.filters.status != "" && s.Status != m.filters.status {
 			continue
 		}
 		if m.filters.project != "" && s.Project != m.filters.project {

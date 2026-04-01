@@ -12,7 +12,7 @@ import (
 	uiutil "github.com/adin/ai-dash/internal/ui/util"
 )
 
-func (m Model) renderOverviewStats(filtered []session.Session, _, _ int) string {
+func (m Model) renderOverviewStats(filtered []session.Session) string {
 	all := m.sessions
 	total := len(all)
 	visible := len(filtered)

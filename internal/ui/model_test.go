@@ -100,13 +100,6 @@ func TestFilteredSessions(t *testing.T) {
 	}
 
 	m.filters.tool = ""
-	m.filters.status = "completed"
-	filtered = m.filteredSessions()
-	if len(filtered) != 2 {
-		t.Errorf("status=completed: expected 2, got %d", len(filtered))
-	}
-
-	m.filters.status = ""
 	m.filters.project = "beta"
 	filtered = m.filteredSessions()
 	if len(filtered) != 1 {
