@@ -36,10 +36,6 @@ func (s Source) Discover() (shared.Result, error) {
 	}, nil
 }
 
-func (Source) ImportSessions(result shared.Result) ([]session.Session, error) {
-	return append([]session.Session(nil), result.Sessions...), nil
-}
-
 func (Source) ResumeArgs(sessionID, projectDir string) []string {
 	if projectDir != "" {
 		return []string{"cd", projectDir, "&&", "opencode", "-s", sessionID}

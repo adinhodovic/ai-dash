@@ -52,13 +52,6 @@ func (s Source) Discover() (shared.Result, error) {
 	return result, err
 }
 
-func (Source) ImportSessions(result shared.Result) ([]session.Session, error) {
-	if len(result.Sessions) > 0 {
-		return append([]session.Session(nil), result.Sessions...), nil
-	}
-	return importTranscriptSessions(result.Transcripts), nil
-}
-
 func (Source) ResumeArgs(sessionID, projectDir string) []string {
 	if projectDir != "" {
 		return []string{"cd", projectDir, "&&", "claude", "--resume", sessionID}

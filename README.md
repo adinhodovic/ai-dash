@@ -82,15 +82,22 @@ Add the `$schema` line to get autocompletion in your editor. You can also run `a
 | Key | Action |
 |-----|--------|
 | `/` | Search |
-| `o` | Resume session |
+| `r` | Resume session |
 | `n` | New session |
-| `f` / `p` | Filter by tool / project |
+| `t` / `p` | Filter by tool / project |
 | `s` | Cycle sort |
+| `D` | Cycle age range |
+| `a` | Toggle subagents |
+| `c` | Clear filters/search |
 | `tab` | Switch focus |
 | `?` | Full help |
 | `q` | Quit |
 
+Press `?` in the app to see the full context-aware keymap.
+
 ## Development
+
+### Common tasks
 
 ```bash
 make fmt
@@ -98,6 +105,39 @@ make build
 make test
 golangci-lint run ./...
 ```
+
+Run the app locally with:
+
+```bash
+./ai-dash
+```
+
+### Project layout
+
+- `cmd/ai-dash` - cobra entrypoint
+- `internal/config` - config loading and schema generation
+- `internal/session` - shared session model and sorting
+- `internal/sources/claude` - Claude Code parser
+- `internal/sources/codex` - Codex parser
+- `internal/sources/opencode` - OpenCode parser
+- `internal/sources/shared` - shared source discovery helpers
+- `internal/ui` - Bubble Tea TUI
+
+### Source support
+
+Only official provider files are supported:
+
+- Claude Code transcripts
+- Codex session JSONL files
+- OpenCode SQLite database
+
+Do not add generic or custom session JSON loaders.
+
+### Testing notes
+
+- Add provider-specific tests when changing importer or parser logic
+- Keep fixtures under each source package's `testdata/` directory
+- Run `make fmt`, `make build`, `make test`, and `golangci-lint run ./...` before finishing changes
 
 ## License
 

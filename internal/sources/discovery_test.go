@@ -57,33 +57,17 @@ func TestDiscoverClaudeTranscripts(t *testing.T) {
 	}
 }
 
-func TestLoadDefaultSessionsPrefersDiscoveredSessionsOverSample(t *testing.T) {
-	dir := t.TempDir()
-	oldwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldwd) }()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-
-	sampleData := `{"sessions":[{"id":"sample","tool":"opencode","project":"demo","status":"completed","started_at":"2026-03-29T12:00:00Z"}]}`
-	samplePath := filepath.Join(dir, "sessions.sample.json")
-	if err := os.WriteFile(samplePath, []byte(sampleData), 0o644); err != nil {
-		t.Fatalf("write sample: %v", err)
-	}
-
+func TestImportSessionsReturnsDiscoveredSessions(t *testing.T) {
 	discovery := Discovery{
 		Sessions: []session.Session{
 			{ID: "real", Tool: "codex", Project: "repo", Status: "completed"},
 		},
 	}
-	sessions, err := LoadDefaultSessions(discovery)
+	sessions, err := ImportSessions(discovery)
 	if err != nil {
-		t.Fatalf("load default sessions: %v", err)
+		t.Fatalf("import sessions: %v", err)
 	}
 	if len(sessions) != 1 || sessions[0].ID != "real" {
-		t.Fatalf("expected discovered session to win, got %#v", sessions)
+		t.Fatalf("expected discovered session, got %#v", sessions)
 	}
 }

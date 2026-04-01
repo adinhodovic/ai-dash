@@ -48,9 +48,9 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 	icon.Init(cfg.NerdFont)
 
 	discovery, discoveryErr := sources.Discover(cfg)
-	sessions, err := sources.LoadDefaultSessions(discovery)
+	sessions, err := sources.ImportSessions(discovery)
 	if err == nil && len(sessions) == 0 {
-		err = fmt.Errorf("no sessions found from JSON files or discovered sources")
+		err = fmt.Errorf("no sessions found from configured providers")
 	}
 	if err == nil && discoveryErr != nil {
 		err = discoveryErr

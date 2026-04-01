@@ -62,23 +62,6 @@ func Discover(cfg config.Config) (Discovery, error) {
 	return discovery, nil
 }
 
-func LoadDefaultSessions(discovery Discovery) ([]session.Session, error) {
-	imported, importErr := ImportSessions(discovery)
-	if importErr == nil && len(imported) > 0 {
-		return imported, nil
-	}
-
-	sessions, err := session.LoadDefaultSessions()
-	if err == nil {
-		return sessions, nil
-	}
-
-	if importErr != nil {
-		return nil, importErr
-	}
-	return nil, err
-}
-
 func classifySessions(provider shared.SessionProvider, sessions []session.Session) {
 	classifier, ok := provider.(shared.SubagentClassifier)
 	if !ok {
@@ -109,11 +92,8 @@ func ImportSessions(discovery Discovery) ([]session.Session, error) {
 		if err != nil {
 			return imported, fmt.Errorf("discover %s for import: %w", provider.Name(), err)
 		}
-		sessions, err := provider.ImportSessions(result)
-		if err != nil {
-			return imported, fmt.Errorf("import %s sessions: %w", provider.Name(), err)
-		}
-		imported = append(imported, sessions...)
+		classifySessions(provider, result.Sessions)
+		imported = append(imported, result.Sessions...)
 	}
 	session.Sort(imported)
 	return imported, nil
