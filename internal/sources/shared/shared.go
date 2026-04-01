@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/adin/ai-dash/internal/session"
@@ -91,6 +92,13 @@ func (d Discovery) SummaryLines() []string {
 func NewSource(tool, kind, path, note string) Source {
 	_, err := os.Stat(path)
 	return Source{Tool: tool, Kind: kind, Path: path, Exists: err == nil, Note: note}
+}
+
+// ShellQuote wraps s in single quotes, escaping any embedded single quotes.
+// This prevents shell metacharacter injection when the value is interpolated
+// into a command string passed to sh -c.
+func ShellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "'\"'\"'") + "'"
 }
 
 func SortTranscripts(transcripts []TranscriptFile) {

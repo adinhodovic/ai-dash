@@ -37,14 +37,16 @@ func (s Source) Discover() (shared.Result, error) {
 }
 
 func (Source) ResumeArgs(sessionID, projectDir string) []string {
+	q := shared.ShellQuote
 	if projectDir != "" {
-		return []string{"cd", projectDir, "&&", "opencode", "-s", sessionID}
+		return []string{"cd", q(projectDir), "&&", "opencode", "-s", q(sessionID)}
 	}
-	return []string{"opencode", "-s", sessionID}
+	return []string{"opencode", "-s", q(sessionID)}
 }
 
 func (Source) NewSessionArgs(projectDir string) []string {
-	return []string{"cd", projectDir, "&&", "opencode"}
+	q := shared.ShellQuote
+	return []string{"cd", q(projectDir), "&&", "opencode"}
 }
 
 func (s Source) dbPath() string {
