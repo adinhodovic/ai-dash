@@ -10,14 +10,15 @@ import (
 
 	"github.com/adin/ai-dash/internal/session"
 	"github.com/adin/ai-dash/internal/ui/icon"
+	uilayout "github.com/adin/ai-dash/internal/ui/layout"
 )
 
 func (m *Model) resizeOverviewTable(filtered []session.Session) {
 	if m.width == 0 {
 		return
 	}
-	topH := topPaneHeight(m.height)
-	bodyH := paneBodyHeight(topH)
+	topH := uilayout.TopPaneHeight(m.height)
+	bodyH := uilayout.PaneBodyHeight(topH)
 
 	projW := max(40, m.width*70/100)
 	tableW := max(30, projW-2) // subtract pane border

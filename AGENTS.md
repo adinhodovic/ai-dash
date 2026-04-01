@@ -14,6 +14,8 @@ Guidance for agents working in `ai-dash`.
   - `internal/sources/codex` — JSONL log parser with session metadata
 - Shared source contracts/helpers: `internal/sources/shared`
 - Icon system: `internal/ui/icon` (Nerd Font with Unicode fallback, auto-detected)
+- Pure pane sizing helpers: `internal/ui/layout`
+- Overlay rendering helpers: `internal/ui/overlay`
 - TUI code: `internal/ui` split by concern:
   - `model.go` — Model struct, Init, Update, message dispatch, focus cycling, filtering, fuzzy search
   - `view.go` — View rendering, pane layout, overlays, top bar, footer, detail items

@@ -65,21 +65,6 @@ func defaultKeyMap() keyMap {
 	}
 }
 
-func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{
-		k.Up,
-		k.Down,
-		k.Help,
-		k.Focus,
-		k.Search,
-		k.Tool,
-		k.Sort,
-		k.Project,
-		k.Clear,
-		k.Quit,
-	}
-}
-
 func (k keyMap) shortHelpForFocus(focus focusArea) []key.Binding {
 	base := []key.Binding{k.Up, k.Down, k.Help, k.Focus, k.Search}
 	switch focus {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/adin/ai-dash/internal/session"
 	"github.com/adin/ai-dash/internal/sources"
+	uilayout "github.com/adin/ai-dash/internal/ui/layout"
 )
 
 func (m *Model) resizeTable(filtered []session.Session) {
@@ -18,7 +19,7 @@ func (m *Model) resizeTable(filtered []session.Session) {
 	// Subtract pane border (2) for inner width; header join (1) for height.
 	tableW := max(40, width-2)
 	summaryW := max(16, tableW-60)
-	height := max(2, paneBodyHeight(bottomPaneHeight(m.height))-1)
+	height := max(2, uilayout.PaneBodyHeight(uilayout.BottomPaneHeight(m.height))-1)
 	m.sessionTable.SetColumns([]table.Column{
 		{Title: m.sortHeader("Last Active", session.SortUpdated, 14), Width: 14},
 		{Title: m.sortHeader("Tool", session.SortTool, 9), Width: 9},

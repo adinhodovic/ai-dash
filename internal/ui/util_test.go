@@ -162,23 +162,6 @@ func TestDurationLabel(t *testing.T) {
 	}
 }
 
-func TestContentHeight(t *testing.T) {
-	tests := []struct {
-		termH, want int
-	}{
-		{24, 22}, // 24 - 2
-		{10, 8},  // 10 - 2
-		{3, 4},   // clamped
-		{0, 4},   // clamped
-	}
-	for _, tt := range tests {
-		got := contentHeight(tt.termH)
-		if got != tt.want {
-			t.Errorf("contentHeight(%d) = %d, want %d", tt.termH, got, tt.want)
-		}
-	}
-}
-
 func TestNextPrevSortField(t *testing.T) {
 	got := nextSortField(session.SortUpdated)
 	if got != session.SortTool {

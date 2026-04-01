@@ -10,6 +10,8 @@ import (
 
 	"github.com/adin/ai-dash/internal/session"
 	"github.com/adin/ai-dash/internal/ui/icon"
+	uilayout "github.com/adin/ai-dash/internal/ui/layout"
+	"github.com/adin/ai-dash/internal/ui/overlay"
 )
 
 func (m Model) View() tea.View {
@@ -23,7 +25,7 @@ func (m Model) View() tea.View {
 	filtered := m.filteredSessions()
 
 	// Layout budget: topBar(1) + content(variable) + footer(1) = m.height
-	contentH := contentHeight(m.height)
+	contentH := uilayout.ContentHeight(m.height)
 	top := " " + ansi.Truncate(m.renderTopBar(filtered), m.width-2, "")
 	footer := " " + m.renderFooter(filtered)
 
@@ -76,8 +78,8 @@ func (m Model) View() tea.View {
 	}
 
 	// Layout: top row = projects, bottom row = sessions + details
-	topH := topPaneHeight(m.height)
-	botH := bottomPaneHeight(m.height)
+	topH := uilayout.TopPaneHeight(m.height)
+	botH := uilayout.BottomPaneHeight(m.height)
 	leftW := max(40, m.width*70/100)
 	rightW := m.width - leftW
 
@@ -109,7 +111,7 @@ func (m Model) View() tea.View {
 		botH,
 	)
 	detail := renderPane(
-		panelStyle(m.styles, m.focus == focusDetail),
+		m.styles.panel,
 		m.styles.header,
 		"Details",
 		m.renderDetailPane(),
@@ -122,13 +124,38 @@ func (m Model) View() tea.View {
 
 	page := m.composePageStr(top, content, footer)
 	if m.picker.active {
-		page = m.overlayPicker(page)
+		page = overlay.Picker(
+			page,
+			m.width,
+			m.height,
+			m.picker.list.Height(),
+			m.styles.overlay,
+			m.picker.list.View(),
+		)
 	}
 	if m.showSources {
-		page = m.overlaySources(page)
+		page = overlay.Sources(
+			page,
+			m.width,
+			m.height,
+			m.styles.overlay,
+			m.styles.header,
+			m.styles.muted,
+			m.sourceTable.View(),
+		)
 	}
 	if m.showHelp {
-		page = m.overlayHelp(page)
+		h := m.help
+		h.SetWidth(max(30, min(60, m.width-4)) - 6)
+		page = overlay.Help(
+			page,
+			m.width,
+			m.height,
+			m.styles.overlay,
+			m.styles.header,
+			m.styles.muted,
+			h.FullHelpView(m.keys.FullHelp()),
+		)
 	}
 	return altView(page)
 }
@@ -156,43 +183,6 @@ func (m Model) renderFooter(_ []session.Session) string {
 		line = line[:i]
 	}
 	return line
-}
-
-func (m Model) overlayPicker(_ string) string {
-	width := max(40, m.width*50/100)
-	height := min(m.picker.list.Height()+6, m.height-4)
-	overlay := m.styles.overlay.Width(width).Height(height).Render(m.picker.list.View())
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, overlay)
-}
-
-func (m Model) overlaySources(_ string) string {
-	width := max(40, m.width*70/100)
-	height := min(12, m.height-6)
-	title := m.styles.header.PaddingLeft(1).PaddingRight(1).MarginBottom(1).Render("Sources")
-	hint := m.styles.muted.MarginTop(1).Render("Press S or Esc to close")
-	body := lipgloss.JoinVertical(lipgloss.Left, title, m.sourceTable.View(), hint)
-	overlay := m.styles.overlay.Width(width).Height(height).Render(body)
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, overlay)
-}
-
-func (m Model) overlayHelp(_ string) string {
-	width := max(30, min(60, m.width-4))
-	height := min(20, m.height-6)
-	h := m.help
-	h.SetWidth(width - 6)
-	title := m.styles.header.PaddingLeft(1).
-		PaddingRight(1).
-		MarginBottom(1).
-		Render("Keyboard Shortcuts")
-	helpText := lipgloss.NewStyle().MarginBottom(1).Render(h.FullHelpView(m.keys.FullHelp()))
-	body := lipgloss.JoinVertical(
-		lipgloss.Left,
-		title,
-		helpText,
-		m.styles.muted.Render("Press ? to close"),
-	)
-	overlay := m.styles.overlay.Width(width).Height(height).Render(body)
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, overlay)
 }
 
 func (m Model) renderSessionPane(filtered []session.Session) string {

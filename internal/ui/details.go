@@ -4,10 +4,11 @@ import (
 	"charm.land/bubbles/v2/table"
 
 	"github.com/adin/ai-dash/internal/session"
+	uilayout "github.com/adin/ai-dash/internal/ui/layout"
 )
 
 func detailPaneSectionHeights(termHeight int) (summary, detail, related int) {
-	bodyH := paneBodyHeight(bottomPaneHeight(termHeight))
+	bodyH := uilayout.PaneBodyHeight(uilayout.BottomPaneHeight(termHeight))
 	// Layout: summaryLabel(1) + summaryText(1) + divider(1) + detailTable + divider(1) + relatedLabel(1) + relatedTable
 	summary = 2
 	related = 6

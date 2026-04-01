@@ -177,24 +177,6 @@ func uniqueSortedValues(sessions []session.Session, pick func(session.Session) s
 	return values
 }
 
-// contentHeight returns the available height for panes (total minus top bar and footer).
-func contentHeight(termHeight int) int {
-	// JoinVertical layout: top(1) + content + footer(1) = termHeight.
-	return max(4, termHeight-2)
-}
-
-func topPaneHeight(termHeight int) int {
-	return max(4, contentHeight(termHeight)*28/100)
-}
-
-func bottomPaneHeight(termHeight int) int {
-	return max(4, contentHeight(termHeight)-topPaneHeight(termHeight))
-}
-
-func paneBodyHeight(paneHeight int) int {
-	return max(1, paneHeight-4)
-}
-
 // renderPane renders a bordered panel with a title and body, constrained to the given dimensions.
 // height is the total pane height including borders. Width is total including borders.
 func renderPane(border, header lipgloss.Style, title, body string, width, height int) string {

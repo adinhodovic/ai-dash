@@ -26,7 +26,6 @@ const (
 	focusList focusArea = iota
 	focusFilters
 	focusSearch
-	focusDetail
 )
 
 type Options struct {
@@ -311,7 +310,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case triggerReloadMsg:
 		return m, tea.Batch(tickReload(), func() tea.Msg {
 			discovery, _ := sources.Discover(m.meta.Config)
-			sessions, err := sources.ImportSessions(discovery)
+			sessions := append([]session.Session(nil), discovery.Sessions...)
+			session.Sort(sessions)
+			var err error
 			return reloadMsg{sessions: sessions, discovery: discovery, err: err}
 		})
 	case reloadMsg:

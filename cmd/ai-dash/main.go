@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/adin/ai-dash/internal/config"
+	"github.com/adin/ai-dash/internal/session"
 	"github.com/adin/ai-dash/internal/sources"
 	"github.com/adin/ai-dash/internal/ui"
 	"github.com/adin/ai-dash/internal/ui/icon"
@@ -48,7 +49,9 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 	icon.Init(cfg.NerdFont)
 
 	discovery, discoveryErr := sources.Discover(cfg)
-	sessions, err := sources.ImportSessions(discovery)
+	sessions := append([]session.Session(nil), discovery.Sessions...)
+	session.Sort(sessions)
+	var err error
 	if err == nil && len(sessions) == 0 {
 		err = fmt.Errorf("no sessions found from configured providers")
 	}
