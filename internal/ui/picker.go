@@ -5,6 +5,8 @@ import (
 
 	"charm.land/bubbles/v2/list"
 	"charm.land/lipgloss/v2"
+	"github.com/adin/ai-dash/internal/ui/theme"
+	uiutil "github.com/adin/ai-dash/internal/ui/util"
 )
 
 type filterPicker struct {
@@ -30,7 +32,7 @@ func newPicker(label string, options []string, current string, searchable bool) 
 		if display == "" {
 			display = "(all)"
 		} else {
-			display = cleanProjectName(display)
+			display = uiutil.CleanProjectName(display)
 		}
 		if opt == current {
 			selectedIdx = i
@@ -42,16 +44,16 @@ func newPicker(label string, options []string, current string, searchable bool) 
 	delegate.SetHeight(1)
 	delegate.SetSpacing(0)
 	delegate.Styles.NormalTitle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(colorStrong)).
+		Foreground(lipgloss.Color(theme.ColorStrong)).
 		Padding(0, 0, 0, 2)
 	delegate.Styles.SelectedTitle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(colorSelectFg)).
-		Background(lipgloss.Color(colorSelectBg)).
+		Foreground(lipgloss.Color(theme.ColorSelectFg)).
+		Background(lipgloss.Color(theme.ColorSelectBg)).
 		Padding(0, 0, 0, 1).
 		Border(lipgloss.NormalBorder(), false, false, false, true).
-		BorderForeground(lipgloss.Color(colorActive))
+		BorderForeground(lipgloss.Color(theme.ColorActive))
 	delegate.Styles.DimmedTitle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(colorMuted)).
+		Foreground(lipgloss.Color(theme.ColorMuted)).
 		Padding(0, 0, 0, 2)
 
 	maxH := 20
@@ -63,15 +65,15 @@ func newPicker(label string, options []string, current string, searchable bool) 
 	l.Title = fmt.Sprintf("Filter: %s", label)
 	l.Styles.TitleBar = lipgloss.NewStyle().Padding(0, 0, 1, 2)
 	l.Styles.Title = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(colorHeaderFg)).
-		Background(lipgloss.Color(colorHeaderBg)).
+		Foreground(lipgloss.Color(theme.ColorHeaderFg)).
+		Background(lipgloss.Color(theme.ColorHeaderBg)).
 		Padding(0, 1)
 	l.Styles.ActivePaginationDot = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(colorActive))
+		Foreground(lipgloss.Color(theme.ColorActive))
 	l.Styles.InactivePaginationDot = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(colorBorder))
+		Foreground(lipgloss.Color(theme.ColorBorder))
 	l.Styles.NoItems = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(colorMuted)).
+		Foreground(lipgloss.Color(theme.ColorMuted)).
 		Padding(0, 0, 0, 2)
 	l.SetShowStatusBar(false)
 	l.SetShowPagination(true)

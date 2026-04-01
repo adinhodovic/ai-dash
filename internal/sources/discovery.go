@@ -77,24 +77,3 @@ func classifySessions(provider shared.SessionProvider, sessions []session.Sessio
 		}
 	}
 }
-
-func ImportSessions(discovery Discovery) ([]session.Session, error) {
-	if len(discovery.Sessions) > 0 {
-		imported := append([]session.Session(nil), discovery.Sessions...)
-		session.Sort(imported)
-		return imported, nil
-	}
-
-	providers := providers(config.Load())
-	imported := make([]session.Session, 0)
-	for _, provider := range providers {
-		result, err := provider.Discover()
-		if err != nil {
-			return imported, fmt.Errorf("discover %s for import: %w", provider.Name(), err)
-		}
-		classifySessions(provider, result.Sessions)
-		imported = append(imported, result.Sessions...)
-	}
-	session.Sort(imported)
-	return imported, nil
-}

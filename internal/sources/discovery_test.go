@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/adin/ai-dash/internal/config"
-	"github.com/adin/ai-dash/internal/session"
 )
 
 func TestDiscoverUsesEnvOverrides(t *testing.T) {
@@ -54,20 +53,5 @@ func TestDiscoverClaudeTranscripts(t *testing.T) {
 	}
 	if discovery.Transcripts[0].Project != "repo-a" {
 		t.Fatalf("expected project repo-a, got %q", discovery.Transcripts[0].Project)
-	}
-}
-
-func TestImportSessionsReturnsDiscoveredSessions(t *testing.T) {
-	discovery := Discovery{
-		Sessions: []session.Session{
-			{ID: "real", Tool: "codex", Project: "repo", Status: "completed"},
-		},
-	}
-	sessions, err := ImportSessions(discovery)
-	if err != nil {
-		t.Fatalf("import sessions: %v", err)
-	}
-	if len(sessions) != 1 || sessions[0].ID != "real" {
-		t.Fatalf("expected discovered session, got %#v", sessions)
 	}
 }

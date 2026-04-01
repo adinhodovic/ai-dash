@@ -1,13 +1,11 @@
 package ui
 
 import (
-	"fmt"
-
 	"charm.land/bubbles/v2/table"
-	tea "charm.land/bubbletea/v2"
 
 	"github.com/adin/ai-dash/internal/session"
-	"github.com/adin/ai-dash/internal/sources"
+	uilayout "github.com/adin/ai-dash/internal/ui/layout"
+	uiutil "github.com/adin/ai-dash/internal/ui/util"
 )
 
 func (m *Model) resizeTable(filtered []session.Session) {
@@ -18,7 +16,7 @@ func (m *Model) resizeTable(filtered []session.Session) {
 	// Subtract pane border (2) for inner width; header join (1) for height.
 	tableW := max(40, width-2)
 	summaryW := max(16, tableW-60)
-	height := max(2, paneBodyHeight(bottomPaneHeight(m.height))-1)
+	height := max(2, uilayout.PaneBodyHeight(uilayout.BottomPaneHeight(m.height))-1)
 	m.sessionTable.SetColumns([]table.Column{
 		{Title: m.sortHeader("Last Active", session.SortUpdated, 14), Width: 14},
 		{Title: m.sortHeader("Tool", session.SortTool, 9), Width: 9},
@@ -35,10 +33,10 @@ func (m *Model) syncTable(filtered []session.Session) {
 	summaryWidth := max(16, m.sessionTable.Width()-60)
 	for _, s := range filtered {
 		rows = append(rows, table.Row{
-			timeAgo(lastActive(s)),
-			capitalize(s.Tool),
-			truncateForCell(cleanProjectName(s.Project), 28),
-			truncateForCell(cleanSummary(s.Summary), summaryWidth),
+			uiutil.TimeAgo(uiutil.LastActive(s)),
+			uiutil.Capitalize(s.Tool),
+			uiutil.TruncateForCell(uiutil.CleanProjectName(s.Project), 28),
+			uiutil.TruncateForCell(uiutil.CleanSummary(s.Summary), summaryWidth),
 		})
 	}
 	m.sessionTable.SetRows(rows)
@@ -64,72 +62,11 @@ func (m *Model) syncSourceTable() {
 		if source.Exists {
 			status = "present"
 		}
-		rows = append(rows, table.Row{source.Tool, source.Kind, status, shortenPath(source.Path)})
+		rows = append(
+			rows,
+			table.Row{source.Tool, source.Kind, status, uiutil.ShortenPath(source.Path)},
+		)
 	}
 	m.sourceTable.SetRows(rows)
 	m.sourceTable.SetCursor(0)
-}
-
-func (m *Model) openNewSession(tool string) tea.Cmd {
-	if tool == "" {
-		m.statusMessage = "No tool selected"
-		return nil
-	}
-	// Get project dir from focused table
-	var projectDir string
-	if m.focus == focusFilters {
-		cursor := m.overviewTable.Cursor()
-		if cursor >= 0 && cursor < len(m.projectPaths) {
-			projectDir = m.projectPaths[cursor]
-		}
-	} else {
-		filtered := m.filteredSessions()
-		sel := m.sessionTable.Cursor()
-		if sel >= 0 && sel < len(filtered) {
-			projectDir = sessionDir(filtered[sel])
-		}
-	}
-	if projectDir == "" {
-		m.statusMessage = "No project selected"
-		return nil
-	}
-	args := sources.NewSessionArgs(m.meta.Config, tool, projectDir)
-	if len(args) == 0 {
-		m.statusMessage = fmt.Sprintf("No new session support for %s", tool)
-		return nil
-	}
-	cmd := spawnTerminal(args)
-	if cmd == nil {
-		m.statusMessage = "Set $TERMINAL to open sessions (e.g. export TERMINAL=ghostty)"
-		return nil
-	}
-	m.statusMessage = fmt.Sprintf(
-		"Opening new %s session in %s...", tool, cleanProjectName(projectDir),
-	)
-	return func() tea.Msg {
-		if err := cmd.Start(); err != nil {
-			return statusMsg{message: fmt.Sprintf("Failed to open terminal: %v", err)}
-		}
-		return statusMsg{message: fmt.Sprintf("Opened new %s session", tool)}
-	}
-}
-
-func (m *Model) openSelectedExternally(filtered []session.Session) tea.Cmd {
-	sel := m.sessionTable.Cursor()
-	if len(filtered) == 0 || sel < 0 || sel >= len(filtered) {
-		return nil
-	}
-	s := filtered[sel]
-	cmd := sessionCommand(s, m.meta.Config)
-	if cmd == nil {
-		m.statusMessage = "Set $TERMINAL to open sessions (e.g. export TERMINAL=ghostty)"
-		return nil
-	}
-	m.statusMessage = fmt.Sprintf("Opening %s session in new terminal...", s.Tool)
-	return func() tea.Msg {
-		if err := cmd.Start(); err != nil {
-			return statusMsg{message: fmt.Sprintf("Failed to open terminal: %v", err)}
-		}
-		return statusMsg{message: fmt.Sprintf("Opened %s session in new terminal", s.Tool)}
-	}
 }

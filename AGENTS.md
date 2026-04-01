@@ -13,17 +13,25 @@ Guidance for agents working in `ai-dash`.
   - `internal/sources/opencode` — SQLite reader with model extraction from message table
   - `internal/sources/codex` — JSONL log parser with session metadata
 - Shared source contracts/helpers: `internal/sources/shared`
-- Icon system: `internal/ui/icon` (Nerd Font with Unicode fallback, auto-detected)
+- Theme system: `internal/ui/theme` (Nord palette, styles, icons, Nerd Font autodetect)
+- Pure pane sizing helpers: `internal/ui/layout`
+- Overlay rendering helpers: `internal/ui/overlay`
+- Formatting and path helpers: `internal/ui/util`
+- Pure page/pane rendering helpers: `internal/ui/views`
 - TUI code: `internal/ui` split by concern:
-  - `model.go` — Model struct, Init, Update, message dispatch, focus cycling, filtering, fuzzy search
-  - `view.go` — View rendering, pane layout, overlays, top bar, footer, detail items
-  - `sessions.go` — Session table, resume session, new session, open transcript
-  - `details.go` — Detail table (key-value), related sessions table
-  - `overview.go` — Projects table, stats panel, per-table sorting
+  - `model.go` — Model struct, Options, Init, constructor, focus cycling, filtering, fuzzy search, age/reload config
+  - `update.go` — Update loop, search handling, table sync orchestration
+  - `view.go` — View orchestration, overlays, top bar/footer, sort headers, collapsed preview
+  - `sessions.go` — Session table resize/sync, source table resize/sync
+  - `details.go` — Detail table resize/sync, related sessions table, detail item builders
+  - `overview.go` — Projects table resize, right-pane table orchestration
+  - `stats.go` — Overview stats rendering, project aggregation, project sort keys
+  - `sort.go` — Sort cycling, direction toggle, slice rotation helpers
+  - `terminal.go` — Terminal spawning, resume/new session commands
   - `picker.go` — Filter picker overlay (bubbles list with fuzzy search), Nord-styled
-  - `keys.go` — Keybindings (keyMap), context-aware shorthelp, table factories
-  - `style.go` — Nord color scheme, all styles centralized
-  - `util.go` — Formatting helpers, path cleaning, time formatting, renderPane
+  - `keys.go` — Keybindings (keyMap), context-aware shorthelp
+  - `tables.go` — Table constructors, detailItem type
+  - `options.go` — Filter option lists and sort field helpers
 
 ## Current Direction
 
@@ -34,7 +42,7 @@ Guidance for agents working in `ai-dash`.
 - Source paths configurable via `config.json`, no legacy env var overrides.
 - Prefer OSS Bubble Tea v2 ecosystem components over hand-rolled widgets.
 - Local-first and terminal-first. No cloud, no HTTP API.
-- Nord color scheme throughout. All colors in `style.go`.
+- Nord color scheme throughout. All colors and icon/theme definitions live in `internal/ui/theme`.
 - Nerd Font icons auto-detected via `fc-list`, fallback to Unicode. Opt-out via config.
 - Use `cobra` for CLI, `viper` for configuration, `sahilm/fuzzy` for search.
 - Use `humanize` for time/number formatting, `lo` for slice utilities.
@@ -53,7 +61,7 @@ Guidance for agents working in `ai-dash`.
 - Use `lipgloss.Place` for centering overlays.
 - Use `Margin*()` / `Padding*()` for all spacing — never manual `" "`, `"\n"`, or `strings.Repeat`.
 - `lipgloss.Height(n)` sets total height including borders — not content height. Use `Height(h).MaxHeight(h)` on panes to enforce exact dimensions.
-- `renderPane()` in `util.go` is the standard bordered panel renderer. All panes use it.
+- `internal/ui/views` owns the shared pane/page rendering helpers.
 
 ### Charm component usage
 - `help.Model` — footer key hints. `shortHelpForFocus()` returns context-aware bindings per focused pane.
@@ -63,15 +71,15 @@ Guidance for agents working in `ai-dash`.
 - `lipgloss.NewStyle().Padding()` — use for spacing. Never use `" "` string concatenation.
 
 ### Styling
-- Nord color scheme defined in `style.go`. All semantic colors map to `nord*` constants.
-- Never hardcode `lipgloss.Color(...)` outside `style.go` (except one-off view-specific styles like the title).
-- `tableStyles()` for table appearance, `applyHelpStyles()` for help component.
+- Nord color scheme defined in `internal/ui/theme`. All semantic colors map to `Nord*` / `Color*` constants.
+- Never hardcode `lipgloss.Color(...)` outside `internal/ui/theme` (except one-off view-specific styles like the title).
+- `theme.TableStyles()` for table appearance, `theme.ApplyHelpStyles()` for help component.
 - Picker delegate styles set in `newPicker()` to match Nord scheme.
 - Filter chips use `badge` style (yellow background) with `Padding(0, 1).MarginRight(1)`.
 
 ### Layout structure
-- Top row: Projects table (70%) + Overview stats (30%), sharing `topPaneHeight`.
-- Bottom row: Sessions table (70%) + Details pane (30%), sharing `bottomPaneHeight`.
+- Top row: Projects table (70%) + Overview stats (30%), sharing `TopPaneHeight`.
+- Bottom row: Sessions table (70%) + Details pane (30%), sharing `BottomPaneHeight`.
 - Focus cycles between Sessions and Projects only (detail pane is display-only).
 - Sorting is per-table: `s` cycles sort for the focused table.
 
@@ -117,10 +125,10 @@ Guidance for agents working in `ai-dash`.
 
 ## Formatting Helpers
 
-- Use `formatCost`, `formatTokens`, `durationLabel`, `timeAgo` from `util.go`.
-- `timeAgo` uses `humanize.Time` for relative timestamps.
-- `cleanProjectName` shortens absolute paths via `shortenPath` (`~` substitution). No slug decoding needed since sources now provide real paths.
-- `humanizeKey` converts `snake_case` meta keys to `Title Case` for display.
+- Use `internal/ui/util` for formatting and path helpers like `FormatCost`, `FormatTokens`, `DurationLabel`, `TimeAgo`, `CleanProjectName`, and `HumanizeKey`.
+- `TimeAgo` uses `humanize.Time` for relative timestamps.
+- `CleanProjectName` shortens absolute paths via `ShortenPath` (`~` substitution). No slug decoding needed since sources now provide real paths.
+- `HumanizeKey` converts `snake_case` meta keys to `Title Case` for display.
 
 ## Style Notes
 
