@@ -24,9 +24,9 @@ func (m *Model) resizeOverviewTable(filtered []session.Session) {
 	cellPad := 3 * 2           // 3 columns × 2 padding
 	nameW := max(8, tableW-fixed-cellPad)
 	m.overviewTable.SetColumns([]table.Column{
-		{Title: m.projSortHeader("Last Active", "last", 14), Width: 14},
-		{Title: m.projSortHeader("Project", "project", nameW), Width: nameW},
-		{Title: m.projSortHeader(theme.Session+" Sessions", "sessions", 16), Width: 16},
+		{Title: m.projSortHeader("Last Active", "last"), Width: 14},
+		{Title: m.projSortHeader("Project", "project"), Width: nameW},
+		{Title: m.projSortHeader(theme.Session+" Sessions", "sessions"), Width: 16},
 	})
 	m.overviewTable.SetWidth(tableW)
 	m.overviewTable.SetHeight(max(2, bodyH-1))

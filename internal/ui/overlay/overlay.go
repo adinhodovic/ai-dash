@@ -3,7 +3,6 @@ package overlay
 import "charm.land/lipgloss/v2"
 
 func Picker(
-	page string,
 	width, height, listHeight int,
 	style lipgloss.Style,
 	listView string,
@@ -15,7 +14,6 @@ func Picker(
 }
 
 func Sources(
-	page string,
 	width, height int,
 	overlayStyle, headerStyle, mutedStyle lipgloss.Style,
 	tableView string,
@@ -30,7 +28,6 @@ func Sources(
 }
 
 func Help(
-	page string,
 	width, height int,
 	overlayStyle, headerStyle, mutedStyle lipgloss.Style,
 	helpView string,

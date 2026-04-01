@@ -91,8 +91,6 @@ func (m *Model) applyFilterChange(value, label string) {
 	switch label {
 	case "tool":
 		m.filters.tool = value
-	case "status":
-		m.filters.status = value
 	case "project":
 		m.filters.project = value
 	}

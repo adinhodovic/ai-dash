@@ -18,10 +18,10 @@ func (m *Model) resizeTable(filtered []session.Session) {
 	summaryW := max(16, tableW-60)
 	height := max(2, uilayout.PaneBodyHeight(uilayout.BottomPaneHeight(m.height))-1)
 	m.sessionTable.SetColumns([]table.Column{
-		{Title: m.sortHeader("Last Active", session.SortUpdated, 14), Width: 14},
-		{Title: m.sortHeader("Tool", session.SortTool, 9), Width: 9},
-		{Title: m.sortHeader("Project", session.SortProject, 28), Width: 28},
-		{Title: m.sortHeader("Summary", session.SortSummary, summaryW), Width: summaryW},
+		{Title: m.sortHeader("Last Active", session.SortUpdated), Width: 14},
+		{Title: m.sortHeader("Tool", session.SortTool), Width: 9},
+		{Title: m.sortHeader("Project", session.SortProject), Width: 28},
+		{Title: m.sortHeader("Summary", session.SortSummary), Width: summaryW},
 	})
 	m.sessionTable.SetWidth(tableW)
 	m.sessionTable.SetHeight(height)

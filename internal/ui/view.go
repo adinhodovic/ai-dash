@@ -28,7 +28,7 @@ func (m Model) View() tea.View {
 	// Layout budget: topBar(1) + content(variable) + footer(1) = m.height
 	contentH := uilayout.ContentHeight(m.height)
 	top := " " + m.renderTopBar(filtered)
-	footer := " " + m.renderFooter(filtered)
+	footer := " " + m.renderFooter()
 
 	if len(m.sessions) == 0 {
 		body := uiviews.EmptySessions(m.styles, m.width, contentH, "No sessions loaded.")
@@ -53,7 +53,7 @@ func (m Model) View() tea.View {
 			contentH,
 			tableH,
 			m.focus == focusList,
-			m.renderSessionPane(filtered),
+			m.renderSessionPane(),
 			m.renderCollapsedPreview(filtered),
 		)
 		return altView(uiviews.Page(top, content, footer))
@@ -74,15 +74,14 @@ func (m Model) View() tea.View {
 		topH,
 		botH,
 		m.overviewTable.View(),
-		m.renderOverviewStats(filtered, rightW, topH),
-		m.renderSessionPane(filtered),
+		m.renderOverviewStats(filtered),
+		m.renderSessionPane(),
 		m.renderDetailPane(),
 	)
 
 	page := uiviews.Page(top, content, footer)
 	if m.picker.active {
 		page = overlay.Picker(
-			page,
 			m.width,
 			m.height,
 			m.picker.list.Height(),
@@ -92,7 +91,6 @@ func (m Model) View() tea.View {
 	}
 	if m.showSources {
 		page = overlay.Sources(
-			page,
 			m.width,
 			m.height,
 			m.styles.Overlay,
@@ -105,7 +103,6 @@ func (m Model) View() tea.View {
 		h := m.help
 		h.SetWidth(max(30, min(60, m.width-4)) - 6)
 		page = overlay.Help(
-			page,
 			m.width,
 			m.height,
 			m.styles.Overlay,
@@ -123,7 +120,7 @@ func altView(s string) tea.View {
 	return v
 }
 
-func (m Model) renderFooter(_ []session.Session) string {
+func (m Model) renderFooter() string {
 	w := m.width
 	if w <= 0 {
 		w = 80
@@ -138,7 +135,7 @@ func (m Model) renderFooter(_ []session.Session) string {
 	return line
 }
 
-func (m Model) renderSessionPane(filtered []session.Session) string {
+func (m Model) renderSessionPane() string {
 	return m.sessionTable.View()
 }
 
@@ -232,7 +229,7 @@ func (m Model) sortLabel() string {
 	return fmt.Sprintf("%s %s", m.sortField, dir)
 }
 
-func (m Model) sortHeader(label string, field session.SortField, _ int) string {
+func (m Model) sortHeader(label string, field session.SortField) string {
 	if m.sortField != field {
 		return label
 	}
@@ -242,7 +239,7 @@ func (m Model) sortHeader(label string, field session.SortField, _ int) string {
 	return label + " " + theme.SortAsc
 }
 
-func (m Model) projSortHeader(label, field string, _ int) string {
+func (m Model) projSortHeader(label, field string) string {
 	if m.projSortField != field {
 		return label
 	}
