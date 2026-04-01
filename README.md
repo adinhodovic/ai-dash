@@ -89,3 +89,16 @@ Add the `$schema` line to get autocompletion in your editor. You can also run `a
 | `tab` | Switch focus |
 | `?` | Full help |
 | `q` | Quit |
+
+## Development
+
+```bash
+make fmt
+make build
+make test
+golangci-lint run ./...
+```
+
+## License
+
+Apache License 2.0
