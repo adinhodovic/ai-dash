@@ -294,6 +294,29 @@ func TestLayoutHeightsStayStableAcrossSelection(t *testing.T) {
 	}
 }
 
+func TestOverviewKeepsRawProjectPaths(t *testing.T) {
+	m := NewModel(Options{
+		Sessions: []session.Session{
+			{
+				ID:        "1",
+				Tool:      "claude",
+				Project:   "/home/adin/src/tailscale-exporter",
+				Status:    "completed",
+				StartedAt: time.Now(),
+			},
+		},
+		Version: "test",
+	})
+
+	m = resize(m, 120, 40)
+	if len(m.projectPaths) != 1 {
+		t.Fatalf("projectPaths len = %d, want 1", len(m.projectPaths))
+	}
+	if got := m.projectPaths[0]; got != "/home/adin/src/tailscale-exporter" {
+		t.Fatalf("projectPaths[0] = %q, want raw absolute path", got)
+	}
+}
+
 func TestDetailPaneSectionHeightsAreStable(t *testing.T) {
 	summary, detail, related := detailPaneSectionHeights(40)
 	if summary != 2 {
