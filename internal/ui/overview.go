@@ -148,11 +148,11 @@ type projStats struct {
 func projectStats(sessions []session.Session) map[string]*projStats {
 	stats := map[string]*projStats{}
 	for _, s := range sessions {
-		name := cleanProjectName(s.Project)
-		ps, ok := stats[name]
+		project := s.Project
+		ps, ok := stats[project]
 		if !ok {
 			ps = &projStats{}
-			stats[name] = ps
+			stats[project] = ps
 		}
 		ps.count++
 		if s.Status == "active" {

@@ -300,10 +300,7 @@ func summarizePrompt(prompt string) string {
 
 func inferProject(cwd, path string) string {
 	if cwd != "" {
-		base := filepath.Base(cwd)
-		if base != "" && base != string(filepath.Separator) {
-			return base
-		}
+		return cwd
 	}
 	parts := strings.Split(filepath.ToSlash(path), "/")
 	for i, part := range parts {

@@ -42,8 +42,11 @@ func TestParseCodexSessionFromFixture(t *testing.T) {
 	if parsed.ID != "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" {
 		t.Fatalf("unexpected id: %#v", parsed)
 	}
-	if parsed.Project != "api" {
+	if parsed.Project != "/workspace/example/services/api" {
 		t.Fatalf("unexpected project: %#v", parsed)
+	}
+	if parsed.Repo != "/workspace/example/services/api" {
+		t.Fatalf("unexpected repo: %#v", parsed)
 	}
 	if parsed.Model != "gpt-5.2-codex" {
 		t.Fatalf("unexpected model: %#v", parsed)
