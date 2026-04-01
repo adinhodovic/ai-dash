@@ -1,7 +1,8 @@
 package session
 
 import (
-	"sort"
+	"cmp"
+	"slices"
 	"time"
 )
 
@@ -41,36 +42,36 @@ func Sort(sessions []Session) {
 }
 
 func SortBy(sessions []Session, field SortField, descending bool) {
-	sort.Slice(sessions, func(i, j int) bool {
-		left, right := sessions[i], sessions[j]
+	slices.SortFunc(sessions, func(a, b Session) int {
+		c := compareSessions(a, b, field)
 		if descending {
-			return compareSessions(right, left, field)
+			return -c
 		}
-		return compareSessions(left, right, field)
+		return c
 	})
 }
 
-func compareSessions(left, right Session, field SortField) bool {
+func compareSessions(a, b Session, field SortField) int {
 	switch field {
 	case SortUpdated:
-		return left.EndedAt.Before(right.EndedAt)
+		return a.EndedAt.Compare(b.EndedAt)
 	case SortProject:
-		if left.Project == right.Project {
-			return left.StartedAt.Before(right.StartedAt)
+		if c := cmp.Compare(a.Project, b.Project); c != 0 {
+			return c
 		}
-		return left.Project < right.Project
+		return a.StartedAt.Compare(b.StartedAt)
 	case SortTool:
-		if left.Tool == right.Tool {
-			return left.StartedAt.Before(right.StartedAt)
+		if c := cmp.Compare(a.Tool, b.Tool); c != 0 {
+			return c
 		}
-		return left.Tool < right.Tool
+		return a.StartedAt.Compare(b.StartedAt)
 	case SortSummary:
-		if left.Summary == right.Summary {
-			return left.StartedAt.Before(right.StartedAt)
+		if c := cmp.Compare(a.Summary, b.Summary); c != 0 {
+			return c
 		}
-		return left.Summary < right.Summary
+		return a.StartedAt.Compare(b.StartedAt)
 	default:
-		return left.StartedAt.Before(right.StartedAt)
+		return a.StartedAt.Compare(b.StartedAt)
 	}
 }
 

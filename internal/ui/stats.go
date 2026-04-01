@@ -1,8 +1,9 @@
 package ui
 
 import (
+	"cmp"
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"charm.land/lipgloss/v2"
@@ -54,7 +55,7 @@ func (m Model) renderOverviewStats(filtered []session.Session) string {
 	for k := range tools {
 		toolKeys = append(toolKeys, k)
 	}
-	sort.Strings(toolKeys)
+	slices.Sort(toolKeys)
 
 	var toolLines []string
 	for _, k := range toolKeys {
@@ -126,22 +127,22 @@ func (m *Model) sortedProjectKeys(stats map[string]*projStats) []string {
 	for k := range stats {
 		keys = append(keys, k)
 	}
-	sort.Slice(keys, func(i, j int) bool {
-		var less bool
+	slices.SortFunc(keys, func(a, b string) int {
+		var c int
 		switch m.projSortField {
 		case "project":
-			less = uiutil.CleanProjectName(keys[i]) < uiutil.CleanProjectName(keys[j])
+			c = cmp.Compare(uiutil.CleanProjectName(a), uiutil.CleanProjectName(b))
 		case "sessions":
-			less = stats[keys[i]].count < stats[keys[j]].count
+			c = cmp.Compare(stats[a].count, stats[b].count)
 		case "active":
-			less = stats[keys[i]].active < stats[keys[j]].active
+			c = cmp.Compare(stats[a].active, stats[b].active)
 		default: // "last"
-			less = stats[keys[i]].last.Before(stats[keys[j]].last)
+			c = stats[a].last.Compare(stats[b].last)
 		}
 		if m.projSortDesc {
-			return !less
+			return -c
 		}
-		return less
+		return c
 	})
 	return keys
 }

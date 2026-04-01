@@ -3,7 +3,7 @@ package shared
 import (
 	"fmt"
 	"os"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/adin/ai-dash/internal/session"
@@ -94,7 +94,7 @@ func NewSource(tool, kind, path, note string) Source {
 }
 
 func SortTranscripts(transcripts []TranscriptFile) {
-	sort.Slice(transcripts, func(i, j int) bool {
-		return transcripts[i].ModTime.After(transcripts[j].ModTime)
+	slices.SortFunc(transcripts, func(a, b TranscriptFile) int {
+		return b.ModTime.Compare(a.ModTime)
 	})
 }
