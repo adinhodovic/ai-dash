@@ -53,14 +53,16 @@ func (s Source) Discover() (shared.Result, error) {
 }
 
 func (Source) ResumeArgs(sessionID, projectDir string) []string {
+	q := shared.ShellQuote
 	if projectDir != "" {
-		return []string{"cd", projectDir, "&&", "claude", "--resume", sessionID}
+		return []string{"cd", q(projectDir), "&&", "claude", "--resume", q(sessionID)}
 	}
-	return []string{"claude", "--resume", sessionID}
+	return []string{"claude", "--resume", q(sessionID)}
 }
 
 func (Source) NewSessionArgs(projectDir string) []string {
-	return []string{"cd", projectDir, "&&", "claude"}
+	q := shared.ShellQuote
+	return []string{"cd", q(projectDir), "&&", "claude"}
 }
 
 func (Source) ParentSessionID(s session.Session) string {

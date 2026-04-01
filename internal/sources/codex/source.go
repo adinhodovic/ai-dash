@@ -90,14 +90,16 @@ func (s Source) Discover() (shared.Result, error) {
 }
 
 func (Source) ResumeArgs(sessionID, projectDir string) []string {
+	q := shared.ShellQuote
 	if projectDir != "" {
-		return []string{"cd", projectDir, "&&", "codex", "resume", sessionID}
+		return []string{"cd", q(projectDir), "&&", "codex", "resume", q(sessionID)}
 	}
-	return []string{"codex", "resume", sessionID}
+	return []string{"codex", "resume", q(sessionID)}
 }
 
 func (Source) NewSessionArgs(projectDir string) []string {
-	return []string{"cd", projectDir, "&&", "codex"}
+	q := shared.ShellQuote
+	return []string{"cd", q(projectDir), "&&", "codex"}
 }
 
 func discoverCandidates(roots []string) ([]string, error) {
