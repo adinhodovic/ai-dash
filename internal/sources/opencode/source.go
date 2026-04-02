@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -56,7 +57,11 @@ func (s Source) dbPath() string {
 	dataDir := os.Getenv("XDG_DATA_HOME")
 	if dataDir == "" {
 		home, _ := os.UserHomeDir()
-		dataDir = filepath.Join(home, ".local", "share")
+		if runtime.GOOS == "darwin" {
+			dataDir = filepath.Join(home, "Library", "Application Support")
+		} else {
+			dataDir = filepath.Join(home, ".local", "share")
+		}
 	}
 	return filepath.Join(dataDir, "opencode", "opencode.db")
 }

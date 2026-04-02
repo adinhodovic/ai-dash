@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -178,7 +179,12 @@ func TestDbPathDefaultHome(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", "")
 	got := (Source{}).dbPath()
 	home, _ := os.UserHomeDir()
-	want := filepath.Join(home, ".local", "share", "opencode", "opencode.db")
+	var want string
+	if runtime.GOOS == "darwin" {
+		want = filepath.Join(home, "Library", "Application Support", "opencode", "opencode.db")
+	} else {
+		want = filepath.Join(home, ".local", "share", "opencode", "opencode.db")
+	}
 	if got != want {
 		t.Errorf("dbPath() = %q, want %q", got, want)
 	}
