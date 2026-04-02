@@ -31,10 +31,21 @@ make build
 
 Pre-built binaries are available on the [releases page](https://github.com/adinhodovic/ai-dash/releases).
 
+**Linux:**
+
 ```bash
 curl -L https://github.com/adinhodovic/ai-dash/releases/latest/download/ai-dash-linux-amd64 -o ai-dash
 chmod +x ai-dash
 ```
+
+**macOS:**
+
+```bash
+curl -L https://github.com/adinhodovic/ai-dash/releases/latest/download/ai-dash-darwin-arm64 -o ai-dash
+chmod +x ai-dash
+```
+
+For other architectures, see all binaries on the [releases page](https://github.com/adinhodovic/ai-dash/releases).
 
 ## Configuration
 
@@ -46,7 +57,7 @@ Sessions are discovered from default paths. Override them if needed:
 
 | Tool | Default path | Config key |
 |------|-------------|------------|
-| OpenCode | `~/.local/share/opencode/opencode.db` | `opencode_path` |
+| OpenCode | `~/.local/share/opencode/opencode.db` or `~/Library/Application Support/opencode/opencode.db` on macOS | `opencode_path` |
 | Codex | `~/.codex/config.toml` | `codex_path` |
 | Claude Code | `~/.claude/projects/` | `claude_path` |
 
@@ -67,7 +78,7 @@ Sessions are discovered from default paths. Override them if needed:
 
 | Option | What it does | Default |
 |--------|-------------|---------|
-| `terminal` | Terminal emulator used to open sessions | `$TERMINAL` |
+| `terminal` | Terminal emulator used to open/resume sessions (e.g. `ghostty`, `kitty`) | `$TERMINAL` |
 | `poll_interval` | How often sessions reload | `10s` |
 | `default_age_filter` | Default age filter used on load and when clearing filters | `14d` |
 | `default_tool` | Pre-selected tool when pressing `n` | none |
@@ -76,6 +87,8 @@ Sessions are discovered from default paths. Override them if needed:
 | `age_presets` | Options when cycling with `D` | `1h,1d,3d,7d,14d,30d` |
 
 Add the `$schema` line to get autocompletion in your editor. You can also run `ai-dash schema` to print it.
+
+On macOS, `terminal` should be a CLI terminal binary like `ghostty` or `kitty`.
 
 ## Keys
 

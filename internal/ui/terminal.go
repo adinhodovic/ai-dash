@@ -32,11 +32,19 @@ func sessionCommand(s session.Session, cfg config.Config) *exec.Cmd {
 }
 
 func spawnTerminal(terminal string, args []string) *exec.Cmd {
-	if terminal == "" {
+	name, argv := terminalCommand(terminal, args)
+	if name == "" {
 		return nil
 	}
+	return exec.Command(name, argv...)
+}
+
+func terminalCommand(terminal string, args []string) (string, []string) {
+	if terminal == "" {
+		return "", nil
+	}
 	shell := strings.Join(args, " ")
-	return exec.Command(terminal, "-e", "sh", "-c", shell)
+	return terminal, []string{"-e", "sh", "-c", shell}
 }
 
 func (m *Model) openNewSession(tool string) tea.Cmd {
@@ -69,7 +77,7 @@ func (m *Model) openNewSession(tool string) tea.Cmd {
 	}
 	cmd := spawnTerminal(m.meta.Config.Terminal, args)
 	if cmd == nil {
-		m.statusMessage = "Set $TERMINAL to open sessions (e.g. export TERMINAL=ghostty)"
+		m.statusMessage = "Set $TERMINAL to open sessions (e.g. ghostty or kitty)"
 		return nil
 	}
 	m.statusMessage = fmt.Sprintf(
@@ -91,7 +99,7 @@ func (m *Model) openSelectedExternally(filtered []session.Session) tea.Cmd {
 	s := filtered[sel]
 	cmd := sessionCommand(s, m.meta.Config)
 	if cmd == nil {
-		m.statusMessage = "Set $TERMINAL to open sessions (e.g. export TERMINAL=ghostty)"
+		m.statusMessage = "Set $TERMINAL to open sessions (e.g. ghostty or kitty)"
 		return nil
 	}
 	m.statusMessage = fmt.Sprintf("Opening %s session in new terminal...", s.Tool)

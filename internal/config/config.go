@@ -147,7 +147,7 @@ func GenerateSchema() string {
 			},
 			"opencode_path": map[string]any{
 				"type":        "string",
-				"description": "Path to OpenCode SQLite database (default: ~/.local/share/opencode/opencode.db)",
+				"description": "Path to OpenCode SQLite database (default: ~/.local/share/opencode/opencode.db, or ~/Library/Application Support/opencode/opencode.db on macOS)",
 				"default":     "",
 			},
 			"codex_path": map[string]any{

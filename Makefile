@@ -23,6 +23,10 @@ build-all:
 	GOOS=linux GOARCH=amd64 $(GO) build -ldflags '$(LDFLAGS)' -o ai-dash-linux-amd64 ./cmd/ai-dash
 	@echo "Building linux/arm64..."
 	GOOS=linux GOARCH=arm64 $(GO) build -ldflags '$(LDFLAGS)' -o ai-dash-linux-arm64 ./cmd/ai-dash
+	@echo "Building darwin/amd64..."
+	GOOS=darwin GOARCH=amd64 $(GO) build -ldflags '$(LDFLAGS)' -o ai-dash-darwin-amd64 ./cmd/ai-dash
+	@echo "Building darwin/arm64..."
+	GOOS=darwin GOARCH=arm64 $(GO) build -ldflags '$(LDFLAGS)' -o ai-dash-darwin-arm64 ./cmd/ai-dash
 
 .PHONY: test
 test:
