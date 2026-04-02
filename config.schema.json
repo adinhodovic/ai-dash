@@ -49,7 +49,7 @@
     },
     "opencode_path": {
       "default": "",
-      "description": "Path to OpenCode SQLite database (default: ~/.local/share/opencode/opencode.db)",
+      "description": "Path to OpenCode SQLite database (default: ~/.local/share/opencode/opencode.db, or ~/Library/Application Support/opencode/opencode.db on macOS)",
       "type": "string"
     },
     "poll_interval": {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -53,12 +54,38 @@ func (s Source) dbPath() string {
 	if s.pathOverride != "" {
 		return s.pathOverride
 	}
-	dataDir := os.Getenv("XDG_DATA_HOME")
-	if dataDir == "" {
-		home, _ := os.UserHomeDir()
-		dataDir = filepath.Join(home, ".local", "share")
+	if dataDir := os.Getenv("XDG_DATA_HOME"); dataDir != "" {
+		return filepath.Join(dataDir, "opencode", "opencode.db")
 	}
-	return filepath.Join(dataDir, "opencode", "opencode.db")
+	paths := defaultDBPaths()
+	for _, path := range paths {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+	if len(paths) == 0 {
+		return ""
+	}
+	return paths[0]
+}
+
+func defaultDBPaths() []string {
+	home, _ := os.UserHomeDir()
+	var paths []string
+	if home != "" {
+		if runtime.GOOS == "darwin" {
+			paths = append(paths,
+				filepath.Join(home, "Library", "Application Support", "opencode", "opencode.db"),
+				filepath.Join(home, ".local", "share", "opencode", "opencode.db"),
+			)
+		} else {
+			paths = append(paths,
+				filepath.Join(home, ".local", "share", "opencode", "opencode.db"),
+				filepath.Join(home, "Library", "Application Support", "opencode", "opencode.db"),
+			)
+		}
+	}
+	return paths
 }
 
 func loadFromDB(path string) []session.Session {

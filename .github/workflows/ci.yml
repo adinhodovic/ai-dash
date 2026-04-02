@@ -79,3 +79,5 @@ jobs:
           files: |
             ai-dash-linux-amd64
             ai-dash-linux-arm64
+            ai-dash-darwin-amd64
+            ai-dash-darwin-arm64

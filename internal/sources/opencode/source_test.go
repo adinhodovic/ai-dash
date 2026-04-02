@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -178,8 +179,47 @@ func TestDbPathDefaultHome(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", "")
 	got := (Source{}).dbPath()
 	home, _ := os.UserHomeDir()
-	want := filepath.Join(home, ".local", "share", "opencode", "opencode.db")
+	var want string
+	if runtime.GOOS == "darwin" {
+		want = filepath.Join(home, "Library", "Application Support", "opencode", "opencode.db")
+	} else {
+		want = filepath.Join(home, ".local", "share", "opencode", "opencode.db")
+	}
 	if got != want {
 		t.Errorf("dbPath() = %q, want %q", got, want)
+	}
+}
+
+func TestDbPathPrefersExistingMacFallbackOnDarwin(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("darwin-only path preference")
+	}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_DATA_HOME", "")
+
+	linuxStyle := filepath.Join(home, ".local", "share", "opencode", "opencode.db")
+	if err := os.MkdirAll(filepath.Dir(linuxStyle), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(linuxStyle, []byte("db"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	if got := (Source{}).dbPath(); got != linuxStyle {
+		t.Fatalf("dbPath() = %q, want %q", got, linuxStyle)
+	}
+}
+
+func TestDefaultDBPathsReturnsTwo(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	paths := defaultDBPaths()
+	if len(paths) != 2 {
+		t.Fatalf("expected 2 candidate paths, got %d: %v", len(paths), paths)
+	}
+	if paths[0] == paths[1] {
+		t.Fatalf("paths should differ, got %q twice", paths[0])
 	}
 }
