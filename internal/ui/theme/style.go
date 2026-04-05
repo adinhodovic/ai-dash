@@ -31,6 +31,10 @@ const (
 	ColorStrong    = Nord6
 	ColorHighlight = Nord8
 	ColorError     = Nord11
+	ColorWarn      = Nord13
+	ColorSuccess   = Nord14
+	ColorInfo      = Nord8
+	ColorAccent    = Nord15
 	ColorMatchFg   = Nord0
 	ColorMatchBg   = Nord13
 	ColorHeaderFg  = Nord6
@@ -127,4 +131,21 @@ func ApplyHelpStyles(h *help.Model) {
 	h.Styles.FullDesc = h.Styles.ShortDesc
 	h.Styles.ShortSeparator = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorHelpSep))
 	h.Styles.FullSeparator = h.Styles.ShortSeparator
+}
+
+func StatusStyle(status string) lipgloss.Style {
+	switch status {
+	case "aborted":
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(ColorError)).Bold(true)
+	case "tool call":
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(ColorAccent)).Bold(true)
+	case "waiting":
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(ColorWarn)).Bold(true)
+	case "running":
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(ColorInfo)).Bold(true)
+	case "done":
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(ColorSuccess)).Bold(true)
+	default:
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(ColorText))
+	}
 }

@@ -33,6 +33,7 @@ func nextSortField(current session.SortField) session.SortField {
 	fields := []session.SortField{
 		session.SortUpdated,
 		session.SortTool,
+		session.SortStatus,
 		session.SortProject,
 		session.SortSummary,
 	}
@@ -48,6 +49,7 @@ func prevSortField(current session.SortField) session.SortField {
 	fields := []session.SortField{
 		session.SortUpdated,
 		session.SortTool,
+		session.SortStatus,
 		session.SortProject,
 		session.SortSummary,
 	}

@@ -144,6 +144,29 @@ func TestDurationLabel(t *testing.T) {
 	}
 }
 
+func TestSessionStatusLabel(t *testing.T) {
+	tests := []struct {
+		name string
+		s    session.Session
+		want string
+	}{
+		{"active default", session.Session{Status: "active"}, "running"},
+		{"active waiting", session.Session{Status: "active", Meta: map[string]string{"stop_reason": "end_turn"}}, "waiting"},
+		{"active tool call", session.Session{Status: "active", Meta: map[string]string{"stop_reason": "tool_use"}}, "tool call"},
+		{"completed", session.Session{Status: "completed"}, "done"},
+		{"aborted", session.Session{Status: "aborted"}, "aborted"},
+		{"unknown", session.Session{}, "unknown"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := SessionStatusLabel(tt.s); got != tt.want {
+				t.Fatalf("SessionStatusLabel() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestRelationLabel(t *testing.T) {
 	parent := session.Session{ID: "parent-1", Project: "proj", Repo: "repo"}
 	child := session.Session{ID: "child-1", ParentID: "parent-1", Project: "proj", Repo: "repo"}

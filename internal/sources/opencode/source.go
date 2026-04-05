@@ -106,6 +106,54 @@ func loadFromDB(path string) []session.Session {
 		           SELECT json_extract(m.data, '$.model.modelID')
 		           FROM message m WHERE m.session_id = s.id
 		           ORDER BY m.time_created ASC LIMIT 1
+		       ), ''),
+		       COALESCE((
+		           SELECT json_extract(m.data, '$.role')
+		           FROM message m WHERE m.session_id = s.id
+		           ORDER BY m.time_created DESC LIMIT 1
+		       ), ''),
+		       COALESCE((
+		           SELECT json_extract(m.data, '$.finish')
+		           FROM message m WHERE m.session_id = s.id
+		           ORDER BY m.time_created DESC LIMIT 1
+		       ), ''),
+		       COALESCE((
+		           SELECT json_extract(m.data, '$.time.completed')
+		           FROM message m WHERE m.session_id = s.id
+		           ORDER BY m.time_created DESC LIMIT 1
+		       ), 0),
+		       COALESCE((
+		           SELECT json_extract(m.data, '$.error.name')
+		           FROM message m WHERE m.session_id = s.id
+		           ORDER BY m.time_created DESC LIMIT 1
+		       ), ''),
+		       COALESCE((
+		           SELECT json_extract(m.data, '$.finish')
+		           FROM message m
+		           WHERE m.session_id = s.id
+		             AND json_extract(m.data, '$.role') = 'assistant'
+		             AND COALESCE(json_extract(m.data, '$.time.completed'), 0) != 0
+		           ORDER BY m.time_created DESC LIMIT 1
+		       ), ''),
+		       COALESCE((
+		           SELECT json_extract(p.data, '$.type')
+		           FROM part p
+		           WHERE p.message_id = (
+		               SELECT m.id
+		               FROM message m WHERE m.session_id = s.id
+		               ORDER BY m.time_created DESC LIMIT 1
+		           )
+		           ORDER BY p.time_created DESC LIMIT 1
+		       ), ''),
+		       COALESCE((
+		           SELECT json_extract(p.data, '$.state.status')
+		           FROM part p
+		           WHERE p.message_id = (
+		               SELECT m.id
+		               FROM message m WHERE m.session_id = s.id
+		               ORDER BY m.time_created DESC LIMIT 1
+		           )
+		           ORDER BY p.time_created DESC LIMIT 1
 		       ), '')
 		FROM session s
 		ORDER BY s.time_updated DESC
@@ -119,22 +167,33 @@ func loadFromDB(path string) []session.Session {
 	for rows.Next() {
 		var (
 			id, parentID, slug, dir, title, version, modelID string
+			latestRole, latestFinish, latestError            string
+			lastCompletedFinish                              string
+			latestPartType, latestPartStatus                 string
 			additions, deletions, files                      int
-			created, updated                                 int64
+			created, updated, latestCompleted                int64
 		)
 		if err := rows.Scan(
 			&id, &parentID, &slug, &dir, &title, &version,
 			&additions, &deletions, &files,
 			&created, &updated, &modelID,
+			&latestRole, &latestFinish, &latestCompleted, &latestError, &lastCompletedFinish,
+			&latestPartType, &latestPartStatus,
 		); err != nil {
 			continue
 		}
 		startedAt := time.UnixMilli(created)
 		endedAt := time.UnixMilli(updated)
-		status := "completed"
-		if time.Since(endedAt) < 5*time.Minute {
-			status = "active"
-		}
+		status, currentState := openCodeStatus(
+			endedAt,
+			latestRole,
+			latestFinish,
+			latestCompleted,
+			latestError,
+			lastCompletedFinish,
+			latestPartType,
+			latestPartStatus,
+		)
 
 		model := modelID
 		if model == "" {
@@ -144,25 +203,103 @@ func loadFromDB(path string) []session.Session {
 		meta := map[string]string{
 			"app_version": version,
 		}
+		if currentState != "" {
+			meta["current_state_source"] = openCodeStatusSource(
+				latestRole,
+				latestFinish,
+				latestCompleted,
+				latestError,
+				lastCompletedFinish,
+				latestPartType,
+				latestPartStatus,
+			)
+		}
 		if additions+deletions > 0 {
 			meta["changes"] = fmt.Sprintf("+%d -%d in %d files", additions, deletions, files)
 		}
 
 		sessions = append(sessions, session.Session{
-			ID:        id,
-			ParentID:  parentID,
-			Slug:      slug,
-			Tool:      "opencode",
-			Project:   dir,
-			Repo:      dir,
-			Status:    status,
-			StartedAt: startedAt,
-			EndedAt:   endedAt,
-			Model:     model,
-			Summary:   title,
-			Tags:      []string{"opencode"},
-			Meta:      meta,
+			ID:           id,
+			ParentID:     parentID,
+			Slug:         slug,
+			Tool:         "opencode",
+			Project:      dir,
+			Repo:         dir,
+			Status:       status,
+			CurrentState: currentState,
+			StartedAt:    startedAt,
+			EndedAt:      endedAt,
+			Model:        model,
+			Summary:      title,
+			Tags:         []string{"opencode"},
+			Meta:         meta,
 		})
 	}
 	return sessions
+}
+
+func openCodeStatus(
+	endedAt time.Time,
+	latestRole, latestFinish string,
+	latestCompleted int64,
+	latestError string,
+	lastCompletedFinish string,
+	latestPartType, latestPartStatus string,
+) (string, string) {
+	if latestError == "MessageAbortedError" {
+		return "aborted", "aborted"
+	}
+	if latestRole == "assistant" && latestCompleted == 0 {
+		if latestPartType == "tool" && latestPartStatus == "running" {
+			return "active", "tool call"
+		}
+		switch lastCompletedFinish {
+		case "tool-calls":
+			return "active", "tool call"
+		case "stop":
+			return "active", "waiting"
+		}
+		return "active", "running"
+	}
+
+	switch latestFinish {
+	case "tool-calls":
+		return "active", "tool call"
+	case "stop":
+		return "active", "waiting"
+	}
+
+	if time.Since(endedAt) < 5*time.Minute {
+		return "active", "running"
+	}
+	return "completed", "done"
+}
+
+func openCodeStatusSource(
+	latestRole, latestFinish string,
+	latestCompleted int64,
+	latestError string,
+	lastCompletedFinish string,
+	latestPartType, latestPartStatus string,
+) string {
+	if latestError == "MessageAbortedError" {
+		return "message.error.name=MessageAbortedError"
+	}
+	if latestRole == "assistant" && latestCompleted == 0 {
+		if latestPartType == "tool" && latestPartStatus == "running" {
+			return "part.type=tool + part.state.status=running"
+		}
+		switch lastCompletedFinish {
+		case "tool-calls":
+			return "message.pending + previous finish=tool-calls"
+		case "stop":
+			return "message.pending + previous finish=stop"
+		default:
+			return "message.pending"
+		}
+	}
+	if latestFinish != "" {
+		return fmt.Sprintf("message.finish=%s", latestFinish)
+	}
+	return "session.time_updated heuristic"
 }

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"slices"
 	"strings"
 
 	"charm.land/bubbles/v2/table"
@@ -31,7 +32,7 @@ func (m *Model) resizeDetailTable(filtered []session.Session) {
 	detailW := m.width - m.width*70/100
 	innerW := max(10, detailW-2) // subtract pane border
 	_, detailH, _ := detailPaneSectionHeights(m.height)
-	keyW := 14
+	keyW := 26
 	valW := max(10, innerW-keyW-4) // subtract cell padding (1 each side × 2 cols)
 	m.detailTable.SetColumns([]table.Column{
 		{Title: "", Width: keyW},
@@ -101,7 +102,7 @@ func (m Model) detailItems(s session.Session) []detailItem {
 	items := []detailItem{
 		{theme.Tool + " Tool", s.Tool},
 		{theme.Project + " Project", uiutil.CleanProjectName(s.Project)},
-		{theme.Active + " Status", s.Status},
+		{theme.Active + " Status", uiutil.SessionStatusLabel(s)},
 		{theme.Model + " Model", uiutil.ValueOrUnknown(s.Model)},
 	}
 
@@ -165,9 +166,15 @@ func (m Model) detailItems(s session.Session) []detailItem {
 	// Metadata
 	skip := map[string]bool{"model": true, "branch": true, "version": true}
 	var metaItems []detailItem
-	for k, v := range s.Meta {
+	metaKeys := make([]string, 0, len(s.Meta))
+	for k := range s.Meta {
+		metaKeys = append(metaKeys, k)
+	}
+	slices.Sort(metaKeys)
+	for _, k := range metaKeys {
+		v := s.Meta[k]
 		if !skip[k] {
-			metaItems = append(metaItems, detailItem{uiutil.HumanizeKey(k), v})
+			metaItems = append(metaItems, detailItem{"  " + uiutil.HumanizeKey(k), v})
 		}
 	}
 	if len(metaItems) > 0 {
