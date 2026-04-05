@@ -197,6 +197,7 @@ func (m Model) searchQuery() string { return m.searchInput.Value() }
 var maxSessionAge time.Duration
 
 var agePresets = []time.Duration{
+	15 * time.Minute,
 	time.Hour,
 	24 * time.Hour,
 	3 * 24 * time.Hour,
@@ -206,6 +207,9 @@ var agePresets = []time.Duration{
 }
 
 func ageLabel(d time.Duration) string {
+	if d < time.Hour {
+		return fmt.Sprintf("%dm", int(d.Minutes()))
+	}
 	hours := int(d.Hours())
 	if hours < 24 {
 		return fmt.Sprintf("%dh", hours)

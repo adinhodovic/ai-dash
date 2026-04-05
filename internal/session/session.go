@@ -3,6 +3,7 @@ package session
 import (
 	"cmp"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type Session struct {
 	Repo           string            `json:"repo"`
 	Branch         string            `json:"branch"`
 	Status         string            `json:"status"`
+	CurrentState   string            `json:"current_state,omitempty"`
 	StartedAt      time.Time         `json:"started_at"`
 	EndedAt        time.Time         `json:"ended_at"`
 	Model          string            `json:"model"`
@@ -29,11 +31,32 @@ type Session struct {
 
 type SortField string
 
+type Status string
+
+const (
+	StatusActive    Status = "active"
+	StatusCompleted Status = "completed"
+	StatusAborted   Status = "aborted"
+)
+
+type CurrentState string
+
+const (
+	StateRunning   CurrentState = "running"
+	StateWaiting   CurrentState = "waiting"
+	StateToolCall  CurrentState = "tool call"
+	StateMaxTokens CurrentState = "max tokens"
+	StateDone      CurrentState = "done"
+	StateAborted   CurrentState = "aborted"
+	StateUnknown   CurrentState = "unknown"
+)
+
 const (
 	SortStarted SortField = "started"
 	SortUpdated SortField = "updated"
 	SortProject SortField = "project"
 	SortTool    SortField = "tool"
+	SortStatus  SortField = "status"
 	SortSummary SortField = "summary"
 )
 
@@ -65,6 +88,11 @@ func compareSessions(a, b Session, field SortField) int {
 			return c
 		}
 		return a.StartedAt.Compare(b.StartedAt)
+	case SortStatus:
+		if c := cmp.Compare(StatusLabel(a), StatusLabel(b)); c != 0 {
+			return c
+		}
+		return a.StartedAt.Compare(b.StartedAt)
 	case SortSummary:
 		if c := cmp.Compare(a.Summary, b.Summary); c != 0 {
 			return c
@@ -76,8 +104,27 @@ func compareSessions(a, b Session, field SortField) int {
 }
 
 func EndedLabel(end time.Time, status string) string {
-	if status == "active" || end.IsZero() {
+	if status == string(StatusActive) || end.IsZero() {
 		return "still running"
 	}
 	return end.Format(time.RFC1123)
+}
+
+func StatusLabel(s Session) string {
+	if currentState := strings.TrimSpace(s.CurrentState); currentState != "" {
+		return currentState
+	}
+
+	switch strings.TrimSpace(s.Status) {
+	case string(StatusActive):
+		return string(StateRunning)
+	case string(StatusCompleted):
+		return string(StateDone)
+	case string(StatusAborted):
+		return string(StateAborted)
+	case "":
+		return string(StateUnknown)
+	default:
+		return strings.TrimSpace(s.Status)
+	}
 }

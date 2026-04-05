@@ -4,6 +4,8 @@ import (
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/table"
 	"charm.land/lipgloss/v2"
+
+	"github.com/adin/ai-dash/internal/session"
 )
 
 const (
@@ -31,6 +33,10 @@ const (
 	ColorStrong    = Nord6
 	ColorHighlight = Nord8
 	ColorError     = Nord11
+	ColorWarn      = Nord13
+	ColorSuccess   = Nord14
+	ColorInfo      = Nord8
+	ColorAccent    = Nord15
 	ColorMatchFg   = Nord0
 	ColorMatchBg   = Nord13
 	ColorHeaderFg  = Nord6
@@ -127,4 +133,21 @@ func ApplyHelpStyles(h *help.Model) {
 	h.Styles.FullDesc = h.Styles.ShortDesc
 	h.Styles.ShortSeparator = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorHelpSep))
 	h.Styles.FullSeparator = h.Styles.ShortSeparator
+}
+
+func StatusStyle(status string) lipgloss.Style {
+	switch status {
+	case string(session.StateAborted):
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(ColorError)).Bold(true)
+	case string(session.StateToolCall):
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(ColorAccent)).Bold(true)
+	case string(session.StateWaiting):
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(ColorWarn)).Bold(true)
+	case string(session.StateRunning):
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(ColorInfo)).Bold(true)
+	case string(session.StateDone):
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(ColorSuccess)).Bold(true)
+	default:
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(ColorText))
+	}
 }

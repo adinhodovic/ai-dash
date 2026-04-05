@@ -29,7 +29,7 @@ func Init() {
 	viper.AddConfigPath(".")
 
 	viper.SetDefault("terminal", "")
-	viper.SetDefault("poll_interval", "10s")
+	viper.SetDefault("poll_interval", "5s")
 	viper.SetDefault("default_age_filter", "14d")
 	viper.SetDefault("default_tool", "")
 	viper.SetDefault("auto_select_tool", false)
@@ -56,7 +56,7 @@ func (c Config) PollDuration() time.Duration {
 	if d, err := time.ParseDuration(c.PollInterval); err == nil && d >= time.Second {
 		return d
 	}
-	return 10 * time.Second
+	return 5 * time.Second
 }
 
 func (c Config) DefaultAgeFilterDuration() time.Duration {
@@ -127,8 +127,8 @@ func GenerateSchema() string {
 			},
 			"poll_interval": map[string]any{
 				"type":        "string",
-				"description": "How often to reload sessions (Go duration, e.g. 10s, 30s, 1m)",
-				"default":     "10s",
+				"description": "How often to reload sessions (Go duration, e.g. 5s, 30s, 1m)",
+				"default":     "5s",
 			},
 			"default_age_filter": map[string]any{
 				"type":        "string",
@@ -166,9 +166,9 @@ func GenerateSchema() string {
 			},
 			"age_presets": map[string]any{
 				"type":        "array",
-				"description": "Date range options cycled with D key (e.g. 1h, 1d, 3d, 7d, 14d, 30d)",
+				"description": "Date range options cycled with D key (e.g. 15m, 1h, 1d, 3d, 7d, 14d, 30d)",
 				"items":       map[string]any{"type": "string"},
-				"default":     []string{"1h", "1d", "3d", "7d", "14d", "30d"},
+				"default":     []string{"15m", "1h", "1d", "3d", "7d", "14d", "30d"},
 			},
 		},
 		"additionalProperties": false,
