@@ -3,6 +3,7 @@ package session
 import (
 	"cmp"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type Session struct {
 	Repo           string            `json:"repo"`
 	Branch         string            `json:"branch"`
 	Status         string            `json:"status"`
+	CurrentState   string            `json:"current_state,omitempty"`
 	StartedAt      time.Time         `json:"started_at"`
 	EndedAt        time.Time         `json:"ended_at"`
 	Model          string            `json:"model"`
@@ -34,6 +36,7 @@ const (
 	SortUpdated SortField = "updated"
 	SortProject SortField = "project"
 	SortTool    SortField = "tool"
+	SortStatus  SortField = "status"
 	SortSummary SortField = "summary"
 )
 
@@ -65,6 +68,11 @@ func compareSessions(a, b Session, field SortField) int {
 			return c
 		}
 		return a.StartedAt.Compare(b.StartedAt)
+	case SortStatus:
+		if c := cmp.Compare(StatusLabel(a), StatusLabel(b)); c != 0 {
+			return c
+		}
+		return a.StartedAt.Compare(b.StartedAt)
 	case SortSummary:
 		if c := cmp.Compare(a.Summary, b.Summary); c != 0 {
 			return c
@@ -80,4 +88,35 @@ func EndedLabel(end time.Time, status string) string {
 		return "still running"
 	}
 	return end.Format(time.RFC1123)
+}
+
+func StatusLabel(s Session) string {
+	if currentState := strings.TrimSpace(s.CurrentState); currentState != "" {
+		return currentState
+	}
+
+	if s.Status == "active" {
+		switch strings.TrimSpace(s.Meta["stop_reason"]) {
+		case "end_turn", "pause_turn":
+			return "waiting"
+		case "tool_use":
+			return "tool call"
+		case "max_tokens":
+			return "max tokens"
+		default:
+			return "running"
+		}
+	}
+
+	switch s.Status {
+	case "completed":
+		return "done"
+	case "aborted":
+		return "aborted"
+	default:
+		if status := strings.TrimSpace(s.Status); status != "" {
+			return status
+		}
+		return "unknown"
+	}
 }

@@ -54,6 +54,12 @@ func TestParseCodexSessionFromFixture(t *testing.T) {
 	if parsed.Status != "aborted" {
 		t.Fatalf("unexpected status: %#v", parsed)
 	}
+	if parsed.CurrentState != "aborted" {
+		t.Fatalf("unexpected current state: %#v", parsed)
+	}
+	if parsed.Meta["current_state_source"] != "event.turn_aborted" {
+		t.Fatalf("unexpected current_state_source: %#v", parsed)
+	}
 	if parsed.Summary != "Ship the rollout cleanup change and exit." {
 		t.Fatalf("unexpected summary: %#v", parsed)
 	}
@@ -83,5 +89,27 @@ func TestDiscoverReadsSessionsDirectory(t *testing.T) {
 	}
 	if len(result.Sessions) == 0 {
 		t.Fatalf("expected discovered codex sessions")
+	}
+}
+
+func TestParseCodexSessionKeepsActiveStatus(t *testing.T) {
+	parsed, ok := parseCodexSession(filepath.Join("testdata", "active_session.jsonl"))
+	if !ok {
+		t.Fatal("expected session to parse")
+	}
+	if parsed.Status != "active" {
+		t.Fatalf("status = %q, want active", parsed.Status)
+	}
+	if parsed.CurrentState != "running" {
+		t.Fatalf("current state = %q, want running", parsed.CurrentState)
+	}
+	if parsed.Meta["current_state_source"] != "event.task_started" {
+		t.Fatalf("current_state_source = %q, want event.task_started", parsed.Meta["current_state_source"])
+	}
+	if parsed.EndedAt.IsZero() {
+		t.Fatal("endedAt should still reflect latest event timestamp")
+	}
+	if parsed.StartedAt.After(parsed.EndedAt) {
+		t.Fatalf("startedAt %v after endedAt %v", parsed.StartedAt, parsed.EndedAt)
 	}
 }

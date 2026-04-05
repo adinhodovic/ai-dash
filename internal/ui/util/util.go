@@ -120,6 +120,10 @@ func DurationLabel(s session.Session) string {
 	return fmt.Sprintf("%dh %dm", int(d.Hours()), int(d.Minutes())%60)
 }
 
+func SessionStatusLabel(s session.Session) string {
+	return session.StatusLabel(s)
+}
+
 func FormatTokens(in, out int) string {
 	if in == 0 && out == 0 {
 		return "n/a"

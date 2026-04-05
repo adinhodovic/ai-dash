@@ -5,6 +5,7 @@ import (
 
 	"github.com/adin/ai-dash/internal/session"
 	uilayout "github.com/adin/ai-dash/internal/ui/layout"
+	"github.com/adin/ai-dash/internal/ui/theme"
 	uiutil "github.com/adin/ai-dash/internal/ui/util"
 )
 
@@ -15,12 +16,13 @@ func (m *Model) resizeTable(filtered []session.Session) {
 	}
 	// Subtract pane border (2) for inner width; header join (1) for height.
 	tableW := max(40, width-2)
-	summaryW := max(16, tableW-60)
+	summaryW := max(16, tableW-63)
 	height := max(2, uilayout.PaneBodyHeight(uilayout.BottomPaneHeight(m.height))-1)
 	m.sessionTable.SetColumns([]table.Column{
 		{Title: m.sortHeader("Last Active", session.SortUpdated), Width: 14},
-		{Title: m.sortHeader("Tool", session.SortTool), Width: 9},
-		{Title: m.sortHeader("Project", session.SortProject), Width: 28},
+		{Title: m.sortHeader("Tool", session.SortTool), Width: 8},
+		{Title: m.sortHeader("Status", session.SortStatus), Width: 11},
+		{Title: m.sortHeader("Project", session.SortProject), Width: 20},
 		{Title: m.sortHeader("Summary", session.SortSummary), Width: summaryW},
 	})
 	m.sessionTable.SetWidth(tableW)
@@ -30,12 +32,14 @@ func (m *Model) resizeTable(filtered []session.Session) {
 
 func (m *Model) syncTable(filtered []session.Session) {
 	rows := make([]table.Row, 0, len(filtered))
-	summaryWidth := max(16, m.sessionTable.Width()-60)
+	summaryWidth := max(16, m.sessionTable.Width()-63)
 	for _, s := range filtered {
+		status := uiutil.SessionStatusLabel(s)
 		rows = append(rows, table.Row{
 			uiutil.TimeAgo(uiutil.LastActive(s)),
 			uiutil.Capitalize(s.Tool),
-			uiutil.TruncateForCell(uiutil.CleanProjectName(s.Project), 28),
+			theme.StatusStyle(status).Render(uiutil.TruncateForCell(status, 11)),
+			uiutil.TruncateForCell(uiutil.CleanProjectName(s.Project), 20),
 			uiutil.TruncateForCell(uiutil.CleanSummary(s.Summary), summaryWidth),
 		})
 	}

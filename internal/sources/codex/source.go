@@ -142,6 +142,7 @@ func parseCodexSession(path string) (session.Session, bool) {
 		status      = "completed"
 		seenMeta    bool
 		seenContext bool
+		lastEvent   string
 	)
 
 	scanner := bufio.NewScanner(file)
@@ -191,6 +192,7 @@ func parseCodexSession(path string) (session.Session, bool) {
 		case "event_msg":
 			var payload eventPayload
 			if json.Unmarshal(line.Payload, &payload) == nil {
+				lastEvent = payload.Type
 				switch payload.Type {
 				case "turn_aborted":
 					status = "aborted"
@@ -213,10 +215,6 @@ func parseCodexSession(path string) (session.Session, bool) {
 	if !seenMeta && !seenContext {
 		return session.Session{}, false
 	}
-	if status == "active" && !endedAt.IsZero() {
-		status = "completed"
-	}
-
 	cwd := firstNonEmpty(ctx.Cwd, meta.Cwd)
 	model := firstNonEmpty(ctx.Model, meta.ModelProvider)
 	project := inferProject(cwd, path)
@@ -236,6 +234,8 @@ func parseCodexSession(path string) (session.Session, bool) {
 	if ctx.Effort != "" {
 		meta2["effort"] = ctx.Effort
 	}
+	meta2["current_state_source"] = codexCurrentStateSource(status, lastEvent)
+	currentState := session.StatusLabel(session.Session{Status: status, Meta: meta2})
 
 	return session.Session{
 		ID:             firstNonEmpty(meta.ID, sessionIDFromPath(path)),
@@ -244,6 +244,7 @@ func parseCodexSession(path string) (session.Session, bool) {
 		Project:        project,
 		Repo:           cwd,
 		Status:         status,
+		CurrentState:   currentState,
 		StartedAt:      startedAt,
 		EndedAt:        endedAt,
 		Model:          model,
@@ -252,6 +253,16 @@ func parseCodexSession(path string) (session.Session, bool) {
 		Tags:           tags,
 		Meta:           meta2,
 	}, true
+}
+
+func codexCurrentStateSource(status, lastEvent string) string {
+	if lastEvent != "" {
+		return "event." + lastEvent
+	}
+	if status == "completed" {
+		return "transcript complete"
+	}
+	return "transcript heuristic"
 }
 
 func parseTimestamp(value string) (time.Time, bool) {

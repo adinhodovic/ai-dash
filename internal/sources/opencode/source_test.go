@@ -57,6 +57,18 @@ func createTestDB(t *testing.T) string {
 		t.Fatalf("create message table: %v", err)
 	}
 
+	_, err = db.Exec(`CREATE TABLE part (
+		id TEXT PRIMARY KEY,
+		message_id TEXT NOT NULL,
+		session_id TEXT NOT NULL,
+		time_created INTEGER NOT NULL,
+		time_updated INTEGER NOT NULL,
+		data TEXT NOT NULL
+	)`)
+	if err != nil {
+		t.Fatalf("create part table: %v", err)
+	}
+
 	now := time.Now().UnixMilli()
 	_, err = db.Exec(
 		`INSERT INTO session (id, project_id, slug, directory, title, version, time_created, time_updated)
@@ -86,6 +98,19 @@ func createTestDB(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("insert message: %v", err)
 	}
+
+	_, err = db.Exec(
+		`INSERT INTO message (id, session_id, time_created, time_updated, data)
+		VALUES (?, ?, ?, ?, ?)`,
+		"msg_2",
+		"ses_test123",
+		now-1000,
+		now,
+		`{"role":"assistant","finish":"stop","time":{"created":1,"completed":2}}`,
+	)
+	if err != nil {
+		t.Fatalf("insert assistant message: %v", err)
+	}
 	return dbFile
 }
 
@@ -113,6 +138,60 @@ func TestLoadFromDB(t *testing.T) {
 	}
 	if s.StartedAt.IsZero() || s.EndedAt.IsZero() {
 		t.Error("timestamps should be set")
+	}
+	if s.Status != "active" {
+		t.Errorf("status = %q, want active", s.Status)
+	}
+	if s.CurrentState != "waiting" {
+		t.Errorf("CurrentState = %q, want waiting", s.CurrentState)
+	}
+}
+
+func TestOpenCodeStatus(t *testing.T) {
+	tests := []struct {
+		name            string
+		latestRole      string
+		latestFinish    string
+		latestCompleted int64
+		latestError     string
+		lastFinish      string
+		partType        string
+		partStatus      string
+		wantStatus      string
+		wantState       string
+	}{
+		{"aborted", "assistant", "", 1, "MessageAbortedError", "", "", "", "aborted", "aborted"},
+		{"running", "assistant", "", 0, "", "", "", "", "active", "running"},
+		{"tool call from part", "assistant", "", 0, "", "", "tool", "running", "active", "tool call"},
+		{"tool call", "assistant", "tool-calls", 1, "", "", "", "", "active", "tool call"},
+		{"tool call placeholder", "assistant", "", 0, "", "tool-calls", "", "", "active", "tool call"},
+		{"waiting placeholder", "assistant", "", 0, "", "stop", "", "", "active", "waiting"},
+		{"waiting", "assistant", "stop", 1, "", "", "", "", "active", "waiting"},
+		{"done fallback", "assistant", "", 1, "", "", "", "", "completed", "done"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotStatus, gotState := openCodeStatus(
+				time.Now().Add(-10*time.Minute),
+				tt.latestRole,
+				tt.latestFinish,
+				tt.latestCompleted,
+				tt.latestError,
+				tt.lastFinish,
+				tt.partType,
+				tt.partStatus,
+			)
+			if gotStatus != tt.wantStatus || gotState != tt.wantState {
+				t.Fatalf(
+					"openCodeStatus() = (%q, %q), want (%q, %q)",
+					gotStatus,
+					gotState,
+					tt.wantStatus,
+					tt.wantState,
+				)
+			}
+		})
 	}
 }
 
