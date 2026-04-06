@@ -88,6 +88,15 @@ func TestParseClaudeTranscriptFromFixture(t *testing.T) {
 	if s.Status != "completed" {
 		t.Errorf("status = %q, want completed (last stop_reason=end_turn)", s.Status)
 	}
+	if s.CurrentState != "done" {
+		t.Errorf("current state = %q, want done", s.CurrentState)
+	}
+	if s.Meta["current_state_source"] != "stop_reason=end_turn" {
+		t.Errorf(
+			"current_state_source = %q, want stop_reason=end_turn",
+			s.Meta["current_state_source"],
+		)
+	}
 	if s.TokensIn == 0 {
 		t.Error("expected non-zero TokensIn")
 	}
@@ -101,6 +110,49 @@ func TestParseClaudeTranscriptFromFixture(t *testing.T) {
 	}
 	if s.TokensOut != expectedOut {
 		t.Errorf("TokensOut = %d, want %d", s.TokensOut, expectedOut)
+	}
+}
+
+func TestParseClaudeTranscriptMarksToolUseAsToolCall(t *testing.T) {
+	s := parseClaudeTranscript(shared.TranscriptFile{
+		Tool:    "claude",
+		Path:    filepath.Join("testdata", "tool_use_session.jsonl"),
+		ModTime: time.Now(),
+	})
+	if s.Status != "active" {
+		t.Fatalf("status = %q, want active", s.Status)
+	}
+	if s.CurrentState != "tool call" {
+		t.Fatalf("current state = %q, want tool call", s.CurrentState)
+	}
+	if s.Meta["current_state_source"] != "stop_reason=tool_use" {
+		t.Fatalf(
+			"current_state_source = %q, want stop_reason=tool_use",
+			s.Meta["current_state_source"],
+		)
+	}
+}
+
+func TestParseClaudeTranscriptUsesModtimeHeuristicOnlyWithoutStopReason(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "session.jsonl")
+	content := []byte("{" +
+		"\"type\":\"user\",\"timestamp\":\"2026-04-01T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"check status\"},\"cwd\":\"/tmp/demo\",\"sessionId\":\"sess-1\"}\n" +
+		"{\"type\":\"assistant\",\"timestamp\":\"2026-04-01T00:00:01Z\",\"message\":{\"role\":\"assistant\",\"model\":\"claude-sonnet-4-6\"},\"cwd\":\"/tmp/demo\",\"sessionId\":\"sess-1\"}\n")
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	s := parseClaudeTranscript(shared.TranscriptFile{
+		Tool:    "claude",
+		Path:    path,
+		ModTime: time.Now(),
+	})
+	if s.Status != "active" || s.CurrentState != "running" {
+		t.Fatalf("got (%q, %q), want (active, running)", s.Status, s.CurrentState)
+	}
+	if s.Meta["current_state_source"] != "transcript.modtime heuristic" {
+		t.Fatalf("current_state_source = %q", s.Meta["current_state_source"])
 	}
 }
 

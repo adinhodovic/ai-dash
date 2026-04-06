@@ -5,6 +5,7 @@
   "properties": {
     "age_presets": {
       "default": [
+        "15m",
         "1h",
         "1d",
         "3d",
@@ -12,7 +13,7 @@
         "14d",
         "30d"
       ],
-      "description": "Date range options cycled with D key (e.g. 1h, 1d, 3d, 7d, 14d, 30d)",
+      "description": "Date range options cycled with D key (e.g. 15m, 1h, 1d, 3d, 7d, 14d, 30d)",
       "items": {
         "type": "string"
       },
@@ -53,8 +54,8 @@
       "type": "string"
     },
     "poll_interval": {
-      "default": "10s",
-      "description": "How often to reload sessions (Go duration, e.g. 10s, 30s, 1m)",
+      "default": "5s",
+      "description": "How often to reload sessions (Go duration, e.g. 5s, 30s, 1m)",
       "type": "string"
     },
     "terminal": {

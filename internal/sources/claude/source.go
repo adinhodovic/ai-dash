@@ -181,7 +181,7 @@ func parseClaudeTranscript(transcript shared.TranscriptFile) session.Session {
 		Slug:           sessionID,
 		Tool:           "claude",
 		Project:        project,
-		Status:         "completed",
+		Status:         string(session.StatusCompleted),
 		StartedAt:      transcript.ModTime,
 		EndedAt:        transcript.ModTime,
 		TranscriptPath: transcript.Path,
@@ -277,13 +277,6 @@ func parseClaudeTranscript(transcript shared.TranscriptFile) session.Session {
 		s.Summary = "Imported session"
 	}
 
-	// Active if last assistant response didn't finish or file modified recently.
-	if lastStopReason != "" && lastStopReason != "end_turn" {
-		s.Status = "active"
-	} else if time.Since(s.EndedAt) < 5*time.Minute {
-		s.Status = "active"
-	}
-
 	s.Meta = map[string]string{}
 	if s.Model != "" {
 		s.Meta["model"] = s.Model
@@ -295,7 +288,43 @@ func parseClaudeTranscript(transcript shared.TranscriptFile) session.Session {
 		s.Meta["branch"] = s.Branch
 	}
 
+	s.Status, s.CurrentState = claudeCurrentState(lastStopReason, transcript.ModTime)
+	s.Meta["current_state_source"] = claudeCurrentStateSource(lastStopReason, transcript.ModTime)
+	s.CurrentState = session.StatusLabel(s)
+
 	return s
+}
+
+func claudeCurrentState(lastStopReason string, modTime time.Time) (string, string) {
+	if lastStopReason != "" {
+		if lastStopReason == "end_turn" {
+			return string(session.StatusCompleted), string(session.StateDone)
+		}
+		switch lastStopReason {
+		case "pause_turn":
+			return string(session.StatusActive), string(session.StateWaiting)
+		case "tool_use":
+			return string(session.StatusActive), string(session.StateToolCall)
+		case "max_tokens":
+			return string(session.StatusActive), string(session.StateMaxTokens)
+		default:
+			return string(session.StatusActive), string(session.StateRunning)
+		}
+	}
+	if !modTime.IsZero() && time.Since(modTime) < 5*time.Minute {
+		return string(session.StatusActive), string(session.StateRunning)
+	}
+	return string(session.StatusCompleted), string(session.StateDone)
+}
+
+func claudeCurrentStateSource(lastStopReason string, modTime time.Time) string {
+	if lastStopReason != "" {
+		return "stop_reason=" + lastStopReason
+	}
+	if !modTime.IsZero() && time.Since(modTime) < 5*time.Minute {
+		return "transcript.modtime heuristic"
+	}
+	return "transcript complete"
 }
 
 func extractTextContent(content any) string {
