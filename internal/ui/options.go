@@ -5,7 +5,7 @@ import (
 
 	"github.com/samber/lo"
 
-	"github.com/adin/ai-dash/internal/session"
+	"github.com/adinhodovic/ai-dash/internal/session"
 )
 
 func toolOptions(sessions []session.Session) []string {

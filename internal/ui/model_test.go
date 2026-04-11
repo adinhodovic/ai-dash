@@ -6,8 +6,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/adin/ai-dash/internal/session"
-	"github.com/adin/ai-dash/internal/sources/shared"
+	"github.com/adinhodovic/ai-dash/internal/session"
+	"github.com/adinhodovic/ai-dash/internal/sources/shared"
 )
 
 func testSessions() []session.Session {

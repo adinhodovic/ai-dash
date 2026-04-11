@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adin/ai-dash/internal/session"
+	"github.com/adinhodovic/ai-dash/internal/session"
 )
 
 type Source struct {

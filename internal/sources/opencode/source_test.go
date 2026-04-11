@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/adin/ai-dash/internal/config"
+	"github.com/adinhodovic/ai-dash/internal/config"
 	_ "modernc.org/sqlite"
 )
 

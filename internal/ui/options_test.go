@@ -3,7 +3,7 @@ package ui
 import (
 	"testing"
 
-	"github.com/adin/ai-dash/internal/session"
+	"github.com/adinhodovic/ai-dash/internal/session"
 )
 
 func TestNextPrevSortField(t *testing.T) {

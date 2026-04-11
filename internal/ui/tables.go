@@ -2,7 +2,7 @@ package ui
 
 import (
 	"charm.land/bubbles/v2/table"
-	"github.com/adin/ai-dash/internal/ui/theme"
+	"github.com/adinhodovic/ai-dash/internal/ui/theme"
 )
 
 type detailItem struct {

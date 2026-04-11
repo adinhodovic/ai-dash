@@ -9,7 +9,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 
-	"github.com/adin/ai-dash/internal/session"
+	"github.com/adinhodovic/ai-dash/internal/session"
 )
 
 func HumanizeKey(s string) string {

@@ -3,12 +3,12 @@ package sources
 import (
 	"fmt"
 
-	"github.com/adin/ai-dash/internal/config"
-	"github.com/adin/ai-dash/internal/session"
-	"github.com/adin/ai-dash/internal/sources/claude"
-	"github.com/adin/ai-dash/internal/sources/codex"
-	"github.com/adin/ai-dash/internal/sources/opencode"
-	"github.com/adin/ai-dash/internal/sources/shared"
+	"github.com/adinhodovic/ai-dash/internal/config"
+	"github.com/adinhodovic/ai-dash/internal/session"
+	"github.com/adinhodovic/ai-dash/internal/sources/claude"
+	"github.com/adinhodovic/ai-dash/internal/sources/codex"
+	"github.com/adinhodovic/ai-dash/internal/sources/opencode"
+	"github.com/adinhodovic/ai-dash/internal/sources/shared"
 )
 
 type (

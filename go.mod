@@ -1,4 +1,4 @@
-module github.com/adin/ai-dash
+module github.com/adinhodovic/ai-dash
 
 go 1.25.0
 

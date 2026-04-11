@@ -7,7 +7,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/adin/ai-dash/internal/ui/theme"
+	"github.com/adinhodovic/ai-dash/internal/ui/theme"
 )
 
 func EmptySessions(styles theme.Styles, width, contentH int, message string) string {

@@ -5,7 +5,7 @@ import (
 	"charm.land/bubbles/v2/table"
 	"charm.land/lipgloss/v2"
 
-	"github.com/adin/ai-dash/internal/session"
+	"github.com/adinhodovic/ai-dash/internal/session"
 )
 
 const (

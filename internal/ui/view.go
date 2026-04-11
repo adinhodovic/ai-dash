@@ -7,12 +7,12 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
-	"github.com/adin/ai-dash/internal/session"
-	uilayout "github.com/adin/ai-dash/internal/ui/layout"
-	"github.com/adin/ai-dash/internal/ui/overlay"
-	"github.com/adin/ai-dash/internal/ui/theme"
-	uiutil "github.com/adin/ai-dash/internal/ui/util"
-	uiviews "github.com/adin/ai-dash/internal/ui/views"
+	"github.com/adinhodovic/ai-dash/internal/session"
+	uilayout "github.com/adinhodovic/ai-dash/internal/ui/layout"
+	"github.com/adinhodovic/ai-dash/internal/ui/overlay"
+	"github.com/adinhodovic/ai-dash/internal/ui/theme"
+	uiutil "github.com/adinhodovic/ai-dash/internal/ui/util"
+	uiviews "github.com/adinhodovic/ai-dash/internal/ui/views"
 )
 
 func (m Model) View() tea.View {
