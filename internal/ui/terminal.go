@@ -7,10 +7,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/adin/ai-dash/internal/config"
-	"github.com/adin/ai-dash/internal/session"
-	"github.com/adin/ai-dash/internal/sources"
-	uiutil "github.com/adin/ai-dash/internal/ui/util"
+	"github.com/adinhodovic/ai-dash/internal/config"
+	"github.com/adinhodovic/ai-dash/internal/session"
+	"github.com/adinhodovic/ai-dash/internal/sources"
+	uiutil "github.com/adinhodovic/ai-dash/internal/ui/util"
 )
 
 func sessionDir(s session.Session) string {

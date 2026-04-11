@@ -5,10 +5,10 @@ import (
 
 	"charm.land/bubbles/v2/table"
 
-	"github.com/adin/ai-dash/internal/session"
-	uilayout "github.com/adin/ai-dash/internal/ui/layout"
-	"github.com/adin/ai-dash/internal/ui/theme"
-	uiutil "github.com/adin/ai-dash/internal/ui/util"
+	"github.com/adinhodovic/ai-dash/internal/session"
+	uilayout "github.com/adinhodovic/ai-dash/internal/ui/layout"
+	"github.com/adinhodovic/ai-dash/internal/ui/theme"
+	uiutil "github.com/adinhodovic/ai-dash/internal/ui/util"
 )
 
 func (m *Model) resizeOverviewTable(filtered []session.Session) {

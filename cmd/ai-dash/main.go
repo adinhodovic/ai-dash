@@ -7,11 +7,11 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/spf13/cobra"
 
-	"github.com/adin/ai-dash/internal/config"
-	"github.com/adin/ai-dash/internal/session"
-	"github.com/adin/ai-dash/internal/sources"
-	"github.com/adin/ai-dash/internal/ui"
-	"github.com/adin/ai-dash/internal/ui/theme"
+	"github.com/adinhodovic/ai-dash/internal/config"
+	"github.com/adinhodovic/ai-dash/internal/session"
+	"github.com/adinhodovic/ai-dash/internal/sources"
+	"github.com/adinhodovic/ai-dash/internal/ui"
+	"github.com/adinhodovic/ai-dash/internal/ui/theme"
 )
 
 var (

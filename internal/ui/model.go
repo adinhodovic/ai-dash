@@ -12,11 +12,11 @@ import (
 
 	"github.com/sahilm/fuzzy"
 
-	"github.com/adin/ai-dash/internal/config"
-	"github.com/adin/ai-dash/internal/session"
-	"github.com/adin/ai-dash/internal/sources"
-	"github.com/adin/ai-dash/internal/ui/theme"
-	uiutil "github.com/adin/ai-dash/internal/ui/util"
+	"github.com/adinhodovic/ai-dash/internal/config"
+	"github.com/adinhodovic/ai-dash/internal/session"
+	"github.com/adinhodovic/ai-dash/internal/sources"
+	"github.com/adinhodovic/ai-dash/internal/ui/theme"
+	uiutil "github.com/adinhodovic/ai-dash/internal/ui/util"
 )
 
 const collapseThreshold = 110

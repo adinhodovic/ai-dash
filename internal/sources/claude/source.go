@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adin/ai-dash/internal/config"
-	"github.com/adin/ai-dash/internal/session"
-	"github.com/adin/ai-dash/internal/sources/shared"
+	"github.com/adinhodovic/ai-dash/internal/config"
+	"github.com/adinhodovic/ai-dash/internal/session"
+	"github.com/adinhodovic/ai-dash/internal/sources/shared"
 )
 
 type Source struct {

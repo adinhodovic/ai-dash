@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/adin/ai-dash/internal/config"
+	"github.com/adinhodovic/ai-dash/internal/config"
 )
 
 func TestDiscoverUsesEnvOverrides(t *testing.T) {

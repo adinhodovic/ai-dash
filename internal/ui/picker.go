@@ -5,8 +5,8 @@ import (
 
 	"charm.land/bubbles/v2/list"
 	"charm.land/lipgloss/v2"
-	"github.com/adin/ai-dash/internal/ui/theme"
-	uiutil "github.com/adin/ai-dash/internal/ui/util"
+	"github.com/adinhodovic/ai-dash/internal/ui/theme"
+	uiutil "github.com/adinhodovic/ai-dash/internal/ui/util"
 )
 
 type filterPicker struct {

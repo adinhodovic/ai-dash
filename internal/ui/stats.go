@@ -8,9 +8,9 @@ import (
 
 	"charm.land/lipgloss/v2"
 
-	"github.com/adin/ai-dash/internal/session"
-	"github.com/adin/ai-dash/internal/ui/theme"
-	uiutil "github.com/adin/ai-dash/internal/ui/util"
+	"github.com/adinhodovic/ai-dash/internal/session"
+	"github.com/adinhodovic/ai-dash/internal/ui/theme"
+	uiutil "github.com/adinhodovic/ai-dash/internal/ui/util"
 )
 
 func (m Model) renderOverviewStats(filtered []session.Session) string {
