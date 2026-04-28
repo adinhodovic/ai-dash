@@ -37,6 +37,26 @@ func TestTruncateForCell(t *testing.T) {
 	}
 }
 
+func TestTruncateProjectPreservesPathTail(t *testing.T) {
+	tests := []struct {
+		value string
+		width int
+		want  string
+	}{
+		{"~/oss/very-long-project-name", 18, "~/.../project-name"},
+		{"/var/tmp/very-long-project-name", 16, "/.../roject-name"},
+		{"team/very-long-project-name", 18, "team/.../ject-name"},
+		{"very-long-project-name", 10, "very-long~"},
+		{"short", 10, "short"},
+	}
+	for _, tt := range tests {
+		got := TruncateProject(tt.value, tt.width)
+		if got != tt.want {
+			t.Errorf("TruncateProject(%q, %d) = %q, want %q", tt.value, tt.width, got, tt.want)
+		}
+	}
+}
+
 func TestCleanProjectName(t *testing.T) {
 	home := homeDir
 	tests := []struct {

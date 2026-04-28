@@ -12,6 +12,8 @@ import (
 	uiutil "github.com/adinhodovic/ai-dash/internal/ui/util"
 )
 
+const relatedProjectW = 12
+
 func detailPaneSectionHeights(termHeight int) (summary, detail, related int) {
 	bodyH := uilayout.PaneBodyHeight(uilayout.BottomPaneHeight(termHeight))
 	// Layout: summaryLabel(1) + summaryText(1) + divider(1) + detailTable + divider(1) + relatedLabel(1) + relatedTable
@@ -55,7 +57,7 @@ func (m *Model) resizeRelatedTable(filtered []session.Session) {
 	_, _, relatedH := detailPaneSectionHeights(m.height)
 	m.relatedTable.SetColumns([]table.Column{
 		{Title: "Tool", Width: 7},
-		{Title: "Project", Width: 12},
+		{Title: "Project", Width: relatedProjectW},
 		{Title: "Relation", Width: 8},
 		{Title: "Summary", Width: max(8, width-35)},
 	})
@@ -84,7 +86,7 @@ func (m *Model) syncRelatedTable(filtered []session.Session) {
 			rows,
 			table.Row{
 				candidate.Tool,
-				uiutil.CleanProjectName(candidate.Project),
+				uiutil.TruncateProject(candidate.Project, relatedProjectW),
 				relation,
 				candidate.Summary,
 			},

@@ -46,7 +46,7 @@ func (m *Model) resizeOverviewTable(filtered []session.Session) {
 		}
 		rows = append(rows, table.Row{
 			uiutil.TimeAgo(ps.last),
-			uiutil.Truncate(uiutil.CleanProjectName(k), nameW),
+			uiutil.TruncateProject(k, nameW),
 			countStr,
 		})
 		m.projectPaths = append(m.projectPaths, k)
