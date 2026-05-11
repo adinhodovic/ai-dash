@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/spf13/cobra"
@@ -19,7 +20,22 @@ var (
 	aiDashVersion  = "dev"
 )
 
+// resolveVersion falls back to the Go module version when the binary was built
+// without Makefile ldflags (e.g. `go install ...@vX.Y.Z` or `go build`).
+func resolveVersion() string {
+	if aiDashVersion != "dev" {
+		return aiDashVersion
+	}
+	if bi, ok := debug.ReadBuildInfo(); ok && bi.Main.Version != "" &&
+		bi.Main.Version != "(devel)" {
+		return bi.Main.Version
+	}
+	return aiDashVersion
+}
+
 func main() {
+	aiDashVersion = resolveVersion()
+
 	root := &cobra.Command{
 		Use:     "ai-dash",
 		Short:   "TUI dashboard for AI coding sessions",
