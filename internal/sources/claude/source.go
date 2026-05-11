@@ -162,11 +162,50 @@ type claudeLine struct {
 
 func importTranscriptSessions(transcripts []shared.TranscriptFile) []session.Session {
 	sessions := make([]session.Session, 0, len(transcripts))
+	gitRootCache := map[string]string{}
 	for _, transcript := range transcripts {
 		s := parseClaudeTranscript(transcript)
+		if s.Repo != "" {
+			s.Project = resolveProjectRoot(s.Repo, gitRootCache)
+		}
 		sessions = append(sessions, s)
 	}
 	return sessions
+}
+
+// resolveProjectRoot returns the git repo root containing dir, or dir itself
+// if no git root is found. The cache memoizes lookups within a single import
+// pass so subdirectory sessions in the same repo collapse into one project.
+func resolveProjectRoot(dir string, cache map[string]string) string {
+	if dir == "" {
+		return dir
+	}
+	if cached, ok := cache[dir]; ok {
+		return cached
+	}
+	root := findGitRoot(dir)
+	if root == "" {
+		root = dir
+	}
+	cache[dir] = root
+	return root
+}
+
+func findGitRoot(dir string) string {
+	if _, err := os.Stat(dir); err != nil {
+		return ""
+	}
+	current := dir
+	for {
+		if _, err := os.Stat(filepath.Join(current, ".git")); err == nil {
+			return current
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			return ""
+		}
+		current = parent
+	}
 }
 
 func parseClaudeTranscript(transcript shared.TranscriptFile) session.Session {
