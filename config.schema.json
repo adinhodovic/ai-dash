@@ -44,6 +44,17 @@
       "description": "Default tool for new sessions (e.g. claude, codex, opencode)",
       "type": "string"
     },
+    "multiplexer": {
+      "default": "auto",
+      "description": "Terminal multiplexer used to open sessions when ai-dash runs inside one. 'auto' detects tmux/zellij from $TMUX/$ZELLIJ; 'tmux' or 'zellij' force a specific one; 'off' disables multiplexer use.",
+      "enum": [
+        "auto",
+        "tmux",
+        "zellij",
+        "off"
+      ],
+      "type": "string"
+    },
     "nerd_font": {
       "description": "Use Nerd Font icons. Null/omitted means auto-detect via fc-list. Set false to force Unicode fallback.",
       "type": "boolean"
