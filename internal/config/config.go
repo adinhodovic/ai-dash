@@ -11,6 +11,7 @@ import (
 
 type Config struct {
 	Terminal         string   `mapstructure:"terminal"           json:"terminal"`
+	Multiplexer      string   `mapstructure:"multiplexer"        json:"multiplexer,omitempty"`
 	PollInterval     string   `mapstructure:"poll_interval"      json:"poll_interval"`
 	DefaultAgeFilter string   `mapstructure:"default_age_filter" json:"default_age_filter,omitempty"`
 	AgePresets       []string `mapstructure:"age_presets"        json:"age_presets"`
@@ -29,6 +30,7 @@ func Init() {
 	viper.AddConfigPath(".")
 
 	viper.SetDefault("terminal", "")
+	viper.SetDefault("multiplexer", "auto")
 	viper.SetDefault("poll_interval", "5s")
 	viper.SetDefault("default_age_filter", "14d")
 	viper.SetDefault("default_tool", "")
@@ -42,6 +44,7 @@ func Init() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	_ = viper.BindEnv("terminal", "TERMINAL", "AIDASH_TERMINAL")
+	_ = viper.BindEnv("multiplexer", "AIDASH_MULTIPLEXER")
 
 	_ = viper.ReadInConfig()
 }
@@ -124,6 +127,12 @@ func GenerateSchema() string {
 				"type":        "string",
 				"description": "Terminal emulator to use when opening sessions (e.g. ghostty, kitty, alacritty)",
 				"default":     "",
+			},
+			"multiplexer": map[string]any{
+				"type":        "string",
+				"description": "Terminal multiplexer used to open sessions when ai-dash runs inside one. 'auto' detects tmux/zellij from $TMUX/$ZELLIJ; 'tmux' or 'zellij' force a specific one; 'off' disables multiplexer use.",
+				"enum":        []string{"auto", "tmux", "zellij", "off"},
+				"default":     "auto",
 			},
 			"poll_interval": map[string]any{
 				"type":        "string",

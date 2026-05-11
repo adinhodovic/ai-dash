@@ -28,11 +28,18 @@ func sessionCommand(s session.Session, cfg config.Config) *exec.Cmd {
 	if len(args) == 0 {
 		return nil
 	}
-	return spawnTerminal(cfg.Terminal, args)
+	return spawnSession(cfg, args)
 }
 
-func spawnTerminal(terminal string, args []string) *exec.Cmd {
-	name, argv := terminalCommand(terminal, args)
+// spawnSession picks a multiplexer if one is detected, otherwise falls back to
+// launching a fresh terminal emulator. Returns nil when neither is available.
+func spawnSession(cfg config.Config, args []string) *exec.Cmd {
+	if kind := detectMultiplexer(cfg.Multiplexer, nil); kind != multiplexerNone {
+		if name, argv := multiplexerCommand(kind, args); name != "" {
+			return exec.Command(name, argv...)
+		}
+	}
+	name, argv := terminalCommand(cfg.Terminal, args)
 	if name == "" {
 		return nil
 	}
@@ -75,9 +82,9 @@ func (m *Model) openNewSession(tool string) tea.Cmd {
 		m.statusMessage = fmt.Sprintf("No new session support for %s", tool)
 		return nil
 	}
-	cmd := spawnTerminal(m.meta.Config.Terminal, args)
+	cmd := spawnSession(m.meta.Config, args)
 	if cmd == nil {
-		m.statusMessage = "Set $TERMINAL to open sessions (e.g. ghostty or kitty)"
+		m.statusMessage = "Set $TERMINAL or run inside tmux/zellij to open sessions"
 		return nil
 	}
 	m.statusMessage = fmt.Sprintf(
@@ -99,7 +106,7 @@ func (m *Model) openSelectedExternally(filtered []session.Session) tea.Cmd {
 	s := filtered[sel]
 	cmd := sessionCommand(s, m.meta.Config)
 	if cmd == nil {
-		m.statusMessage = "Set $TERMINAL to open sessions (e.g. ghostty or kitty)"
+		m.statusMessage = "Set $TERMINAL or run inside tmux/zellij to open sessions"
 		return nil
 	}
 	m.statusMessage = fmt.Sprintf("Opening %s session in new terminal...", s.Tool)
