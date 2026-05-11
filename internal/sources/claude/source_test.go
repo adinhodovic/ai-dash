@@ -174,6 +174,98 @@ func TestParentSessionIDClassifiesSubagents(t *testing.T) {
 	}
 }
 
+func TestResolveProjectRootWalksToGitDir(t *testing.T) {
+	repo := t.TempDir()
+	if err := os.Mkdir(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatalf("mkdir .git: %v", err)
+	}
+	nested := filepath.Join(repo, "internal", "ui")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatalf("mkdir nested: %v", err)
+	}
+
+	cache := map[string]string{}
+	if got := resolveProjectRoot(nested, cache); got != repo {
+		t.Fatalf("resolveProjectRoot(%q) = %q, want %q", nested, got, repo)
+	}
+	if got := resolveProjectRoot(repo, cache); got != repo {
+		t.Fatalf("resolveProjectRoot(%q) = %q, want %q", repo, got, repo)
+	}
+}
+
+func TestResolveProjectRootHandlesGitFileWorktree(t *testing.T) {
+	repo := t.TempDir()
+	// In git worktrees, .git is a regular file, not a directory.
+	if err := os.WriteFile(
+		filepath.Join(repo, ".git"),
+		[]byte("gitdir: /elsewhere\n"),
+		0o644,
+	); err != nil {
+		t.Fatalf("write .git: %v", err)
+	}
+	nested := filepath.Join(repo, "pkg")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatalf("mkdir nested: %v", err)
+	}
+
+	if got := resolveProjectRoot(nested, map[string]string{}); got != repo {
+		t.Fatalf("resolveProjectRoot(%q) = %q, want %q", nested, got, repo)
+	}
+}
+
+func TestResolveProjectRootFallsBackToInput(t *testing.T) {
+	dir := t.TempDir() // no .git anywhere
+	if got := resolveProjectRoot(dir, map[string]string{}); got != dir {
+		t.Fatalf("resolveProjectRoot(%q) = %q, want fallback to input", dir, got)
+	}
+}
+
+func TestResolveProjectRootMissingDirReturnsInput(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "does-not-exist")
+	if got := resolveProjectRoot(missing, map[string]string{}); got != missing {
+		t.Fatalf("resolveProjectRoot(%q) = %q, want input unchanged for missing dir", missing, got)
+	}
+}
+
+func TestImportConsolidatesSubdirSessionsIntoGitRoot(t *testing.T) {
+	repo := t.TempDir()
+	if err := os.Mkdir(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatalf("mkdir .git: %v", err)
+	}
+	nested := filepath.Join(repo, "internal", "ui")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatalf("mkdir nested: %v", err)
+	}
+
+	rootTranscript := filepath.Join(t.TempDir(), "root.jsonl")
+	rootContent := []byte(
+		"{\"type\":\"user\",\"timestamp\":\"2026-04-01T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"hi\"},\"cwd\":\"" + repo + "\",\"sessionId\":\"sess-root\"}\n",
+	)
+	if err := os.WriteFile(rootTranscript, rootContent, 0o644); err != nil {
+		t.Fatalf("write root transcript: %v", err)
+	}
+	nestedTranscript := filepath.Join(t.TempDir(), "nested.jsonl")
+	nestedContent := []byte(
+		"{\"type\":\"user\",\"timestamp\":\"2026-04-01T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"hi\"},\"cwd\":\"" + nested + "\",\"sessionId\":\"sess-nested\"}\n",
+	)
+	if err := os.WriteFile(nestedTranscript, nestedContent, 0o644); err != nil {
+		t.Fatalf("write nested transcript: %v", err)
+	}
+
+	sessions := importTranscriptSessions([]shared.TranscriptFile{
+		{Tool: "claude", Path: rootTranscript, Project: "bucket-root", ModTime: time.Now()},
+		{Tool: "claude", Path: nestedTranscript, Project: "bucket-nested", ModTime: time.Now()},
+	})
+
+	if len(sessions) != 2 {
+		t.Fatalf("expected 2 sessions, got %d", len(sessions))
+	}
+	if sessions[0].Project != repo || sessions[1].Project != repo {
+		t.Fatalf("expected both sessions to share project %q, got %q and %q",
+			repo, sessions[0].Project, sessions[1].Project)
+	}
+}
+
 func TestDiscoverIncludesSubagentTranscripts(t *testing.T) {
 	root := t.TempDir()
 	projectDir := filepath.Join(root, "repo-a")
