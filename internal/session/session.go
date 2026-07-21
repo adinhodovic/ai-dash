@@ -2,6 +2,10 @@ package session
 
 import (
 	"cmp"
+	"encoding/json"
+	"errors"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -28,6 +32,8 @@ type Session struct {
 	Tags           []string          `json:"tags"`
 	Meta           map[string]string `json:"meta,omitempty"`
 }
+
+const renamesFile = "session-renames.json"
 
 type SortField string
 
@@ -62,6 +68,53 @@ const (
 
 func Sort(sessions []Session) {
 	SortBy(sessions, SortStarted, true)
+}
+
+func RenameKey(s Session) string {
+	return s.Tool + "/" + s.ID
+}
+
+func DefaultRenamesPath() string {
+	dir, err := os.UserConfigDir()
+	if err != nil || dir == "" {
+		return renamesFile
+	}
+	return filepath.Join(dir, "ai-dash", renamesFile)
+}
+
+func LoadRenames(path string) (map[string]string, error) {
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return map[string]string{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	renames := map[string]string{}
+	if err := json.Unmarshal(data, &renames); err != nil {
+		return nil, err
+	}
+	return renames, nil
+}
+
+func SaveRenames(path string, renames map[string]string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(renames, "", "  ")
+	if err != nil {
+		return err
+	}
+	data = append(data, '\n')
+	return os.WriteFile(path, data, 0o644)
+}
+
+func ApplyRenames(sessions []Session, renames map[string]string) {
+	for i := range sessions {
+		if summary := strings.TrimSpace(renames[RenameKey(sessions[i])]); summary != "" {
+			sessions[i].Summary = summary
+		}
+	}
 }
 
 func SortBy(sessions []Session, field SortField, descending bool) {

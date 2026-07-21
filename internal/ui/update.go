@@ -72,6 +72,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, cmd
 		}
+		if m.renaming {
+			return m.updateRename(msg)
+		}
 		if m.focus == focusSearch {
 			return m.updateSearch(msg)
 		}
@@ -91,6 +94,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r":
 			if cmd := m.openSelectedExternally(filtered); cmd != nil {
 				return m, cmd
+			}
+		case "R":
+			if m.focus == focusList {
+				m.startRename(filtered)
 			}
 		case "n":
 			if m.meta.Config.AutoSelectTool && m.meta.Config.DefaultTool != "" {
@@ -202,6 +209,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(tickReload(), func() tea.Msg {
 			discovery, _ := sources.Discover(m.meta.Config)
 			sessions := append([]session.Session(nil), discovery.Sessions...)
+			session.ApplyRenames(sessions, m.meta.Renames)
 			session.Sort(sessions)
 			var err error
 			return reloadMsg{sessions: sessions, discovery: discovery, err: err}
@@ -270,6 +278,69 @@ func (m Model) updateSearch(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		filtered := m.filteredSessions()
 		m.resizeTable(filtered)
 		m.resizeOverviewTable(filtered)
+	}
+	return m, cmd
+}
+
+func (m *Model) startRename(filtered []session.Session) {
+	sel := m.sessionTable.Cursor()
+	if len(filtered) == 0 || sel < 0 || sel >= len(filtered) {
+		m.statusMessage = "No session selected"
+		return
+	}
+	s := filtered[sel]
+	m.renaming = true
+	m.renamingKey = session.RenameKey(s)
+	m.renameInput.SetValue(s.Summary)
+	m.renameInput.Focus()
+	m.showHelp = false
+	m.showSources = false
+	m.picker.active = false
+}
+
+func (m Model) updateRename(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	switch msg.String() {
+	case "ctrl+c":
+		return m, tea.Quit
+	case "esc":
+		m.renaming = false
+		m.renamingKey = ""
+		m.renameInput.Blur()
+		m.statusMessage = "Rename cancelled"
+	case "enter":
+		newSummary := strings.TrimSpace(m.renameInput.Value())
+		if newSummary == "" {
+			m.statusMessage = "Rename cannot be empty"
+			return m, nil
+		}
+		if m.meta.Renames == nil {
+			m.meta.Renames = map[string]string{}
+		}
+		previous, hadPrevious := m.meta.Renames[m.renamingKey]
+		m.meta.Renames[m.renamingKey] = newSummary
+		if err := session.SaveRenames(m.meta.RenamesPath, m.meta.Renames); err != nil {
+			if hadPrevious {
+				m.meta.Renames[m.renamingKey] = previous
+			} else {
+				delete(m.meta.Renames, m.renamingKey)
+			}
+			m.statusMessage = fmt.Sprintf("Rename not saved: %v", err)
+			return m, nil
+		}
+		for i := range m.sessions {
+			if session.RenameKey(m.sessions[i]) == m.renamingKey {
+				m.sessions[i].Summary = newSummary
+				break
+			}
+		}
+		m.statusMessage = "Renamed session"
+		m.renaming = false
+		m.renamingKey = ""
+		m.renameInput.Blur()
+		m.syncAllTables(m.filteredSessions())
+	default:
+		m.renameInput, cmd = m.renameInput.Update(msg)
 	}
 	return m, cmd
 }
