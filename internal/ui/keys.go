@@ -19,6 +19,7 @@ type keyMap struct {
 	Sort          key.Binding
 	Project       key.Binding
 	ResumeSession key.Binding
+	RenameSession key.Binding
 	ToggleDetails key.Binding
 	NewSession    key.Binding
 	AgeRange      key.Binding
@@ -52,6 +53,7 @@ func defaultKeyMap() keyMap {
 		Sort:          key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "sort")),
 		Project:       key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "project")),
 		ResumeSession: key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "resume")),
+		RenameSession: key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "rename")),
 		ToggleDetails: key.NewBinding(key.WithKeys("v"), key.WithHelp("v", "details")),
 		NewSession:    key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "new session")),
 		AgeRange:      key.NewBinding(key.WithKeys("D"), key.WithHelp("D", "age range")),
@@ -66,7 +68,7 @@ func (k keyMap) shortHelpForFocus(focus focusArea) []key.Binding {
 	base := []key.Binding{k.Up, k.Down, k.Help, k.Focus, k.Search}
 	switch focus {
 	case focusList:
-		base = append(base, k.ResumeSession, k.NewSession)
+		base = append(base, k.ResumeSession, k.RenameSession, k.NewSession)
 	case focusFilters:
 		base = append(base, k.NewSession)
 	}
@@ -81,6 +83,7 @@ func (k keyMap) FullHelp() [][]key.Binding {
 			k.Focus,
 			k.Search,
 			k.ResumeSession,
+			k.RenameSession,
 			k.NewSession,
 			k.ToggleDetails,
 			k.Clear,

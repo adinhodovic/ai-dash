@@ -36,6 +36,8 @@ type Options struct {
 	Err            error
 	Version        string
 	BuildTimestamp string
+	Renames        map[string]string
+	RenamesPath    string
 }
 
 type filters struct {
@@ -57,6 +59,9 @@ type Model struct {
 	manualCollapse  bool
 	statusMessage   string
 	searchInput     textinput.Model
+	renameInput     textinput.Model
+	renaming        bool
+	renamingKey     string
 	sessionTable    table.Model
 	sourceTable     table.Model
 	relatedTable    table.Model
@@ -81,6 +86,19 @@ func NewModel(opts Options) Model {
 	input.CharLimit = 120
 	input.Prompt = ""
 	input.Blur()
+	renameInput := textinput.New()
+	renameInput.Placeholder = "rename selected session"
+	renameInput.CharLimit = 200
+	renameInput.Prompt = ""
+	renameInput.Blur()
+	renames := opts.Renames
+	if renames == nil {
+		renames = map[string]string{}
+	}
+	renamesPath := opts.RenamesPath
+	if renamesPath == "" {
+		renamesPath = session.DefaultRenamesPath()
+	}
 
 	reloadInterval = opts.Config.PollDuration()
 	maxSessionAge = opts.Config.DefaultAgeFilterDuration()
@@ -93,6 +111,7 @@ func NewModel(opts Options) Model {
 		styles:       theme.NewStyles(),
 		meta:         opts,
 		searchInput:  input,
+		renameInput:  renameInput,
 		sessionTable: newSessionTable(),
 		sourceTable:  newSourceTable(),
 		relatedTable: newRelatedTable(),
@@ -111,6 +130,8 @@ func NewModel(opts Options) Model {
 		projSortField:  "last",
 		projSortDesc:   true,
 	}
+	m.meta.Renames = renames
+	m.meta.RenamesPath = renamesPath
 	return m
 }
 

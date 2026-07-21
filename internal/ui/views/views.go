@@ -116,13 +116,19 @@ func TopBar(
 	styles theme.Styles,
 	width int,
 	searchFocused bool,
-	searchInputView, searchQuery string,
+	renameFocused bool,
+	searchInputView, renameInputView, searchQuery string,
 	filteredCount, totalCount int,
 	chips string,
 ) string {
 	sep := styles.Muted.Padding(0, 1).Render("│")
 	var searchPart string
-	if searchFocused {
+	if renameFocused {
+		searchPart = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(theme.Nord13)).
+			Bold(true).
+			Render("Rename ") + renameInputView
+	} else if searchFocused {
 		searchPart = lipgloss.NewStyle().
 			Foreground(lipgloss.Color(theme.Nord13)).
 			Bold(true).

@@ -66,6 +66,11 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 
 	discovery, discoveryErr := sources.Discover(cfg)
 	sessions := append([]session.Session(nil), discovery.Sessions...)
+	renamesPath := session.DefaultRenamesPath()
+	renames, renameErr := session.LoadRenames(renamesPath)
+	if renameErr == nil {
+		session.ApplyRenames(sessions, renames)
+	}
 	session.Sort(sessions)
 	var err error
 	if err == nil && len(sessions) == 0 {
@@ -73,6 +78,9 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 	}
 	if err == nil && discoveryErr != nil {
 		err = discoveryErr
+	}
+	if err == nil && renameErr != nil {
+		err = fmt.Errorf("load session renames: %w", renameErr)
 	}
 
 	m := ui.NewModel(ui.Options{
@@ -82,6 +90,8 @@ func runDashboard(cmd *cobra.Command, args []string) error {
 		Err:            err,
 		Version:        aiDashVersion,
 		BuildTimestamp: buildTimestamp,
+		Renames:        renames,
+		RenamesPath:    renamesPath,
 	})
 
 	p := tea.NewProgram(m)

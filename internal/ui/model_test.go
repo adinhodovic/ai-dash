@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -66,6 +67,11 @@ func resize(m Model, w, h int) Model {
 
 func sendKey(m Model, k string) Model {
 	updated, _ := m.Update(tea.KeyPressMsg{Code: rune(k[0]), Text: k})
+	return updated.(Model)
+}
+
+func sendNamedKey(m Model, k string) Model {
+	updated, _ := m.Update(tea.KeyPressMsg{Text: k})
 	return updated.(Model)
 }
 
@@ -180,6 +186,28 @@ func TestClearFilters(t *testing.T) {
 	}
 	if m.searchInput.Value() != "" {
 		t.Error("search should be cleared")
+	}
+}
+
+func TestRenameSession(t *testing.T) {
+	m := testModel()
+	m.meta.RenamesPath = filepath.Join(t.TempDir(), "session-renames.json")
+	m = resize(m, 120, 40)
+	m = sendKey(m, "R")
+	if !m.renaming {
+		t.Fatal("expected rename mode")
+	}
+	m.renameInput.SetValue("renamed session")
+	m = sendNamedKey(m, "enter")
+	if m.renaming {
+		t.Fatal("rename mode should close after save")
+	}
+	filtered := m.filteredSessions()
+	if got := filtered[m.sessionTable.Cursor()].Summary; got != "renamed session" {
+		t.Fatalf("selected summary = %q, want renamed session", got)
+	}
+	if got := m.meta.Renames[session.RenameKey(filtered[m.sessionTable.Cursor()])]; got != "renamed session" {
+		t.Fatalf("stored rename = %q, want renamed session", got)
 	}
 }
 
