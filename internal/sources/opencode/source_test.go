@@ -278,6 +278,7 @@ func TestDbPathDefault(t *testing.T) {
 func TestDbPathDefaultHome(t *testing.T) {
 	t.Setenv("AIDASH_OPENCODE_DB", "")
 	t.Setenv("XDG_DATA_HOME", "")
+	t.Setenv("HOME", t.TempDir())
 	got := (Source{}).dbPath()
 	home, _ := os.UserHomeDir()
 	var want string
