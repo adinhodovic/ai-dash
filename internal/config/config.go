@@ -21,6 +21,7 @@ type Config struct {
 	OpencodePath     string   `mapstructure:"opencode_path"      json:"opencode_path"`
 	CodexPath        string   `mapstructure:"codex_path"         json:"codex_path"`
 	ClaudePath       string   `mapstructure:"claude_path"        json:"claude_path"`
+	PiPath           string   `mapstructure:"pi_path"            json:"pi_path"`
 }
 
 func Init() {
@@ -38,6 +39,7 @@ func Init() {
 	viper.SetDefault("opencode_path", "")
 	viper.SetDefault("codex_path", "")
 	viper.SetDefault("claude_path", "")
+	viper.SetDefault("pi_path", "")
 
 	viper.SetEnvPrefix("AIDASH")
 	viper.AutomaticEnv()
@@ -112,6 +114,10 @@ func (c Config) SourcePath(source, fallback string) string {
 		if c.ClaudePath != "" {
 			return c.ClaudePath
 		}
+	case "pi":
+		if c.PiPath != "" {
+			return c.PiPath
+		}
 	}
 	return fallback
 }
@@ -167,6 +173,11 @@ func GenerateSchema() string {
 			"claude_path": map[string]any{
 				"type":        "string",
 				"description": "Path to Claude Code projects directory (default: ~/.claude/projects)",
+				"default":     "",
+			},
+			"pi_path": map[string]any{
+				"type":        "string",
+				"description": "Path to pi agent sessions directory (default: ~/.pi/agent/sessions)",
 				"default":     "",
 			},
 			"nerd_font": map[string]any{

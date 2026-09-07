@@ -2,11 +2,11 @@
 
 ![AI Dash](./docs/images/demo.gif)
 
-A terminal UI for browsing coding sessions across multiple tools from local transcripts, session logs, and databases. It currently supports Claude Code, Codex, and OpenCode.
+A terminal UI for browsing coding sessions across multiple tools from local transcripts, session logs, and databases. It currently supports Claude Code, Codex, OpenCode, and pi.
 
 ## What it does
 
-- Parses Claude Code JSONL transcripts, Codex session logs, and the OpenCode SQLite database
+- Parses Claude Code JSONL transcripts, Codex session logs, OpenCode's SQLite database, and pi session JSONL files
 - Fuzzy search across sessions, live as you type
 - Filter by tool, project, or date range
 - Sort per table (last active, tool, project, summary)
@@ -60,6 +60,7 @@ Sessions are discovered from default paths. Override them if needed:
 | OpenCode | `~/.local/share/opencode/opencode.db` or `~/Library/Application Support/opencode/opencode.db` on macOS | `opencode_path` |
 | Codex | `~/.codex/config.toml` | `codex_path` |
 | Claude Code | `~/.claude/projects/` | `claude_path` |
+| pi | `~/.pi/agent/sessions/` | `pi_path` |
 
 ### Options
 
@@ -100,15 +101,25 @@ On macOS, `terminal` should be a CLI terminal binary like `ghostty` or `kitty`.
 
 | Key | Action |
 |-----|--------|
-| `/` | Search |
+| `↑`/`k`, `↓`/`j` | Move selection |
+| `g`/`G` | Top / bottom |
+| `pgup`/`pgdn` | Page up / down |
 | `r` | Resume session |
+| `R` | Rename session |
 | `n` | New session |
+| `v` | Toggle detail pane |
+| `i` | Toggle IDs & metadata |
+| `/` | Search |
 | `t` / `p` | Filter by tool / project |
-| `s` | Cycle sort |
 | `D` | Cycle age range |
 | `a` | Toggle subagents |
+| `!` | Toggle needs-attention filter |
+| `A` | Toggle active-only filter |
 | `c` | Clear filters/search |
-| `tab` | Switch focus |
+| `s` | Cycle sort field |
+| `[`/`]` | Cycle sort field |
+| `=` | Toggle sort direction |
+| `S` | Toggle sources view |
 | `?` | Full help |
 | `q` | Quit |
 
@@ -139,6 +150,7 @@ Run the app locally with:
 - `internal/sources/claude` - Claude Code parser
 - `internal/sources/codex` - Codex parser
 - `internal/sources/opencode` - OpenCode parser
+- `internal/sources/pi` - pi parser
 - `internal/sources/shared` - shared source discovery helpers
 - `internal/ui` - Bubble Tea TUI
 
@@ -149,6 +161,7 @@ Only official provider files are supported:
 - Claude Code transcripts
 - Codex session JSONL files
 - OpenCode SQLite database
+- pi session JSONL files
 
 Do not add generic or custom session JSON loaders.
 
