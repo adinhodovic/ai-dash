@@ -7,6 +7,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	uilayout "github.com/adinhodovic/ai-dash/internal/ui/layout"
 	"github.com/adinhodovic/ai-dash/internal/ui/theme"
 )
 
@@ -46,27 +47,10 @@ func CollapsedSessions(
 
 func MainDashboard(
 	styles theme.Styles,
-	focusFilters, focusList bool,
-	leftW, rightW, topH, botH int,
-	overviewTable, overviewStats, sessionPane, detailPane string,
+	focusList bool,
+	leftW, rightW, botH int,
+	sessionPane, detailPane string,
 ) string {
-	projPane := renderPane(
-		panelStyle(styles, focusFilters),
-		styles.Header,
-		"Projects",
-		overviewTable,
-		leftW,
-		topH,
-	)
-	statsPane := renderPane(
-		styles.Panel,
-		styles.Header,
-		"Overview",
-		overviewStats,
-		rightW,
-		topH,
-	)
-	projects := lipgloss.JoinHorizontal(lipgloss.Top, projPane, statsPane)
 	sessions := renderPane(
 		panelStyle(styles, focusList),
 		styles.Header,
@@ -83,32 +67,24 @@ func MainDashboard(
 		rightW,
 		botH,
 	)
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		projects,
-		lipgloss.JoinHorizontal(lipgloss.Top, sessions, details),
-	)
+	return lipgloss.JoinHorizontal(lipgloss.Top, sessions, details)
 }
 
-func DetailPane(styles theme.Styles, width int, summary, detailTable, relatedTable string) string {
+func DetailPane(styles theme.Styles, width int, summary, detailTable string) string {
 	detailW := width - width*70/100
-	innerW := max(10, detailW-2)
+	innerW := max(10, detailW-2-2*uilayout.PanePadding)
 	divider := styles.Muted.Render(strings.Repeat("─", max(1, innerW)))
 	if len(summary) > 500 {
 		summary = summary[:497] + "..."
 	}
 	summaryLabel := styles.Highlight.Render("Summary")
 	summaryText := lipgloss.NewStyle().Width(innerW).Render(summary)
-	relatedLabel := styles.Highlight.Render("Related Sessions")
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		summaryLabel,
 		summaryText,
 		divider,
 		detailTable,
-		divider,
-		relatedLabel,
-		relatedTable,
 	)
 }
 

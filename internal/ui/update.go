@@ -84,10 +84,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "?":
 			m.showHelp = true
-		case "tab":
-			m.cycleForward()
-		case "shift+tab":
-			m.cycleBackward()
 		case "/":
 			m.focus = focusSearch
 			m.searchInput.Focus()
@@ -132,7 +128,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "v":
 			m.manualCollapse = !m.manualCollapse
 			m.updateDetailCollapse()
-			m.resizeRightTables(filtered)
+			m.resizeSourceTable()
 
 		case "c":
 			m.filters = filters{}
@@ -194,12 +190,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				var cmd tea.Cmd
 				m.sessionTable, cmd = m.sessionTable.Update(msg)
 				m.resizeDetailTable(filtered)
-				m.resizeRightTables(filtered)
-				return m, cmd
-			}
-			if m.focus == focusFilters {
-				var cmd tea.Cmd
-				m.overviewTable, cmd = m.overviewTable.Update(msg)
+				m.resizeSourceTable()
 				return m, cmd
 			}
 		}
@@ -244,8 +235,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) syncAfterChange(filtered []session.Session) {
 	m.resizeDetailTable(filtered)
-	m.resizeOverviewTable(filtered)
-	m.resizeRightTables(filtered)
+	m.resizeSourceTable()
 }
 
 func (m *Model) syncAllTables(filtered []session.Session) {
@@ -277,7 +267,6 @@ func (m Model) updateSearch(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.searchInput, cmd = m.searchInput.Update(msg)
 		filtered := m.filteredSessions()
 		m.resizeTable(filtered)
-		m.resizeOverviewTable(filtered)
 	}
 	return m, cmd
 }

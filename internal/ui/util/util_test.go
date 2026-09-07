@@ -187,26 +187,6 @@ func TestSessionStatusLabel(t *testing.T) {
 	}
 }
 
-func TestRelationLabel(t *testing.T) {
-	parent := session.Session{ID: "parent-1", Project: "proj", Repo: "repo"}
-	child := session.Session{ID: "child-1", ParentID: "parent-1", Project: "proj", Repo: "repo"}
-	sibling := session.Session{ID: "sib-1", Project: "proj", Repo: "other"}
-	unrelated := session.Session{ID: "other-1", Project: "other", Repo: "other"}
-
-	if got := RelationLabel(parent, child); got != "child" {
-		t.Errorf("child relation = %q", got)
-	}
-	if got := RelationLabel(child, parent); got != "parent" {
-		t.Errorf("parent relation = %q", got)
-	}
-	if got := RelationLabel(parent, sibling); got != "project" {
-		t.Errorf("project relation = %q", got)
-	}
-	if got := RelationLabel(parent, unrelated); got != "" {
-		t.Errorf("unrelated should be empty, got %q", got)
-	}
-}
-
 func TestValueOrUnknown(t *testing.T) {
 	if got := ValueOrUnknown(""); got != "unknown" {
 		t.Errorf("empty = %q", got)

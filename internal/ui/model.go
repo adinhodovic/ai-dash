@@ -25,7 +25,6 @@ type focusArea int
 
 const (
 	focusList focusArea = iota
-	focusFilters
 	focusSearch
 )
 
@@ -64,16 +63,11 @@ type Model struct {
 	renamingKey     string
 	sessionTable    table.Model
 	sourceTable     table.Model
-	relatedTable    table.Model
 	detailTable     table.Model
-	overviewTable   table.Model
 	help            help.Model
 	keys            keyMap
 	sortField       session.SortField
 	sortDescending  bool
-	projSortField   string
-	projSortDesc    bool
-	projectPaths    []string // raw project paths matching overviewTable rows
 	showHelp        bool
 	showSources     bool
 	showSubagents   bool
@@ -114,11 +108,7 @@ func NewModel(opts Options) Model {
 		renameInput:  renameInput,
 		sessionTable: newSessionTable(),
 		sourceTable:  newSourceTable(),
-		relatedTable: newRelatedTable(),
 		detailTable:  newTable([]table.Column{{Title: "", Width: 10}, {Title: "", Width: 30}}),
-		overviewTable: newTable(
-			[]table.Column{{Title: "Metric", Width: 16}, {Title: "Value", Width: 20}},
-		),
 		help: func() help.Model {
 			h := help.New()
 			theme.ApplyHelpStyles(&h)
@@ -127,8 +117,6 @@ func NewModel(opts Options) Model {
 		keys:           defaultKeyMap(),
 		sortField:      session.SortUpdated,
 		sortDescending: true,
-		projSortField:  "last",
-		projSortDesc:   true,
 	}
 	m.meta.Renames = renames
 	m.meta.RenamesPath = renamesPath
@@ -141,29 +129,6 @@ func (m Model) Init() tea.Cmd {
 
 func (m *Model) updateDetailCollapse() {
 	m.detailCollapsed = m.autoCollapsed || m.manualCollapse
-}
-
-// cycleForward/cycleBackward skip focusSearch — search is only entered via '/'.
-var tabbableFoci = []focusArea{focusList, focusFilters}
-
-func (m *Model) cycleForward() {
-	for i, f := range tabbableFoci {
-		if f == m.focus {
-			m.focus = tabbableFoci[(i+1)%len(tabbableFoci)]
-			return
-		}
-	}
-	m.focus = focusList
-}
-
-func (m *Model) cycleBackward() {
-	for i, f := range tabbableFoci {
-		if f == m.focus {
-			m.focus = tabbableFoci[(i-1+len(tabbableFoci))%len(tabbableFoci)]
-			return
-		}
-	}
-	m.focus = focusList
 }
 
 func (m Model) filteredSessions() []session.Session {

@@ -9,7 +9,6 @@ type keyMap struct {
 	GoBottom      key.Binding
 	PageUp        key.Binding
 	PageDown      key.Binding
-	Focus         key.Binding
 	Help          key.Binding
 	Search        key.Binding
 	SortNext      key.Binding
@@ -43,7 +42,6 @@ func defaultKeyMap() keyMap {
 			key.WithKeys("pgdown", "ctrl+d"),
 			key.WithHelp("pgdn", "page down"),
 		),
-		Focus:         key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "focus")),
 		Help:          key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
 		Search:        key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "search")),
 		SortNext:      key.NewBinding(key.WithKeys("]"), key.WithHelp("[/]", "sort")),
@@ -65,12 +63,10 @@ func defaultKeyMap() keyMap {
 }
 
 func (k keyMap) shortHelpForFocus(focus focusArea) []key.Binding {
-	base := []key.Binding{k.Up, k.Down, k.Help, k.Focus, k.Search}
+	base := []key.Binding{k.Up, k.Down, k.Help, k.Search}
 	switch focus {
 	case focusList:
 		base = append(base, k.ResumeSession, k.RenameSession, k.NewSession)
-	case focusFilters:
-		base = append(base, k.NewSession)
 	}
 	return append(base, k.Tool, k.Sort, k.Project, k.AgeRange, k.Clear, k.Quit)
 }
@@ -80,7 +76,6 @@ func (k keyMap) FullHelp() [][]key.Binding {
 		{k.Up, k.Down, k.GoTop, k.PageUp, k.PageDown},
 		{
 			k.Help,
-			k.Focus,
 			k.Search,
 			k.ResumeSession,
 			k.RenameSession,
