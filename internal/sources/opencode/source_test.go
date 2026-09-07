@@ -189,6 +189,19 @@ func TestOpenCodeStatus(t *testing.T) {
 		},
 		{"waiting placeholder", "assistant", "", 0, "", "stop", "", "", "active", "waiting"},
 		{"waiting", "assistant", "stop", 1, "", "", "", "", "active", "waiting"},
+		{
+			"max tokens placeholder",
+			"assistant",
+			"",
+			0,
+			"",
+			"length",
+			"",
+			"",
+			"active",
+			"max tokens",
+		},
+		{"max tokens", "assistant", "length", 1, "", "", "", "", "active", "max tokens"},
 		{"done fallback", "assistant", "", 1, "", "", "", "", "completed", "done"},
 	}
 

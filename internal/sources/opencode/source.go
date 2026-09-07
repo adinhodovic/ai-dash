@@ -258,6 +258,8 @@ func openCodeStatus(
 			return string(session.StatusActive), string(session.StateToolCall)
 		case "stop":
 			return string(session.StatusActive), string(session.StateWaiting)
+		case "length":
+			return string(session.StatusActive), string(session.StateMaxTokens)
 		}
 		return string(session.StatusActive), string(session.StateRunning)
 	}
@@ -267,6 +269,8 @@ func openCodeStatus(
 		return string(session.StatusActive), string(session.StateToolCall)
 	case "stop":
 		return string(session.StatusActive), string(session.StateWaiting)
+	case "length":
+		return string(session.StatusActive), string(session.StateMaxTokens)
 	}
 
 	if time.Since(endedAt) < 5*time.Minute {
@@ -294,6 +298,8 @@ func openCodeStatusSource(
 			return "message.pending + previous finish=tool-calls"
 		case "stop":
 			return "message.pending + previous finish=stop"
+		case "length":
+			return "message.pending + previous finish=length"
 		default:
 			return "message.pending"
 		}

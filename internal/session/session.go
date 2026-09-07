@@ -66,6 +66,79 @@ const (
 	SortSummary SortField = "summary"
 )
 
+type AttentionReason string
+
+const (
+	AttentionNone      AttentionReason = ""
+	AttentionWaiting   AttentionReason = "waiting"
+	AttentionMaxTokens AttentionReason = "max tokens"
+	AttentionStalled   AttentionReason = "stalled"
+)
+
+// staleAfter is how long an active session can go without any observed
+// activity before it's considered stalled and flagged for attention. It's
+// intentionally longer than the per-source mtime heuristics used to decide
+// Active vs Completed status, to avoid false positives on long tool calls.
+const staleAfter = 30 * time.Minute
+
+// staleCeiling caps how long any attention reason keeps getting flagged,
+// including waiting/max-tokens. Past this, an untouched session — even one
+// whose last recorded state was literally "waiting for input" — is presumed
+// abandoned (crashed, forgotten terminal, moved on) rather than something to
+// act on right now.
+const staleCeiling = 2 * time.Hour
+
+// Attention reports whether a session needs a human to look at it: it's
+// waiting on input, has hit a token limit, or has gone quiet while still
+// marked active. It's a pure function of existing fields, so it works
+// uniformly across all sources — a source with no waiting/max-tokens signal
+// (e.g. Codex) simply falls through to the staleness check. Every reason is
+// bounded by staleCeiling: an old session doesn't stay flagged forever just
+// because its last observed state happened to be "waiting".
+func Attention(s Session) AttentionReason {
+	if time.Since(s.EndedAt) > staleCeiling {
+		return AttentionNone
+	}
+	switch CurrentState(strings.TrimSpace(s.CurrentState)) {
+	case StateWaiting:
+		return AttentionWaiting
+	case StateMaxTokens:
+		return AttentionMaxTokens
+	}
+	if s.Status == string(StatusActive) && time.Since(s.EndedAt) > staleAfter {
+		return AttentionStalled
+	}
+	return AttentionNone
+}
+
+func NeedsAttention(s Session) bool {
+	return Attention(s) != AttentionNone
+}
+
+// recentActivityWindow is how recently a session must have been touched —
+// regardless of its terminal status — to still count as "active" in the
+// broad, everyday sense: something you were just talking to, whether or not
+// it happened to wrap up cleanly in the meantime.
+const recentActivityWindow = 15 * time.Minute
+
+// IsLive reports whether a session counts as active right now: either it's
+// still genuinely running (as opposed to merely last observed mid-turn/
+// mid-tool-call with no later terminating event recorded — the per-source
+// Active/Completed heuristics don't apply a time check on that path, so a
+// session can sit at Status==active indefinitely after being abandoned; the
+// staleAfter threshold guards against that), or it simply had any activity
+// at all within recentActivityWindow, whatever its final status.
+func IsLive(s Session) bool {
+	lastActive := s.EndedAt
+	if lastActive.IsZero() {
+		lastActive = s.StartedAt
+	}
+	if time.Since(lastActive) <= recentActivityWindow {
+		return true
+	}
+	return s.Status == string(StatusActive) && time.Since(s.EndedAt) <= staleAfter
+}
+
 func Sort(sessions []Session) {
 	SortBy(sessions, SortStarted, true)
 }

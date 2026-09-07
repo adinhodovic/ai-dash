@@ -391,9 +391,12 @@ func summarizeUserMessage(msg string) string {
 	if strings.HasPrefix(msg, "<") || strings.Contains(msg, "AGENTS.md") {
 		return "Imported session"
 	}
+	// The UI wraps and truncates summaries for display itself (up to two
+	// lines), so this only needs to guard against pathologically long
+	// messages, not pre-truncate to whatever a list row happens to fit.
 	runes := []rune(msg)
-	if len(runes) > 120 {
-		return string(runes[:119]) + "~"
+	if len(runes) > 500 {
+		return string(runes[:499]) + "~"
 	}
 	return msg
 }
