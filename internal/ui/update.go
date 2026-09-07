@@ -356,6 +356,7 @@ func (m Model) updateSearch(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.searchInput, cmd = m.searchInput.Update(msg)
 		filtered := m.filteredSessions()
 		m.resizeTable(filtered)
+		m.syncAfterChange(filtered)
 	}
 	return m, cmd
 }
