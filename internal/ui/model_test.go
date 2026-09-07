@@ -99,17 +99,24 @@ func TestFilteredSessions(t *testing.T) {
 		t.Fatalf("no filters: expected 4, got %d", len(filtered))
 	}
 
-	m.filters.tool = "claude"
+	m.filters.tools = []string{"claude"}
 	filtered = m.filteredSessions()
 	if len(filtered) != 2 {
 		t.Errorf("tool=claude: expected 2, got %d", len(filtered))
 	}
 
-	m.filters.tool = ""
-	m.filters.project = "beta"
+	m.filters.tools = nil
+	m.filters.projects = []string{"beta"}
 	filtered = m.filteredSessions()
 	if len(filtered) != 1 {
 		t.Errorf("project=beta: expected 1, got %d", len(filtered))
+	}
+
+	m.filters.projects = nil
+	m.filters.tools = []string{"claude", "codex"}
+	filtered = m.filteredSessions()
+	if len(filtered) != 3 {
+		t.Errorf("tool in [claude,codex]: expected 3, got %d", len(filtered))
 	}
 }
 
@@ -143,10 +150,10 @@ func TestSortCycling(t *testing.T) {
 func TestClearFilters(t *testing.T) {
 	m := testModel()
 	m = resize(m, 120, 40)
-	m.filters.tool = "claude"
+	m.filters.tools = []string{"claude"}
 	m.searchInput.SetValue("test")
 	m = sendKey(m, "c")
-	if m.filters.tool != "" {
+	if len(m.filters.tools) != 0 {
 		t.Error("filters should be cleared")
 	}
 	if m.searchInput.Value() != "" {
@@ -213,7 +220,7 @@ func TestViewEmptySessions(t *testing.T) {
 func TestViewNoMatchingFilters(t *testing.T) {
 	m := testModel()
 	m = resize(m, 80, 24)
-	m.filters.tool = "nonexistent"
+	m.filters.tools = []string{"nonexistent"}
 	view := m.View()
 	if view.Content == "" {
 		t.Error("no matches should still render")

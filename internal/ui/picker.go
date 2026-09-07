@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"slices"
 
 	"charm.land/bubbles/v2/list"
 	"charm.land/lipgloss/v2"
@@ -11,22 +12,44 @@ import (
 
 type filterPicker struct {
 	active bool
-	label  string // "tool", "status", "project"
+	label  string // "tool", "project", "new-session"
+	multi  bool   // toggle-in-place checkboxes vs. pick-one-and-close
 	list   list.Model
 }
 
 type pickerItem struct {
-	value   string
-	display string
+	value    string
+	display  string
+	checkbox bool
+	checked  bool
 }
 
-func (i pickerItem) Title() string       { return i.display }
+func (i pickerItem) Title() string {
+	if !i.checkbox {
+		return i.display
+	}
+	mark := "[ ]"
+	if i.checked {
+		mark = "[x]"
+	}
+	return mark + " " + i.display
+}
 func (i pickerItem) Description() string { return "" }
 func (i pickerItem) FilterValue() string { return i.display }
 
-func newPicker(label string, options []string, current string, searchable bool) filterPicker {
+// newPicker builds a filter picker. In multi mode every option is a
+// checkbox toggled in place (no "(all)" entry — clearing is what `c`
+// already does); otherwise it's a single pick-and-close list.
+func newPicker(label string, options []string, selected []string, multi, searchable bool) filterPicker {
+	selectedSet := make(map[string]bool, len(selected))
+	for _, v := range selected {
+		selectedSet[v] = true
+	}
+	if multi {
+		options = slices.DeleteFunc(slices.Clone(options), func(s string) bool { return s == "" })
+	}
 	items := make([]list.Item, 0, len(options))
-	selectedIdx := 0
+	cursorIdx := 0
 	for i, opt := range options {
 		display := opt
 		if display == "" {
@@ -34,10 +57,10 @@ func newPicker(label string, options []string, current string, searchable bool) 
 		} else {
 			display = uiutil.CleanProjectName(display)
 		}
-		if opt == current {
-			selectedIdx = i
+		if selectedSet[opt] {
+			cursorIdx = i
 		}
-		items = append(items, pickerItem{value: opt, display: display})
+		items = append(items, pickerItem{value: opt, display: display, checkbox: multi, checked: selectedSet[opt]})
 	}
 	delegate := list.NewDefaultDelegate()
 	delegate.ShowDescription = false
@@ -80,20 +103,41 @@ func newPicker(label string, options []string, current string, searchable bool) 
 	l.SetFilteringEnabled(searchable)
 	l.SetShowFilter(searchable)
 	l.DisableQuitKeybindings()
-	l.Select(selectedIdx)
-	return filterPicker{active: true, label: label, list: l}
+	l.Select(cursorIdx)
+	return filterPicker{active: true, label: label, multi: multi, list: l}
 }
 
-func (m *Model) applyFilterChange(value, label string) {
+// toggleFilterValue adds or removes value from the tool/project filter set,
+// live — the picker stays open so multiple values can be checked in one
+// pass instead of one apply-and-reopen cycle per value.
+func (m *Model) toggleFilterValue(value, label string) {
 	if m.focus != focusList {
 		return
 	}
 	switch label {
 	case "tool":
-		m.filters.tool = value
+		m.filters.tools = toggleInSlice(m.filters.tools, value)
 	case "project":
-		m.filters.project = value
+		m.filters.projects = toggleInSlice(m.filters.projects, value)
 	}
 	m.sessionCursor = 0
-	m.statusMessage = fmt.Sprintf("Updated %s filter", label)
+}
+
+func toggleInSlice(values []string, value string) []string {
+	if i := slices.Index(values, value); i >= 0 {
+		return slices.Delete(slices.Clone(values), i, i+1)
+	}
+	return append(slices.Clone(values), value)
+}
+
+// clearFilter empties the tool/project filter set entirely.
+func (m *Model) clearFilter(label string) {
+	switch label {
+	case "tool":
+		m.filters.tools = nil
+	case "project":
+		m.filters.projects = nil
+	}
+	m.sessionCursor = 0
+	m.statusMessage = fmt.Sprintf("Cleared %s filter", label)
 }

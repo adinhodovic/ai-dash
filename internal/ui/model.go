@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -41,8 +42,8 @@ type Options struct {
 }
 
 type filters struct {
-	tool    string
-	project string
+	tools    []string
+	projects []string
 }
 
 type Model struct {
@@ -159,10 +160,10 @@ func (m Model) filteredSessions() []session.Session {
 		if uiutil.LastActive(s).Before(cutoff) {
 			continue
 		}
-		if m.filters.tool != "" && s.Tool != m.filters.tool {
+		if len(m.filters.tools) > 0 && !slices.Contains(m.filters.tools, s.Tool) {
 			continue
 		}
-		if m.filters.project != "" && s.Project != m.filters.project {
+		if len(m.filters.projects) > 0 && !slices.Contains(m.filters.projects, s.Project) {
 			continue
 		}
 		if !m.showSubagents && s.ParentID != "" {

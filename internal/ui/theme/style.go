@@ -40,18 +40,24 @@ const (
 	// distinct semantic colors from purely decorative ones (see ColorSelectBg)
 	// avoids accidental foreground==background collisions when a row is
 	// selected.
-	ColorInfo     = Nord9
-	ColorAccent   = Nord15
-	ColorLimit    = Nord12
-	ColorMatchFg  = Nord0
-	ColorMatchBg  = Nord13
-	ColorHeaderFg = Nord6
-	ColorHeaderBg = Nord2
-	ColorBadgeFg  = Nord0
-	ColorBadgeBg  = Nord13
-	ColorBorder   = Nord3
-	ColorActive   = Nord6
-	ColorSubtle   = Nord2
+	ColorInfo   = Nord9
+	ColorAccent = Nord15
+	ColorLimit  = Nord12
+	// ColorFilterActive is its own hue (teal, not the blue-cyan family
+	// ColorHighlight/ColorInfo already own) so "this filter is applied"
+	// doesn't visually blend into the general emphasis color used
+	// everywhere (icons, sort arrows) or the "session is running" status
+	// color — both of which read as a similar blue at a glance.
+	ColorFilterActive = Nord7
+	ColorMatchFg      = Nord0
+	ColorMatchBg      = Nord13
+	ColorHeaderFg     = Nord6
+	ColorHeaderBg     = Nord2
+	ColorBadgeFg      = Nord0
+	ColorBadgeBg      = Nord13
+	ColorBorder       = Nord3
+	ColorActive       = Nord6
+	ColorSubtle       = Nord2
 	// ColorSelectBg is a subtle lift off the base background (Nord's own
 	// "selection" shade), not an inverted bright block — the rest of the
 	// palette assumes light text on a dark background, and a bright color
@@ -114,13 +120,13 @@ func NewStyles() Styles {
 			Foreground(lipgloss.Color(ColorBadgeFg)).
 			Background(lipgloss.Color(ColorBadgeBg)),
 		// FilterActive marks "this filter is applied" — deliberately not
-		// Badge's warning-toned Nord13 (that's for search-match highlights
-		// and literal warnings), but the same accent color used everywhere
-		// else in the UI for "this is the active/selected thing".
+		// Badge's warning-toned Nord13 (search-match highlights and literal
+		// warnings) and not ColorHighlight's blue (general emphasis/"session
+		// running" status already own that hue) — its own teal instead.
 		FilterActive: lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color(ColorMatchFg)).
-			Background(lipgloss.Color(ColorHighlight)),
+			Background(lipgloss.Color(ColorFilterActive)),
 		Error: lipgloss.NewStyle().
 			Foreground(lipgloss.Color(ColorError)).
 			Bold(true),

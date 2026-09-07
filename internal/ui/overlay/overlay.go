@@ -4,12 +4,16 @@ import "charm.land/lipgloss/v2"
 
 func Picker(
 	width, height, listHeight int,
-	style lipgloss.Style,
-	listView string,
+	style, mutedStyle lipgloss.Style,
+	listView, hint string,
 ) string {
 	overlayW := max(40, width*50/100)
-	overlayH := min(listHeight+6, height-4)
-	box := style.Width(overlayW).Height(overlayH).Render(listView)
+	body := listView
+	if hint != "" {
+		body = lipgloss.JoinVertical(lipgloss.Left, listView, mutedStyle.MarginTop(1).Render(hint))
+	}
+	overlayH := min(listHeight+8, height-4)
+	box := style.Width(overlayW).Height(overlayH).Render(body)
 	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, box)
 }
 
