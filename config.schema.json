@@ -64,6 +64,11 @@
       "description": "Path to OpenCode SQLite database (default: ~/.local/share/opencode/opencode.db, or ~/Library/Application Support/opencode/opencode.db on macOS)",
       "type": "string"
     },
+    "pi_path": {
+      "default": "",
+      "description": "Path to pi agent sessions directory (default: ~/.pi/agent/sessions)",
+      "type": "string"
+    },
     "poll_interval": {
       "default": "5s",
       "description": "How often to reload sessions (Go duration, e.g. 5s, 30s, 1m)",

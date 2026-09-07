@@ -1,0 +1,3 @@
+{"type":"session","version":3,"id":"pi-session-uuid-2","timestamp":"2024-12-03T15:00:00.000Z","cwd":"/home/user/projects/myapp"}
+{"type":"message","id":"c3d4e5f6","parentId":null,"timestamp":"2024-12-03T15:00:01.000Z","message":{"role":"user","content":"Run the test suite","timestamp":1733238001000}}
+{"type":"message","id":"d4e5f6g7","parentId":"c3d4e5f6","timestamp":"2024-12-03T15:00:05.000Z","message":{"role":"assistant","content":[{"type":"toolCall","id":"call_1","name":"bash","arguments":{}}],"provider":"anthropic","model":"claude-sonnet-4-5","stopReason":"toolUse","usage":{"input":900,"output":120,"cacheRead":0,"cacheWrite":0,"totalTokens":1020,"cost":{"input":0.002,"output":0.002,"cacheRead":0,"cacheWrite":0,"total":0.004}},"timestamp":1733238005000}}

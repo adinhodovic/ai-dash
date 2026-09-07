@@ -8,6 +8,7 @@ import (
 	"github.com/adinhodovic/ai-dash/internal/sources/claude"
 	"github.com/adinhodovic/ai-dash/internal/sources/codex"
 	"github.com/adinhodovic/ai-dash/internal/sources/opencode"
+	"github.com/adinhodovic/ai-dash/internal/sources/pi"
 	"github.com/adinhodovic/ai-dash/internal/sources/shared"
 )
 
@@ -22,6 +23,7 @@ func providers(cfg config.Config) []shared.SessionProvider {
 		opencode.New(cfg),
 		codex.New(cfg),
 		claude.New(cfg),
+		pi.New(cfg),
 	}
 }
 
