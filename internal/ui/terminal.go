@@ -76,8 +76,8 @@ func (m *Model) openNewSession(tool string) tea.Cmd {
 	if sel >= 0 && sel < len(filtered) {
 		projectDir = sessionDir(filtered[sel])
 	}
-	if projectDir == "" && m.filters.project != "" {
-		projectDir = m.filters.project
+	if projectDir == "" && len(m.filters.projects) > 0 {
+		projectDir = m.filters.projects[0]
 	}
 	if projectDir == "" {
 		m.statusMessage = "No project selected"

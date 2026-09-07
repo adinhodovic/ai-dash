@@ -7,6 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/adinhodovic/ai-dash/internal/session"
 	uilayout "github.com/adinhodovic/ai-dash/internal/ui/layout"
@@ -83,12 +84,18 @@ func (m Model) View() tea.View {
 
 	page := uiviews.Page(top, content, footer)
 	if m.picker.active {
+		hint := "Press Esc to close"
+		if m.picker.label != "new-session" {
+			hint = "Press c to clear • Esc to close"
+		}
 		page = overlay.Picker(
 			m.width,
 			m.height,
 			m.picker.list.Height(),
 			m.styles.Overlay,
+			m.styles.Muted,
 			m.picker.list.View(),
+			hint,
 		)
 	}
 	if m.showSources {
@@ -199,6 +206,12 @@ func (m Model) renderCollapsedPreview(filtered []session.Session) string {
 		Render(content)
 }
 
+// searchCellWidth is the search section's fixed width — same footprint
+// whether it's showing the placeholder, a short query, or a long one being
+// typed — so Filters sits at a stable position instead of sliding sideways
+// on every keystroke.
+const searchCellWidth = 60
+
 func (m Model) renderTopBar(filtered []session.Session) string {
 	var searchPart string
 	switch {
@@ -215,7 +228,7 @@ func (m Model) renderTopBar(filtered []session.Session) string {
 		term := m.styles.Selected.Underline(true).Render(strings.TrimSpace(m.searchQuery()))
 		searchPart = prefix + term
 	}
-	searchLine := searchPart
+	searchLine := lipgloss.NewStyle().Width(searchCellWidth).Render(ansi.Truncate(searchPart, searchCellWidth, "…"))
 
 	var active int
 	activeTools := map[string]bool{}
@@ -246,48 +259,45 @@ func (m Model) renderTopBar(filtered []session.Session) string {
 // what "?" is for, and having both just competed for attention with the
 // thing that actually matters: what's applied right now.
 func (m Model) filterAndShortcutsLine() string {
-	prefix := m.styles.Highlight.Render(theme.Filter + " ")
+	prefix := m.styles.Highlight.Padding(0, 1).MarginRight(1).Render(theme.Filter)
 	return prefix + m.filterChips()
 }
 
-// filterChips renders what's currently narrowing the list. Filters actually
-// changed from their default get a bold accent-colored chip — the thing
-// that answers "what's applied" at a glance; filters still sitting at their
-// default get a plain muted chip if they're worth showing as context at
-// all (a default that's simply "off," like subagents, isn't — there's
-// nothing to say about it until it's turned on).
+// filterChips renders what's currently narrowing the list, as bold
+// accent-colored chips. A toggle that's simply "off" (like subagents) isn't
+// shown at all — there's nothing to say about it until it's turned on — but
+// the age window always gets a chip, since even its default value is always
+// excluding something.
 func (m Model) filterChips() string {
-	var active, info []string
-	activeChip := m.styles.FilterActive.Padding(0, 1).MarginRight(2)
-	infoChip := m.styles.Muted.Padding(0, 1).MarginRight(2)
+	var active []string
+	activeChip := m.styles.FilterActive.Padding(0, 2).MarginRight(3)
 
 	if m.showAttentionOnly {
 		active = append(active, activeChip.Render(theme.Attention+" needs attention"))
 	} else if n := len(attentionKeys(m.sessions)); n > 0 {
 		active = append(
 			active,
-			theme.AttentionStyle().Bold(true).Padding(0, 1).MarginRight(2).
+			theme.AttentionStyle().Bold(true).Padding(0, 2).MarginRight(3).
 				Render(fmt.Sprintf("%s %d need attention", theme.Attention, n)),
 		)
 	}
 	if m.showActiveOnly {
 		active = append(active, activeChip.Render(theme.Active+" active only"))
 	}
-	if m.filters.tool != "" {
-		active = append(active, activeChip.Render(theme.Tool+" "+m.filters.tool))
+	for _, tool := range m.filters.tools {
+		active = append(active, activeChip.Render(theme.Tool+" "+tool))
 	}
-	if m.filters.project != "" {
-		active = append(active, activeChip.Render(theme.Project+" "+uiutil.CleanProjectName(m.filters.project)))
+	for _, project := range m.filters.projects {
+		active = append(active, activeChip.Render(theme.Project+" "+uiutil.CleanProjectName(project)))
 	}
 	if m.showSubagents {
 		active = append(active, activeChip.Render(theme.Parent+" incl. subagents"))
 	}
-	if maxSessionAge != m.meta.Config.DefaultAgeFilterDuration() {
-		active = append(active, activeChip.Render(theme.Clock+" last "+ageLabel(maxSessionAge)))
-	} else {
-		info = append(info, infoChip.Render(theme.Clock+" last "+ageLabel(maxSessionAge)))
-	}
-	return lipgloss.JoinHorizontal(lipgloss.Top, append(active, info...)...)
+	// Unlike the boolean toggles above, the age window always has a real
+	// effect — even at its default value it's excluding everything older —
+	// so it's never just "off," and always gets the active styling.
+	active = append(active, activeChip.Render(theme.Clock+" last "+ageLabel(maxSessionAge)))
+	return lipgloss.JoinHorizontal(lipgloss.Top, active...)
 }
 
 // renderHelpBody renders the "?" overlay as labeled sections (Navigate,

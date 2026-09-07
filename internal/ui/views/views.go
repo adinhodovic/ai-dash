@@ -117,16 +117,14 @@ func TopStrip(styles theme.Styles, width int, version, results string) string {
 		Render(ansi.Truncate(line, innerW, "…"))
 }
 
-// TopBar renders the search window: Search and Filters share one line now
-// that Filters dropped its keyboard-hint clutter and actually has room —
-// two things this closely related no longer need two lines to say.
+// TopBar renders the search window: Search fixed-width on the left (so it
+// doesn't slide around as you type), Filters pushed to the right edge of
+// the window — the two ends of the same bar rather than crowded together
+// right after Search.
 func TopBar(styles theme.Styles, width int, searchLine, filtersLine string) string {
 	innerW := max(10, width-2-2*uilayout.PanePadding)
-	// A faint mid-dot, not a hard rule — same separator the results line
-	// already uses ("N sessions · M active"), so the two read as one
-	// consistent convention instead of two different kinds of divider.
-	divider := styles.Muted.Render("   ·   ")
-	line := searchLine + divider + filtersLine
+	gapW := max(1, innerW-lipgloss.Width(searchLine)-lipgloss.Width(filtersLine))
+	line := searchLine + strings.Repeat(" ", gapW) + filtersLine
 
 	return styles.Panel.
 		Padding(0, uilayout.PanePadding).

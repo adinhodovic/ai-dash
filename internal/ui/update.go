@@ -54,14 +54,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			switch msg.String() {
 			case "enter":
-				if item, ok := m.picker.list.SelectedItem().(pickerItem); ok {
-					if m.picker.label == "new-session" {
-						if cmd := m.openNewSession(item.value); cmd != nil {
-							m.picker.active = false
-							return m, cmd
-						}
-					} else {
-						m.applyFilterChange(item.value, m.picker.label)
+				item, ok := m.picker.list.SelectedItem().(pickerItem)
+				if !ok {
+					break
+				}
+				if m.picker.multi {
+					// Toggle in place and keep the picker open — checking
+					// several values shouldn't mean reopening it each time.
+					m.toggleFilterValue(item.value, m.picker.label)
+					item.checked = !item.checked
+					m.picker.list.SetItem(m.picker.list.Index(), item)
+					filtered = m.filteredSessions()
+					m.syncAllTables(filtered)
+					return m, cmd
+				}
+				if m.picker.label == "new-session" {
+					if cmd := m.openNewSession(item.value); cmd != nil {
+						m.picker.active = false
+						return m, cmd
 					}
 				}
 				m.picker.active = false
@@ -69,6 +79,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.syncAllTables(filtered)
 			case "esc":
 				m.picker.active = false
+			case "c":
+				if m.picker.multi {
+					m.clearFilter(m.picker.label)
+					m.picker.active = false
+					filtered = m.filteredSessions()
+					m.syncAllTables(filtered)
+				}
 			}
 			return m, cmd
 		}
@@ -106,10 +123,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.showSources = false
 				m.showHelp = false
 				defTool := m.meta.Config.DefaultTool
+				var selected []string
+				if defTool != "" {
+					selected = []string{defTool}
+				}
 				m.picker = newPicker(
 					"new session (tool)",
 					toolOptions(m.sessions),
-					defTool,
+					selected,
+					false,
 					false,
 				)
 				m.picker.label = "new-session"
@@ -154,7 +176,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.picker.active = false
 			m.showSources = false
 			m.showHelp = false
-			m.picker = newPicker("tool", toolOptions(filtered), m.filters.tool, false)
+			m.picker = newPicker("tool", toolOptions(filtered), m.filters.tools, true, false)
 		case "s":
 			m.cycleSortForward()
 			filtered = m.filteredSessions()
@@ -163,7 +185,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.picker.active = false
 			m.showSources = false
 			m.showHelp = false
-			m.picker = newPicker("project", projectOptions(filtered), m.filters.project, true)
+			m.picker = newPicker("project", projectOptions(filtered), m.filters.projects, true, true)
 		case "S":
 			m.picker.active = false
 			m.showHelp = false
