@@ -1,6 +1,10 @@
 package ui
 
 import (
+	"fmt"
+	"strings"
+	"time"
+
 	"charm.land/bubbles/v2/table"
 
 	"github.com/adinhodovic/ai-dash/internal/session"
@@ -9,61 +13,63 @@ import (
 	uiutil "github.com/adinhodovic/ai-dash/internal/ui/util"
 )
 
+// attentionLabel describes why a session needs attention and for how long,
+// e.g. "waiting 45m". The duration is time since last observed activity —
+// the same signal session.Attention uses to derive the reason itself, so it
+// doubles as "how long in this state" for every reason, not just stalled.
+func attentionLabel(s session.Session) string {
+	reason := session.Attention(s)
+	if reason == session.AttentionNone {
+		return ""
+	}
+	return fmt.Sprintf("%s %s", reason, ageLabel(time.Since(s.EndedAt)))
+}
+
 func (m *Model) resizeTable(filtered []session.Session) {
 	width := max(44, m.width)
 	if !m.detailCollapsed {
 		width = max(40, m.width*70/100)
 	}
-	// Subtract pane border (2) for inner width; header join (1) for height.
-	tableW := max(40, width-2)
-	projectW, summaryW := sessionColumnWidths(tableW)
+	// Subtract pane border (2) and interior padding for inner width; sort
+	// header + its margin line (2) for height.
+	tableW := max(40, width-2-2*uilayout.PanePadding)
 	height := max(2, uilayout.PaneBodyHeight(uilayout.BottomPaneHeight(m.height))-1)
-	m.sessionTable.SetColumns([]table.Column{
-		{Title: m.sortHeader("Last Active", session.SortUpdated), Width: 14},
-		{Title: m.sortHeader("Tool", session.SortTool), Width: 8},
-		{Title: m.sortHeader("Status", session.SortStatus), Width: 11},
-		{Title: m.sortHeader("Project", session.SortProject), Width: projectW},
-		{Title: m.sortHeader("Summary", session.SortSummary), Width: summaryW},
-	})
-	m.sessionTable.SetWidth(tableW)
-	m.sessionTable.SetHeight(height)
+	m.sessionViewport.SetWidth(tableW)
+	m.sessionViewport.SetHeight(max(1, height-2))
 	m.syncTable(filtered)
 }
 
 func (m *Model) syncTable(filtered []session.Session) {
-	rows := make([]table.Row, 0, len(filtered))
-	projectW, summaryW := sessionColumnWidths(m.sessionTable.Width())
-	for _, s := range filtered {
-		status := uiutil.SessionStatusLabel(s)
-		rows = append(rows, table.Row{
-			uiutil.TimeAgo(uiutil.LastActive(s)),
-			uiutil.Capitalize(s.Tool),
-			theme.StatusStyle(status).Render(uiutil.TruncateForCell(status, 11)),
-			uiutil.TruncateProject(s.Project, projectW),
-			uiutil.TruncateForCell(uiutil.CleanSummary(s.Summary), summaryW),
-		})
+	if len(filtered) == 0 {
+		m.sessionCursor = 0
+		m.sessionViewport.SetContent("")
+		return
 	}
-	m.sessionTable.SetRows(rows)
-}
-
-func sessionColumnWidths(tableW int) (int, int) {
-	const fixed = 14 + 8 + 11
-	const cellPad = 5 * 2
-	const minSummaryW = 16
-	available := max(36, tableW-fixed-cellPad)
-	projectW := min(36, max(24, available/3))
-	projectW = min(projectW, available-minSummaryW)
-	summaryW := max(minSummaryW, available-projectW)
-	return projectW, summaryW
+	m.sessionCursor = max(0, min(len(filtered)-1, m.sessionCursor))
+	width := m.sessionViewport.Width()
+	blocks := make([]string, 0, len(filtered))
+	for i, s := range filtered {
+		blocks = append(blocks, renderSessionRow(*m, s, i == m.sessionCursor, width))
+	}
+	// A faint rule between rows (not just blank space) so one session's
+	// boundary is unambiguous, matching sessionRowGap's single line.
+	divider := m.styles.Rule.Render(strings.Repeat("─", width))
+	m.sessionViewport.SetContent(strings.Join(blocks, "\n"+divider+"\n"))
+	m.sessionViewport.SetYOffset(followCursor(
+		m.sessionCursor,
+		len(filtered),
+		m.sessionViewport.Height(),
+		m.sessionViewport.YOffset(),
+	))
 }
 
 func (m *Model) resizeSourceTable() {
 	width := max(40, m.width*70/100-6)
 	m.sourceTable.SetColumns([]table.Column{
-		{Title: "Tool", Width: 9},
-		{Title: "Format", Width: 8},
-		{Title: "Status", Width: 8},
-		{Title: "Path", Width: max(16, width-29)},
+		{Title: theme.Tool + " Tool", Width: 9},
+		{Title: theme.Meta + " Format", Width: 9},
+		{Title: theme.Active + " Status", Width: 9},
+		{Title: theme.Repo + " Path", Width: max(16, width-31)},
 	})
 	m.sourceTable.SetWidth(width)
 	m.sourceTable.SetHeight(max(3, min(5, len(m.meta.Discovery.Sources)+1)))

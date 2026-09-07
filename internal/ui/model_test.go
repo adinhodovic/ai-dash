@@ -125,41 +125,6 @@ func TestSearchFilter(t *testing.T) {
 	}
 }
 
-func TestCycleForward(t *testing.T) {
-	m := testModel()
-	if m.focus != focusList {
-		t.Fatal("should start at focusList")
-	}
-	// Tab order: Sessions -> Projects
-	m.cycleForward()
-	if m.focus != focusFilters {
-		t.Errorf("after 1 tab: got %d, want focusFilters(%d)", m.focus, focusFilters)
-	}
-	m.cycleForward()
-	if m.focus != focusList {
-		t.Errorf("after 2 tab: got %d, want focusList(%d)", m.focus, focusList)
-	}
-}
-
-func TestCycleBackward(t *testing.T) {
-	m := testModel()
-	m.cycleBackward()
-	if m.focus != focusFilters {
-		t.Errorf("backward from list: got %d, want focusFilters(%d)", m.focus, focusFilters)
-	}
-}
-
-func TestCycleSkipsSearch(t *testing.T) {
-	m := testModel()
-	// Cycle through all positions 10 times
-	for i := 0; i < 30; i++ {
-		m.cycleForward()
-		if m.focus == focusSearch {
-			t.Fatal("tab should never land on focusSearch")
-		}
-	}
-}
-
 func TestSortCycling(t *testing.T) {
 	m := testModel()
 	m = resize(m, 120, 40)
@@ -203,10 +168,10 @@ func TestRenameSession(t *testing.T) {
 		t.Fatal("rename mode should close after save")
 	}
 	filtered := m.filteredSessions()
-	if got := filtered[m.sessionTable.Cursor()].Summary; got != "renamed session" {
+	if got := filtered[m.sessionCursor].Summary; got != "renamed session" {
 		t.Fatalf("selected summary = %q, want renamed session", got)
 	}
-	if got := m.meta.Renames[session.RenameKey(filtered[m.sessionTable.Cursor()])]; got != "renamed session" {
+	if got := m.meta.Renames[session.RenameKey(filtered[m.sessionCursor])]; got != "renamed session" {
 		t.Fatalf("stored rename = %q, want renamed session", got)
 	}
 }
@@ -258,10 +223,10 @@ func TestViewNoMatchingFilters(t *testing.T) {
 func TestSyncTableKeepsSelectedCursor(t *testing.T) {
 	m := testModel()
 	m = resize(m, 120, 40)
-	m.sessionTable.SetCursor(2)
+	m.sessionCursor = 2
 	filtered := m.filteredSessions()
 	m.syncTable(filtered)
-	if got := m.sessionTable.Cursor(); got != 2 {
+	if got := m.sessionCursor; got != 2 {
 		t.Fatalf("cursor = %d, want 2", got)
 	}
 }
@@ -299,7 +264,7 @@ func TestLayoutHeightsStayStableAcrossSelection(t *testing.T) {
 	filtered := m.filteredSessions()
 	firstDetail := m.detailTable.Height()
 
-	m.sessionTable.SetCursor(1)
+	m.sessionCursor = 1
 	m.syncAllTables(filtered)
 
 	if got := m.detailTable.Height(); got != firstDetail {

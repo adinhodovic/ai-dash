@@ -20,16 +20,6 @@ func newTable(columns []table.Column) table.Model {
 	return t
 }
 
-func newSessionTable() table.Model {
-	return newTable([]table.Column{
-		{Title: "Tool", Width: 7},
-		{Title: "Project", Width: 16},
-		{Title: "Status", Width: 10},
-		{Title: "Started", Width: 16},
-		{Title: "Summary", Width: 36},
-	})
-}
-
 func newSourceTable() table.Model {
 	return newTable([]table.Column{
 		{Title: "Tool", Width: 8},

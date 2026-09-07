@@ -1,7 +1,6 @@
 package views
 
 import (
-	"fmt"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -12,11 +11,11 @@ import (
 )
 
 func EmptySessions(styles theme.Styles, width, contentH int, message string) string {
-	return renderPane(styles.Panel, styles.Header, "Sessions", message, width, contentH)
+	return renderPane(styles.Panel, message, width, contentH)
 }
 
 func NoMatches(styles theme.Styles, width, contentH int, message string) string {
-	return renderPane(styles.Panel, styles.Header, "Sessions", message, width, contentH)
+	return renderPane(styles.Panel, message, width, contentH)
 }
 
 func CollapsedSessions(
@@ -27,8 +26,6 @@ func CollapsedSessions(
 ) string {
 	tablePane := renderPane(
 		panelStyle(styles, focusList),
-		styles.Header,
-		"Sessions",
 		sessionPane,
 		width,
 		tableH,
@@ -53,16 +50,12 @@ func MainDashboard(
 ) string {
 	sessions := renderPane(
 		panelStyle(styles, focusList),
-		styles.Header,
-		"Sessions",
 		sessionPane,
 		leftW,
 		botH,
 	)
 	details := renderPane(
 		styles.Panel,
-		styles.Header,
-		"Details",
 		detailPane,
 		rightW,
 		botH,
@@ -88,68 +81,67 @@ func DetailPane(styles theme.Styles, width int, summary, detailTable string) str
 	)
 }
 
-func TopBar(
-	styles theme.Styles,
-	width int,
-	searchFocused bool,
-	renameFocused bool,
-	searchInputView, renameInputView, searchQuery string,
-	filteredCount, totalCount int,
-	chips string,
-) string {
-	sep := styles.Muted.Padding(0, 1).Render("│")
-	var searchPart string
-	if renameFocused {
-		searchPart = lipgloss.NewStyle().
-			Foreground(lipgloss.Color(theme.Nord13)).
-			Bold(true).
-			Render("Rename ") + renameInputView
-	} else if searchFocused {
-		searchPart = lipgloss.NewStyle().
-			Foreground(lipgloss.Color(theme.Nord13)).
-			Bold(true).
-			Render(theme.Search+" ") + searchInputView
-	} else if searchQuery == "" {
-		searchPart = styles.Muted.Render(theme.Search + " all")
-	} else {
-		prefix := styles.Highlight.Render(theme.Search + " ")
-		term := styles.Selected.Underline(true).Render(searchQuery)
-		searchPart = prefix + term
-	}
-	parts := []string{
-		searchPart,
-		styles.Selected.Render(fmt.Sprintf("%d/%d", filteredCount, totalCount)),
-	}
-	if chips != "" {
-		parts = append(parts, chips)
-	}
-	left := strings.Join(parts, sep)
-	title := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color(theme.Nord6)).
-		Background(lipgloss.Color(theme.Nord10)).
-		Padding(0, 2).
-		Render("AI Dash")
-	return lipgloss.NewStyle().Width(width - 2).Render(
-		lipgloss.JoinHorizontal(
+// TopStrip renders the one-line masthead above the search window: the
+// results count on the left (it reads fine on its own — no "Results:"
+// label needed), a small plain-text brand mark and the build version
+// grouped together on the right. Pixel art was tried at three different
+// sizes and never actually read as "AI Dash" at terminal scale — plain
+// text is small, legible, and done.
+func TopStrip(styles theme.Styles, width int, version, results string) string {
+	logo := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(theme.Nord8)).Render("AI Dash")
+	right := lipgloss.JoinHorizontal(lipgloss.Top, logo, "  ", styles.Muted.Render(version))
+
+	innerW := max(10, width-2*uilayout.PanePadding)
+	leftW := lipgloss.Width(results)
+	rightMax := max(0, innerW-leftW-1) // leave room for at least one gap column
+	if lipgloss.Width(right) > rightMax {
+		versionW := max(0, rightMax-lipgloss.Width(logo)-2)
+		right = lipgloss.JoinHorizontal(
 			lipgloss.Top,
-			left,
-			lipgloss.NewStyle().
-				Width(width-2-lipgloss.Width(left)-lipgloss.Width(title)).
-				Render(""),
-			title,
-		),
+			logo,
+			"  ",
+			styles.Muted.Render(ansi.Truncate(version, versionW, "…")),
+		)
+	}
+	gapW := max(0, innerW-leftW-lipgloss.Width(right))
+	line := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		results,
+		lipgloss.NewStyle().Width(gapW).Render(""),
+		right,
 	)
+
+	return lipgloss.NewStyle().
+		Padding(0, uilayout.PanePadding).
+		Width(width).
+		Render(ansi.Truncate(line, innerW, "…"))
+}
+
+// TopBar renders the search window: Search and Filters share one line now
+// that Filters dropped its keyboard-hint clutter and actually has room —
+// two things this closely related no longer need two lines to say.
+func TopBar(styles theme.Styles, width int, searchLine, filtersLine string) string {
+	innerW := max(10, width-2-2*uilayout.PanePadding)
+	// A faint mid-dot, not a hard rule — same separator the results line
+	// already uses ("N sessions · M active"), so the two read as one
+	// consistent convention instead of two different kinds of divider.
+	divider := styles.Muted.Render("   ·   ")
+	line := searchLine + divider + filtersLine
+
+	return styles.Panel.
+		Padding(0, uilayout.PanePadding).
+		Width(width).
+		Height(1).
+		Render(ansi.Truncate(line, innerW, "…"))
 }
 
 func Page(top, content, footer string) string {
 	return lipgloss.JoinVertical(lipgloss.Left, top, content, footer)
 }
 
-func renderPane(border, header lipgloss.Style, title, body string, width, height int) string {
-	titleLine := header.PaddingRight(1).PaddingLeft(1).MarginBottom(1).Render(title)
-	content := lipgloss.JoinVertical(lipgloss.Left, titleLine, body)
-	return border.Width(width).Height(height).MaxHeight(height).Render(content)
+func renderPane(border lipgloss.Style, body string, width, height int) string {
+	inner := lipgloss.NewStyle().Padding(0, uilayout.PanePadding).Render(body)
+	return border.Width(width).Height(height).MaxHeight(height).Render(inner)
 }
 
 func panelStyle(styles theme.Styles, active bool) lipgloss.Style {

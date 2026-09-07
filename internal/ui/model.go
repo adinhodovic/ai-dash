@@ -8,6 +8,7 @@ import (
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/table"
 	"charm.land/bubbles/v2/textinput"
+	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/sahilm/fuzzy"
@@ -45,33 +46,51 @@ type filters struct {
 }
 
 type Model struct {
-	sessions        []session.Session
-	width           int
-	height          int
-	err             error
-	styles          theme.Styles
-	meta            Options
-	filters         filters
-	focus           focusArea
-	detailCollapsed bool
-	autoCollapsed   bool
-	manualCollapse  bool
-	statusMessage   string
-	searchInput     textinput.Model
-	renameInput     textinput.Model
-	renaming        bool
-	renamingKey     string
-	sessionTable    table.Model
-	sourceTable     table.Model
-	detailTable     table.Model
-	help            help.Model
-	keys            keyMap
-	sortField       session.SortField
-	sortDescending  bool
-	showHelp        bool
-	showSources     bool
-	showSubagents   bool
-	picker          filterPicker
+	sessions              []session.Session
+	width                 int
+	height                int
+	err                   error
+	styles                theme.Styles
+	meta                  Options
+	filters               filters
+	focus                 focusArea
+	detailCollapsed       bool
+	autoCollapsed         bool
+	manualCollapse        bool
+	statusMessage         string
+	searchInput           textinput.Model
+	searchQueryBeforeEdit string
+	renameInput           textinput.Model
+	renaming              bool
+	renamingKey           string
+	sessionViewport       viewport.Model
+	sessionCursor         int
+	sourceTable           table.Model
+	detailTable           table.Model
+	help                  help.Model
+	keys                  keyMap
+	sortField             session.SortField
+	sortDescending        bool
+	showHelp              bool
+	showSources           bool
+	showSubagents         bool
+	showAttentionOnly     bool
+	showActiveOnly        bool
+	showDetailExtra       bool
+	seenAttention         map[string]bool
+	picker                filterPicker
+}
+
+// attentionKeys returns the RenameKey of every session currently needing
+// attention, for tracking which ones have already been surfaced to the user.
+func attentionKeys(sessions []session.Session) map[string]bool {
+	keys := make(map[string]bool)
+	for _, s := range sessions {
+		if session.NeedsAttention(s) {
+			keys[session.RenameKey(s)] = true
+		}
+	}
+	return keys
 }
 
 func NewModel(opts Options) Model {
@@ -100,15 +119,15 @@ func NewModel(opts Options) Model {
 		agePresets = presets
 	}
 	m := Model{
-		sessions:     opts.Sessions,
-		err:          opts.Err,
-		styles:       theme.NewStyles(),
-		meta:         opts,
-		searchInput:  input,
-		renameInput:  renameInput,
-		sessionTable: newSessionTable(),
-		sourceTable:  newSourceTable(),
-		detailTable:  newTable([]table.Column{{Title: "", Width: 10}, {Title: "", Width: 30}}),
+		sessions:        opts.Sessions,
+		err:             opts.Err,
+		styles:          theme.NewStyles(),
+		meta:            opts,
+		searchInput:     input,
+		renameInput:     renameInput,
+		sessionViewport: viewport.New(),
+		sourceTable:     newSourceTable(),
+		detailTable:     newTable([]table.Column{{Title: "", Width: 10}, {Title: "", Width: 30}}),
 		help: func() help.Model {
 			h := help.New()
 			theme.ApplyHelpStyles(&h)
@@ -117,6 +136,7 @@ func NewModel(opts Options) Model {
 		keys:           defaultKeyMap(),
 		sortField:      session.SortUpdated,
 		sortDescending: true,
+		seenAttention:  attentionKeys(opts.Sessions),
 	}
 	m.meta.Renames = renames
 	m.meta.RenamesPath = renamesPath
@@ -148,13 +168,35 @@ func (m Model) filteredSessions() []session.Session {
 		if !m.showSubagents && s.ParentID != "" {
 			continue
 		}
+		if m.showAttentionOnly && !session.NeedsAttention(s) {
+			continue
+		}
+		if m.showActiveOnly && !session.IsLive(s) {
+			continue
+		}
 		if query != "" && !matchesQuery(s, query) {
 			continue
 		}
 		filtered = append(filtered, s)
 	}
 	session.SortBy(filtered, m.sortField, m.sortDescending)
-	return filtered
+	return prioritizeAttention(filtered)
+}
+
+// prioritizeAttention stably partitions sessions needing attention to the
+// front, preserving whatever order the active sort already produced within
+// each partition.
+func prioritizeAttention(sessions []session.Session) []session.Session {
+	attention := make([]session.Session, 0, len(sessions))
+	rest := make([]session.Session, 0, len(sessions))
+	for _, s := range sessions {
+		if session.NeedsAttention(s) {
+			attention = append(attention, s)
+		} else {
+			rest = append(rest, s)
+		}
+	}
+	return append(attention, rest...)
 }
 
 func matchesQuery(s session.Session, query string) bool {

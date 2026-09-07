@@ -94,6 +94,6 @@ func (m *Model) applyFilterChange(value, label string) {
 	case "project":
 		m.filters.project = value
 	}
-	m.sessionTable.SetCursor(0)
+	m.sessionCursor = 0
 	m.statusMessage = fmt.Sprintf("Updated %s filter", label)
 }

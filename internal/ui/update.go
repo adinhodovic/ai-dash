@@ -86,6 +86,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.showHelp = true
 		case "/":
 			m.focus = focusSearch
+			m.searchQueryBeforeEdit = m.searchInput.Value()
 			m.searchInput.Focus()
 		case "r":
 			if cmd := m.openSelectedExternally(filtered); cmd != nil {
@@ -129,13 +130,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.manualCollapse = !m.manualCollapse
 			m.updateDetailCollapse()
 			m.resizeSourceTable()
+		case "i":
+			m.showDetailExtra = !m.showDetailExtra
+			m.resizeDetailTable(filtered)
+			if m.showDetailExtra {
+				m.statusMessage = "Showing IDs & metadata"
+			} else {
+				m.statusMessage = "Hiding IDs & metadata"
+			}
 
 		case "c":
 			m.filters = filters{}
 			m.searchInput.SetValue("")
 			m.showSubagents = false
+			m.showAttentionOnly = false
+			m.showActiveOnly = false
 			maxSessionAge = m.meta.Config.DefaultAgeFilterDuration()
-			m.sessionTable.SetCursor(0)
+			m.sessionCursor = 0
 			m.statusMessage = "Cleared all filters"
 			filtered = m.filteredSessions()
 			m.syncAllTables(filtered)
@@ -173,25 +184,68 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			maxSessionAge = next
 			m.statusMessage = fmt.Sprintf("Showing sessions from last %s", ageLabel(maxSessionAge))
 			filtered = m.filteredSessions()
-			m.sessionTable.SetCursor(0)
+			m.sessionCursor = 0
 			m.syncAllTables(filtered)
 		case "a":
 			m.showSubagents = !m.showSubagents
 			filtered = m.filteredSessions()
-			m.sessionTable.SetCursor(0)
+			m.sessionCursor = 0
 			m.syncAllTables(filtered)
 			if m.showSubagents {
 				m.statusMessage = "Showing subagent sessions"
 			} else {
 				m.statusMessage = "Hiding subagent sessions"
 			}
-		default:
+		case "!":
+			m.showAttentionOnly = !m.showAttentionOnly
+			if m.showAttentionOnly {
+				for key := range attentionKeys(m.sessions) {
+					m.seenAttention[key] = true
+				}
+			}
+			filtered = m.filteredSessions()
+			m.sessionCursor = 0
+			m.syncAllTables(filtered)
+			if m.showAttentionOnly {
+				m.statusMessage = "Showing only sessions needing attention"
+			} else {
+				m.statusMessage = "Showing all sessions"
+			}
+		case "A":
+			m.showActiveOnly = !m.showActiveOnly
+			filtered = m.filteredSessions()
+			m.sessionCursor = 0
+			m.syncAllTables(filtered)
+			if m.showActiveOnly {
+				m.statusMessage = "Showing only active sessions"
+			} else {
+				m.statusMessage = "Showing all sessions"
+			}
+		case "up", "k":
 			if m.focus == focusList {
-				var cmd tea.Cmd
-				m.sessionTable, cmd = m.sessionTable.Update(msg)
-				m.resizeDetailTable(filtered)
-				m.resizeSourceTable()
-				return m, cmd
+				moveSessionCursor(&m, -1, filtered)
+			}
+		case "down", "j":
+			if m.focus == focusList {
+				moveSessionCursor(&m, 1, filtered)
+			}
+		case "pgup", "ctrl+u":
+			if m.focus == focusList {
+				page := max(1, m.sessionViewport.Height()/sessionRowStride)
+				moveSessionCursor(&m, -page, filtered)
+			}
+		case "pgdown", "ctrl+d":
+			if m.focus == focusList {
+				page := max(1, m.sessionViewport.Height()/sessionRowStride)
+				moveSessionCursor(&m, page, filtered)
+			}
+		case "g":
+			if m.focus == focusList {
+				moveSessionCursor(&m, -len(filtered), filtered)
+			}
+		case "G":
+			if m.focus == focusList {
+				moveSessionCursor(&m, len(filtered), filtered)
 			}
 		}
 	case statusMsg:
@@ -210,6 +264,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			prev := len(m.sessions)
 			m.sessions = msg.sessions
 			m.meta.Discovery = msg.discovery
+			current := attentionKeys(m.sessions)
+			for key := range current {
+				current[key] = m.seenAttention[key]
+			}
+			m.seenAttention = current
 			if len(m.sessions) != prev {
 				m.statusMessage = fmt.Sprintf(
 					"Reloaded: %d sessions (was %d)", len(m.sessions), prev,
@@ -250,12 +309,14 @@ func (m Model) updateSearch(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case "esc":
 		m.focus = focusList
+		m.searchInput.SetValue(m.searchQueryBeforeEdit)
 		m.searchInput.Blur()
 		m.syncAllTables(m.filteredSessions())
+		m.statusMessage = "Search cancelled"
 	case "enter":
 		m.focus = focusList
 		m.searchInput.Blur()
-		m.sessionTable.SetCursor(0)
+		m.sessionCursor = 0
 		filtered := m.filteredSessions()
 		m.syncAllTables(filtered)
 		if strings.TrimSpace(m.searchQuery()) == "" {
@@ -272,7 +333,7 @@ func (m Model) updateSearch(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) startRename(filtered []session.Session) {
-	sel := m.sessionTable.Cursor()
+	sel := m.sessionCursor
 	if len(filtered) == 0 || sel < 0 || sel >= len(filtered) {
 		m.statusMessage = "No session selected"
 		return
