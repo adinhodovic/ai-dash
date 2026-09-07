@@ -202,18 +202,3 @@ func ValueOrUnknown(value string) string {
 	}
 	return value
 }
-
-func RelationLabel(selected, candidate session.Session) string {
-	switch {
-	case selected.ParentID != "" && candidate.ID == selected.ParentID:
-		return "parent"
-	case candidate.ParentID != "" && candidate.ParentID == selected.ID:
-		return "child"
-	case selected.Project != "" && candidate.Project == selected.Project:
-		return "project"
-	case selected.Repo != "" && candidate.Repo == selected.Repo:
-		return "repo"
-	default:
-		return ""
-	}
-}

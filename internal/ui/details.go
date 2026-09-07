@@ -12,16 +12,13 @@ import (
 	uiutil "github.com/adinhodovic/ai-dash/internal/ui/util"
 )
 
-const relatedProjectW = 12
-
-func detailPaneSectionHeights(termHeight int) (summary, detail, related int) {
+func detailPaneSectionHeights(termHeight int) (summary, detail int) {
 	bodyH := uilayout.PaneBodyHeight(uilayout.BottomPaneHeight(termHeight))
-	// Layout: summaryLabel(1) + summaryText(1) + divider(1) + detailTable + divider(1) + relatedLabel(1) + relatedTable
+	// Layout: summaryLabel(1) + summaryText(1) + divider(1) + detailTable
 	summary = 2
-	related = 6
-	fixed := summary + 2 + 2 + related // summary section + 2 divider/label lines + 2 table join newlines
+	fixed := summary + 1 // summary section + divider/join line
 	detail = max(3, bodyH-fixed)
-	return summary, detail, related
+	return summary, detail
 }
 
 func (m *Model) resizeDetailTable(filtered []session.Session) {
@@ -32,8 +29,8 @@ func (m *Model) resizeDetailTable(filtered []session.Session) {
 		return
 	}
 	detailW := m.width - m.width*70/100
-	innerW := max(10, detailW-2) // subtract pane border
-	_, detailH, _ := detailPaneSectionHeights(m.height)
+	innerW := max(10, detailW-2-2*uilayout.PanePadding) // subtract pane border + padding
+	_, detailH := detailPaneSectionHeights(m.height)
 	keyW := 26
 	valW := max(10, innerW-keyW-4) // subtract cell padding (1 each side × 2 cols)
 	m.detailTable.SetColumns([]table.Column{
@@ -49,52 +46,6 @@ func (m *Model) resizeDetailTable(filtered []session.Session) {
 	m.detailTable.SetRows(rows)
 	m.detailTable.SetHeight(detailH)
 	m.detailTable.UpdateViewport()
-}
-
-func (m *Model) resizeRelatedTable(filtered []session.Session) {
-	detailW := m.width - m.width*70/100
-	width := max(30, detailW-2) // subtract pane border
-	_, _, relatedH := detailPaneSectionHeights(m.height)
-	m.relatedTable.SetColumns([]table.Column{
-		{Title: "Tool", Width: 7},
-		{Title: "Project", Width: relatedProjectW},
-		{Title: "Relation", Width: 8},
-		{Title: "Summary", Width: max(8, width-35)},
-	})
-	m.relatedTable.SetWidth(width)
-	m.relatedTable.SetHeight(relatedH)
-	m.syncRelatedTable(filtered)
-}
-
-func (m *Model) syncRelatedTable(filtered []session.Session) {
-	rows := make([]table.Row, 0)
-	sel := m.sessionTable.Cursor()
-	if len(filtered) == 0 || sel < 0 || sel >= len(filtered) {
-		m.relatedTable.SetRows(rows)
-		return
-	}
-	selected := filtered[sel]
-	for _, candidate := range m.sessions {
-		if candidate.ID == selected.ID {
-			continue
-		}
-		relation := uiutil.RelationLabel(selected, candidate)
-		if relation == "" {
-			continue
-		}
-		rows = append(
-			rows,
-			table.Row{
-				candidate.Tool,
-				uiutil.TruncateProject(candidate.Project, relatedProjectW),
-				relation,
-				candidate.Summary,
-			},
-		)
-	}
-	m.relatedTable.SetRows(rows)
-	m.relatedTable.SetCursor(0)
-	m.relatedTable.UpdateViewport()
 }
 
 func spacer() detailItem { return detailItem{"", ""} }

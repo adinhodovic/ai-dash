@@ -85,7 +85,7 @@ func newPicker(label string, options []string, current string, searchable bool) 
 }
 
 func (m *Model) applyFilterChange(value, label string) {
-	if m.focus != focusFilters && m.focus != focusList {
+	if m.focus != focusList {
 		return
 	}
 	switch label {

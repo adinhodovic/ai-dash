@@ -59,19 +59,12 @@ func (m *Model) openNewSession(tool string) tea.Cmd {
 		m.statusMessage = "No tool selected"
 		return nil
 	}
-	// Get project dir from focused table
+	// Get project dir from the selected session.
 	var projectDir string
-	if m.focus == focusFilters {
-		cursor := m.overviewTable.Cursor()
-		if cursor >= 0 && cursor < len(m.projectPaths) {
-			projectDir = m.projectPaths[cursor]
-		}
-	} else {
-		filtered := m.filteredSessions()
-		sel := m.sessionTable.Cursor()
-		if sel >= 0 && sel < len(filtered) {
-			projectDir = sessionDir(filtered[sel])
-		}
+	filtered := m.filteredSessions()
+	sel := m.sessionTable.Cursor()
+	if sel >= 0 && sel < len(filtered) {
+		projectDir = sessionDir(filtered[sel])
 	}
 	if projectDir == "" {
 		m.statusMessage = "No project selected"

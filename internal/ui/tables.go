@@ -38,13 +38,3 @@ func newSourceTable() table.Model {
 		{Title: "Path", Width: 40},
 	})
 }
-
-func newRelatedTable() table.Model {
-	return newTable([]table.Column{
-		{Title: "Tool", Width: 8},
-		{Title: "Project", Width: 14},
-		{Title: "Relation", Width: 12},
-		{Title: "Started", Width: 16},
-		{Title: "Summary", Width: 28},
-	})
-}

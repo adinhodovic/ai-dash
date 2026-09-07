@@ -297,54 +297,20 @@ func TestLayoutHeightsStayStableAcrossSelection(t *testing.T) {
 	})
 	m = resize(m, 120, 40)
 	filtered := m.filteredSessions()
-	firstOverview := m.overviewTable.Height()
 	firstDetail := m.detailTable.Height()
-	firstRelated := m.relatedTable.Height()
 
 	m.sessionTable.SetCursor(1)
 	m.syncAllTables(filtered)
 
-	if got := m.overviewTable.Height(); got != firstOverview {
-		t.Fatalf("overview height = %d, want %d", got, firstOverview)
-	}
 	if got := m.detailTable.Height(); got != firstDetail {
 		t.Fatalf("detail height = %d, want %d", got, firstDetail)
-	}
-	if got := m.relatedTable.Height(); got != firstRelated {
-		t.Fatalf("related height = %d, want %d", got, firstRelated)
-	}
-}
-
-func TestOverviewKeepsRawProjectPaths(t *testing.T) {
-	m := NewModel(Options{
-		Sessions: []session.Session{
-			{
-				ID:        "1",
-				Tool:      "claude",
-				Project:   "/home/adin/src/tailscale-exporter",
-				Status:    "completed",
-				StartedAt: time.Now(),
-			},
-		},
-		Version: "test",
-	})
-
-	m = resize(m, 120, 40)
-	if len(m.projectPaths) != 1 {
-		t.Fatalf("projectPaths len = %d, want 1", len(m.projectPaths))
-	}
-	if got := m.projectPaths[0]; got != "/home/adin/src/tailscale-exporter" {
-		t.Fatalf("projectPaths[0] = %q, want raw absolute path", got)
 	}
 }
 
 func TestDetailPaneSectionHeightsAreStable(t *testing.T) {
-	summary, detail, related := detailPaneSectionHeights(40)
+	summary, detail := detailPaneSectionHeights(40)
 	if summary != 2 {
 		t.Fatalf("summary height = %d, want 2", summary)
-	}
-	if related != 6 {
-		t.Fatalf("related height = %d, want 6", related)
 	}
 	if detail < 3 {
 		t.Fatalf("detail height = %d, want at least 3", detail)
