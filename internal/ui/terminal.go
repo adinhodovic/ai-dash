@@ -13,6 +13,15 @@ import (
 	uiutil "github.com/adinhodovic/ai-dash/internal/ui/util"
 )
 
+func findSessionByID(sessions []session.Session, id string) (session.Session, bool) {
+	for _, s := range sessions {
+		if s.ID == id {
+			return s, true
+		}
+	}
+	return session.Session{}, false
+}
+
 func sessionDir(s session.Session) string {
 	if s.Repo != "" && s.Repo != "/" {
 		return s.Repo
@@ -59,12 +68,16 @@ func (m *Model) openNewSession(tool string) tea.Cmd {
 		m.statusMessage = "No tool selected"
 		return nil
 	}
-	// Get project dir from the selected session.
+	// Prefer the selected session's project; fall back to the active project
+	// filter (set via `p`) when no session gives one, e.g. an empty list.
 	var projectDir string
 	filtered := m.filteredSessions()
-	sel := m.sessionTable.Cursor()
+	sel := m.sessionCursor
 	if sel >= 0 && sel < len(filtered) {
 		projectDir = sessionDir(filtered[sel])
+	}
+	if projectDir == "" && m.filters.project != "" {
+		projectDir = m.filters.project
 	}
 	if projectDir == "" {
 		m.statusMessage = "No project selected"
@@ -92,17 +105,34 @@ func (m *Model) openNewSession(tool string) tea.Cmd {
 }
 
 func (m *Model) openSelectedExternally(filtered []session.Session) tea.Cmd {
-	sel := m.sessionTable.Cursor()
+	sel := m.sessionCursor
 	if len(filtered) == 0 || sel < 0 || sel >= len(filtered) {
 		return nil
 	}
 	s := filtered[sel]
+	redirectedFromSubagent := false
+	if s.ParentID != "" {
+		// A subagent's ID is an internal transcript for a Task-tool
+		// invocation, not a standalone session the tool's own CLI can
+		// --resume — resume the parent instead, since that's almost always
+		// what's actually wanted.
+		parent, ok := findSessionByID(m.sessions, s.ParentID)
+		if !ok {
+			m.statusMessage = "Subagent sessions can't be resumed directly, and the parent session wasn't found"
+			return nil
+		}
+		s = parent
+		redirectedFromSubagent = true
+	}
 	cmd := sessionCommand(s, m.meta.Config)
 	if cmd == nil {
 		m.statusMessage = "Set $TERMINAL or run inside tmux/zellij to open sessions"
 		return nil
 	}
 	m.statusMessage = fmt.Sprintf("Opening %s session in new terminal...", s.Tool)
+	if redirectedFromSubagent {
+		m.statusMessage = "Subagents can't be resumed directly — " + m.statusMessage
+	}
 	return func() tea.Msg {
 		if err := cmd.Start(); err != nil {
 			return statusMsg{message: fmt.Sprintf("Failed to open terminal: %v", err)}

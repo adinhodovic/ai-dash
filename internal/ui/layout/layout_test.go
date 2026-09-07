@@ -7,8 +7,8 @@ func TestContentHeight(t *testing.T) {
 		termH int
 		want  int
 	}{
-		{24, 22},
-		{10, 8},
+		{24, 18},
+		{10, 4},
 		{3, 4},
 		{0, 4},
 	}

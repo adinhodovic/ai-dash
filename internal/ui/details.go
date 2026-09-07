@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 
@@ -22,7 +23,7 @@ func detailPaneSectionHeights(termHeight int) (summary, detail int) {
 }
 
 func (m *Model) resizeDetailTable(filtered []session.Session) {
-	sel := m.sessionTable.Cursor()
+	sel := m.sessionCursor
 	if m.width == 0 || len(filtered) == 0 || sel < 0 || sel >= len(filtered) {
 		m.detailTable.SetRows(nil)
 		m.detailTable.UpdateViewport()
@@ -50,22 +51,47 @@ func (m *Model) resizeDetailTable(filtered []session.Session) {
 
 func spacer() detailItem { return detailItem{"", ""} }
 
+// countSubagents returns how many sessions have id as their parent — the one
+// number Related Sessions used to spend a whole table conveying.
+func countSubagents(sessions []session.Session, id string) int {
+	n := 0
+	for _, s := range sessions {
+		if s.ParentID == id {
+			n++
+		}
+	}
+	return n
+}
+
 func (m Model) detailItems(s session.Session) []detailItem {
 	// Identity
+	status := uiutil.SessionStatusLabel(s)
 	items := []detailItem{
-		{theme.Tool + " Tool", s.Tool},
-		{theme.Project + " Project", uiutil.CleanProjectName(s.Project)},
-		{theme.Active + " Status", uiutil.SessionStatusLabel(s)},
+		{theme.Tool + " Tool", uiutil.Capitalize(s.Tool)},
 		{theme.Model + " Model", uiutil.ValueOrUnknown(s.Model)},
+		{theme.Project + " Project", uiutil.CleanProjectName(s.Project)},
+		{theme.StateGlyph(status) + " Status", status},
+	}
+	if session.NeedsAttention(s) {
+		items = append(items, detailItem{theme.Attention + " Attention", attentionLabel(s)})
+	}
+	if n := countSubagents(m.sessions, s.ID); n > 0 {
+		items = append(items, detailItem{theme.Parent + " Subagents", fmt.Sprintf("%d", n)})
 	}
 
 	// Time
+	timeDesc := fmt.Sprintf(
+		"%s → %s",
+		s.StartedAt.Format("2006-01-02 15:04:05"),
+		session.EndedLabel(s.EndedAt, s.Status),
+	)
+	if s.Status != "active" {
+		timeDesc += " (" + uiutil.DurationLabel(s) + ")"
+	}
 	items = append(items, spacer())
 	items = append(items,
 		detailItem{theme.Clock + " Active", uiutil.TimeAgo(uiutil.LastActive(s))},
-		detailItem{theme.Clock + " Started", s.StartedAt.Format("2006-01-02 15:04:05")},
-		detailItem{theme.Clock + " Ended", session.EndedLabel(s.EndedAt, s.Status)},
-		detailItem{theme.Clock + " Duration", uiutil.DurationLabel(s)},
+		detailItem{theme.Clock + " Time", timeDesc},
 	)
 
 	// Source
@@ -101,6 +127,12 @@ func (m Model) detailItems(s session.Session) []detailItem {
 	if len(usageItems) > 0 {
 		items = append(items, spacer())
 		items = append(items, usageItems...)
+	}
+
+	if !m.showDetailExtra {
+		items = append(items, spacer())
+		items = append(items, detailItem{theme.Meta + " More", "press i for IDs & metadata"})
+		return items
 	}
 
 	// IDs

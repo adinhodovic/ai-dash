@@ -20,7 +20,7 @@ func Sources(
 ) string {
 	overlayW := max(40, width*70/100)
 	overlayH := min(12, height-6)
-	title := headerStyle.PaddingLeft(1).PaddingRight(1).MarginBottom(1).Render("Sources")
+	title := headerStyle.MarginBottom(1).Render("Sources")
 	hint := mutedStyle.MarginTop(1).Render("Press S or Esc to close")
 	body := lipgloss.JoinVertical(lipgloss.Left, title, tableView, hint)
 	box := overlayStyle.Width(overlayW).Height(overlayH).Render(body)
@@ -34,10 +34,7 @@ func Help(
 ) string {
 	overlayW := max(30, min(60, width-4))
 	overlayH := min(20, height-6)
-	title := headerStyle.PaddingLeft(1).
-		PaddingRight(1).
-		MarginBottom(1).
-		Render("Keyboard Shortcuts")
+	title := headerStyle.MarginBottom(1).Render("Keyboard Shortcuts")
 	helpText := lipgloss.NewStyle().MarginBottom(1).Render(helpView)
 	body := lipgloss.JoinVertical(
 		lipgloss.Left,
