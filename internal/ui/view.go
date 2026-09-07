@@ -216,10 +216,16 @@ func (m Model) renderTopBar(filtered []session.Session) string {
 	var searchPart string
 	switch {
 	case m.renaming:
-		searchPart = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Nord13)).Bold(true).Render("Rename ") +
+		searchPart = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(theme.Nord13)).
+			Bold(true).
+			Render("Rename ") +
 			m.renameInput.View()
 	case m.focus == focusSearch:
-		searchPart = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Nord13)).Bold(true).Render(theme.Search+" ") +
+		searchPart = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(theme.Nord13)).
+			Bold(true).
+			Render(theme.Search+" ") +
 			m.searchInput.View()
 	case strings.TrimSpace(m.searchQuery()) == "":
 		searchPart = m.styles.Muted.Render(theme.Search + " press / to search")
@@ -228,7 +234,9 @@ func (m Model) renderTopBar(filtered []session.Session) string {
 		term := m.styles.Selected.Underline(true).Render(strings.TrimSpace(m.searchQuery()))
 		searchPart = prefix + term
 	}
-	searchLine := lipgloss.NewStyle().Width(searchCellWidth).Render(ansi.Truncate(searchPart, searchCellWidth, "…"))
+	searchLine := lipgloss.NewStyle().
+		Width(searchCellWidth).
+		Render(ansi.Truncate(searchPart, searchCellWidth, "…"))
 
 	var active int
 	activeTools := map[string]bool{}
@@ -288,7 +296,10 @@ func (m Model) filterChips() string {
 		active = append(active, activeChip.Render(theme.Tool+" "+tool))
 	}
 	for _, project := range m.filters.projects {
-		active = append(active, activeChip.Render(theme.Project+" "+uiutil.CleanProjectName(project)))
+		active = append(
+			active,
+			activeChip.Render(theme.Project+" "+uiutil.CleanProjectName(project)),
+		)
 	}
 	if m.showSubagents {
 		active = append(active, activeChip.Render(theme.Parent+" incl. subagents"))
@@ -317,7 +328,11 @@ func (m Model) renderHelpBody() string {
 				}
 				lines = append(
 					lines,
-					"  "+m.styles.Selected.Render(padField(h.Key, helpKeyWidth))+m.styles.Muted.Render(h.Desc),
+					"  "+m.styles.Selected.Render(
+						padField(h.Key, helpKeyWidth),
+					)+m.styles.Muted.Render(
+						h.Desc,
+					),
 				)
 			}
 			blocks = append(blocks, lipgloss.JoinVertical(lipgloss.Left, lines...))

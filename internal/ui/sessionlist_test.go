@@ -25,7 +25,12 @@ func TestFollowCursor(t *testing.T) {
 			if got != tt.want {
 				t.Fatalf(
 					"followCursor(cursor=%d, count=%d, viewportHeight=%d, yOffset=%d) = %d, want %d",
-					tt.cursor, tt.count, tt.viewportHeight, tt.yOffset, got, tt.want,
+					tt.cursor,
+					tt.count,
+					tt.viewportHeight,
+					tt.yOffset,
+					got,
+					tt.want,
 				)
 			}
 		})

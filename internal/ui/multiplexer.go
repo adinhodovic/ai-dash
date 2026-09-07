@@ -13,16 +13,6 @@ const (
 	multiplexerZellij
 )
 
-func (k multiplexerKind) String() string {
-	switch k {
-	case multiplexerTmux:
-		return "tmux"
-	case multiplexerZellij:
-		return "zellij"
-	}
-	return ""
-}
-
 type envLookup func(string) string
 
 func osEnv(key string) string { return os.Getenv(key) }

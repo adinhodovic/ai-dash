@@ -35,65 +35,6 @@ func Truncate(value string, limit int) string {
 	return string(runes[:limit-1]) + "~"
 }
 
-func TruncateForCell(value string, width int) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return "-"
-	}
-	return Truncate(value, width)
-}
-
-func TruncateProject(value string, width int) string {
-	value = CleanProjectName(value)
-	if width <= 0 || lo.RuneLength(value) <= width {
-		return value
-	}
-	if !strings.Contains(value, "/") {
-		return Truncate(value, width)
-	}
-	return truncatePathTail(value, width)
-}
-
-func truncatePathTail(value string, width int) string {
-	const marker = ".../"
-
-	prefix := pathPrefix(value)
-	budget := width - lo.RuneLength(prefix) - lo.RuneLength(marker)
-	if budget < 4 {
-		return truncateMiddle(value, width)
-	}
-
-	return prefix + marker + lo.Substring(value, -budget, uint(budget))
-}
-
-func pathPrefix(value string) string {
-	if strings.HasPrefix(value, "~/") {
-		return "~/"
-	}
-	if strings.HasPrefix(value, "/") {
-		return "/"
-	}
-	idx := strings.Index(value, "/")
-	if idx >= 0 {
-		return value[:idx+1]
-	}
-	return ""
-}
-
-func truncateMiddle(value string, width int) string {
-	runes := []rune(value)
-	if width <= 0 || len(runes) <= width {
-		return value
-	}
-	if width <= 1 {
-		return string(runes[:width])
-	}
-	keep := width - 1
-	left := keep / 2
-	right := keep - left
-	return string(runes[:left]) + "~" + string(runes[len(runes)-right:])
-}
-
 var homeDir, _ = os.UserHomeDir()
 
 func ShortenPath(value string) string {

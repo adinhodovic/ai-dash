@@ -35,8 +35,16 @@ func TestAttention(t *testing.T) {
 		s    Session
 		want AttentionReason
 	}{
-		{"waiting", Session{CurrentState: "waiting", Status: "active", EndedAt: now}, AttentionWaiting},
-		{"max tokens", Session{CurrentState: "max tokens", Status: "active", EndedAt: now}, AttentionMaxTokens},
+		{
+			"waiting",
+			Session{CurrentState: "waiting", Status: "active", EndedAt: now},
+			AttentionWaiting,
+		},
+		{
+			"max tokens",
+			Session{CurrentState: "max tokens", Status: "active", EndedAt: now},
+			AttentionMaxTokens,
+		},
 		{
 			"old waiting session is abandoned, not flagged",
 			Session{CurrentState: "waiting", Status: "active", EndedAt: now.Add(-3 * time.Hour)},
