@@ -185,7 +185,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.picker.active = false
 			m.showSources = false
 			m.showHelp = false
-			m.picker = newPicker("project", projectOptions(filtered), m.filters.projects, true, true)
+			m.picker = newPicker(
+				"project",
+				projectOptions(filtered),
+				m.filters.projects,
+				true,
+				true,
+			)
 		case "S":
 			m.picker.active = false
 			m.showHelp = false

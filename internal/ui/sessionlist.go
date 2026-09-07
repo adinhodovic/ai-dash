@@ -107,7 +107,7 @@ func renderSessionRow(m Model, s session.Session, selected bool, width int) stri
 	status := uiutil.SessionStatusLabel(s)
 	reason := session.Attention(s)
 	var icon, statusText string
-	statusStyle := m.styles.Muted
+	var statusStyle lipgloss.Style
 	if reason != session.AttentionNone {
 		icon = theme.Attention
 		statusText = attentionLabel(s)
@@ -139,12 +139,20 @@ func renderSessionRow(m Model, s session.Session, selected bool, width int) stri
 	gap := gapStyle.Render(strings.Repeat(" ", zoneGap))
 	metaGapStr := gapStyle.Render(strings.Repeat(" ", metaGap))
 	projectZone := dim.Render(
-		padField(theme.Project+" "+uiutil.CleanProjectName(s.Project), projectZoneWidth(contentWidth)),
+		padField(
+			theme.Project+" "+uiutil.CleanProjectName(s.Project),
+			projectZoneWidth(contentWidth),
+		),
 	)
 	toolZone := dim.Render(padField(theme.Tool+" "+uiutil.Capitalize(s.Tool), toolZoneWidth))
-	timeZone := dim.Render(padField(theme.Clock+" "+uiutil.TimeAgo(uiutil.LastActive(s)), timeZoneWidth))
+	timeZone := dim.Render(
+		padField(theme.Clock+" "+uiutil.TimeAgo(uiutil.LastActive(s)), timeZoneWidth),
+	)
 	statusZone := statusStyle.Render(padField(icon+" "+statusText, statusZoneWidth))
-	context := projectZone + metaGapStr + strings.Join([]string{toolZone, timeZone, statusZone}, gap)
+	context := projectZone + metaGapStr + strings.Join(
+		[]string{toolZone, timeZone, statusZone},
+		gap,
+	)
 
 	// The title sits under the Session zone only — it shouldn't run out past
 	// where the Tool column starts on the line above it.

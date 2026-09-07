@@ -40,7 +40,12 @@ func (i pickerItem) FilterValue() string { return i.display }
 // newPicker builds a filter picker. In multi mode every option is a
 // checkbox toggled in place (no "(all)" entry — clearing is what `c`
 // already does); otherwise it's a single pick-and-close list.
-func newPicker(label string, options []string, selected []string, multi, searchable bool) filterPicker {
+func newPicker(
+	label string,
+	options []string,
+	selected []string,
+	multi, searchable bool,
+) filterPicker {
 	selectedSet := make(map[string]bool, len(selected))
 	for _, v := range selected {
 		selectedSet[v] = true
@@ -60,7 +65,10 @@ func newPicker(label string, options []string, selected []string, multi, searcha
 		if selectedSet[opt] {
 			cursorIdx = i
 		}
-		items = append(items, pickerItem{value: opt, display: display, checkbox: multi, checked: selectedSet[opt]})
+		items = append(
+			items,
+			pickerItem{value: opt, display: display, checkbox: multi, checked: selectedSet[opt]},
+		)
 	}
 	delegate := list.NewDefaultDelegate()
 	delegate.ShowDescription = false
