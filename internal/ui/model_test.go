@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/adinhodovic/ai-dash/internal/session"
@@ -158,6 +159,84 @@ func TestClearFilters(t *testing.T) {
 	}
 	if m.searchInput.Value() != "" {
 		t.Error("search should be cleared")
+	}
+}
+
+func TestProjectPickerEnterAfterSearchSelectsItem(t *testing.T) {
+	m := testModel()
+	m = resize(m, 120, 40)
+	m = sendKey(m, "p")
+	m.picker.list.SetFilterText("beta")
+	m.picker.list.SetFilterState(list.Filtering)
+
+	m = sendNamedKey(m, "enter")
+
+	if !m.picker.active {
+		t.Fatal("multi-select picker should remain open after selecting a value")
+	}
+	if len(m.filters.projects) != 1 || m.filters.projects[0] != "beta" {
+		t.Fatalf("projects = %v, want [beta]", m.filters.projects)
+	}
+}
+
+func TestProjectPickerSearchUpdatesSelectedCheckbox(t *testing.T) {
+	m := testModel()
+	m = resize(m, 120, 40)
+	m = sendKey(m, "p")
+	m.picker.list.SetFilterText("beta")
+
+	updated, cmd := m.Update(tea.KeyPressMsg{Text: "enter"})
+	m = updated.(Model)
+	if cmd != nil {
+		if msg := cmd(); msg != nil {
+			updated, _ = m.Update(msg)
+			m = updated.(Model)
+		}
+	}
+
+	item, ok := m.picker.list.SelectedItem().(pickerItem)
+	if !ok || !item.checked {
+		t.Fatalf("selected item = %#v, want checked beta", m.picker.list.SelectedItem())
+	}
+}
+
+func TestProjectPickerNoMatchEnterDoesNotSelectItem(t *testing.T) {
+	m := testModel()
+	m = resize(m, 120, 40)
+	m = sendKey(m, "p")
+	m.picker.list.SetFilterText("does-not-exist")
+	m.picker.list.SetFilterState(list.Filtering)
+
+	m = sendNamedKey(m, "enter")
+
+	if len(m.filters.projects) != 0 {
+		t.Fatalf("projects = %v, want no selection", m.filters.projects)
+	}
+}
+
+func TestNewSessionPickerOmitsAllOption(t *testing.T) {
+	m := testModel()
+	m = resize(m, 120, 40)
+	m = sendKey(m, "n")
+
+	item, ok := m.picker.list.SelectedItem().(pickerItem)
+	if !ok || item.value == "" {
+		t.Fatalf("selected item = %#v, want a tool", m.picker.list.SelectedItem())
+	}
+}
+
+func TestFilterPickerShowsOptionsOutsideCurrentFilter(t *testing.T) {
+	m := testModel()
+	m.filters.tools = []string{"claude"}
+	m = resize(m, 120, 40)
+	m = sendKey(m, "t")
+
+	values := make(map[string]bool)
+	for _, item := range m.picker.list.VisibleItems() {
+		values[item.(pickerItem).value] = true
+	}
+	if !values["codex"] {
+		t.Fatalf("tool options = %v, want codex despite active claude filter", values)
 	}
 }
 

@@ -14,6 +14,10 @@ func toolOptions(sessions []session.Session) []string {
 		uniqueSortedValues(sessions, func(s session.Session) string { return s.Tool })...)
 }
 
+func newSessionToolOptions(sessions []session.Session) []string {
+	return uniqueSortedValues(sessions, func(s session.Session) string { return s.Tool })
+}
+
 func projectOptions(sessions []session.Session) []string {
 	return append(
 		[]string{""},
