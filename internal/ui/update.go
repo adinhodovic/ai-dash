@@ -47,8 +47,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			prevState := m.picker.list.FilterState()
 			m.picker.list, cmd = m.picker.list.Update(msg)
 
+			// Bubbles clears a no-match filter on Enter. Do not interpret that
+			// same key as selecting the first unfiltered item.
+			if prevState == list.Filtering &&
+				m.picker.list.FilterState() == list.Unfiltered &&
+				msg.String() == "enter" {
+				return m, cmd
+			}
+
 			// Actively typing in the filter — let the list handle everything.
-			if m.picker.list.FilterState() == list.Filtering || prevState == list.Filtering {
+			if m.picker.list.FilterState() == list.Filtering {
 				return m, cmd
 			}
 
@@ -63,7 +71,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// several values shouldn't mean reopening it each time.
 					m.toggleFilterValue(item.value, m.picker.label)
 					item.checked = !item.checked
-					m.picker.list.SetItem(m.picker.list.Index(), item)
+					setItemCmd := m.picker.list.SetItem(m.picker.list.GlobalIndex(), item)
+					cmd = tea.Batch(cmd, setItemCmd)
 					filtered = m.filteredSessions()
 					m.syncAllTables(filtered)
 					return m, cmd
@@ -129,7 +138,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.picker = newPicker(
 					"new session (tool)",
-					toolOptions(m.sessions),
+					newSessionToolOptions(m.sessions),
 					selected,
 					false,
 					false,
@@ -176,7 +185,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.picker.active = false
 			m.showSources = false
 			m.showHelp = false
-			m.picker = newPicker("tool", toolOptions(filtered), m.filters.tools, true, false)
+			m.picker = newPicker("tool", toolOptions(m.sessions), m.filters.tools, true, false)
 		case "s":
 			m.cycleSortForward()
 			filtered = m.filteredSessions()
@@ -187,7 +196,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.showHelp = false
 			m.picker = newPicker(
 				"project",
-				projectOptions(filtered),
+				projectOptions(m.sessions),
 				m.filters.projects,
 				true,
 				true,
