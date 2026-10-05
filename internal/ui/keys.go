@@ -54,7 +54,7 @@ func defaultKeyMap() keyMap {
 		Sort:          key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "sort")),
 		Project:       key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "project")),
 		ResumeSession: key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "resume")),
-		RenameSession: key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "rename")),
+		RenameSession: key.NewBinding(key.WithKeys("R", "ctrl+r"), key.WithHelp("R/ctrl+r", "rename")),
 		ToggleDetails: key.NewBinding(key.WithKeys("v"), key.WithHelp("v", "details")),
 		ToggleDetailExtra: key.NewBinding(
 			key.WithKeys("i"),

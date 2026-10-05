@@ -280,6 +280,18 @@ func TestRenameSession(t *testing.T) {
 	}
 }
 
+func TestRenameShortcutWorksWhileSearching(t *testing.T) {
+	m := testModel()
+	m = resize(m, 120, 40)
+	m = sendKey(m, "/")
+
+	m = sendNamedKey(m, "ctrl+r")
+
+	if !m.renaming {
+		t.Fatal("ctrl+r should start renaming while search is focused")
+	}
+}
+
 func TestViewNoPanic(t *testing.T) {
 	// Test that View doesn't panic with various states
 	sizes := [][2]int{{0, 0}, {80, 24}, {200, 50}, {40, 10}}

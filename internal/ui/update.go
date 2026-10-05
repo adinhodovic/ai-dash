@@ -344,6 +344,8 @@ func (m Model) updateSearch(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c":
 		return m, tea.Quit
+	case "ctrl+r":
+		m.startRename(m.filteredSessions())
 	case "esc":
 		m.focus = focusList
 		m.searchInput.SetValue(m.searchQueryBeforeEdit)

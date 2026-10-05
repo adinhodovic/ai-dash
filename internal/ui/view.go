@@ -140,7 +140,7 @@ func (m Model) renderFooter() string {
 		return "Enter save | Esc cancel"
 	}
 	if m.focus == focusSearch {
-		return "Enter apply | Esc cancel"
+		return "Ctrl+R rename | Enter apply | Esc cancel"
 	}
 	h := m.help
 	h.SetWidth(w)
