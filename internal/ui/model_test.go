@@ -2,6 +2,7 @@ package ui
 
 import (
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -237,6 +238,23 @@ func TestFilterPickerShowsOptionsOutsideCurrentFilter(t *testing.T) {
 	}
 	if !values["codex"] {
 		t.Fatalf("tool options = %v, want codex despite active claude filter", values)
+	}
+}
+
+func TestToolPickerSupportsMultipleSelections(t *testing.T) {
+	m := testModel()
+	m = resize(m, 120, 40)
+	m = sendKey(m, "t")
+
+	// Multi-select pickers omit the empty "all" option; select claude and codex.
+	m.picker.list.Select(0)
+	m = sendNamedKey(m, "enter")
+	m.picker.list.Select(1)
+	m = sendNamedKey(m, "enter")
+
+	if len(m.filters.tools) != 2 || !slices.Contains(m.filters.tools, "claude") ||
+		!slices.Contains(m.filters.tools, "codex") {
+		t.Fatalf("tools = %v, want claude and codex", m.filters.tools)
 	}
 }
 

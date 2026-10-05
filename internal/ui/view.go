@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 
+	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -84,9 +85,12 @@ func (m Model) View() tea.View {
 
 	page := uiviews.Page(top, content, footer)
 	if m.picker.active {
-		hint := "Press Esc to close"
-		if m.picker.label != "new-session" {
-			hint = "Press c to clear • Esc to close"
+		hint := "Press Enter to select • Esc to close"
+		if m.picker.multi {
+			hint = "Press Enter to toggle • c to clear • Esc to close"
+		}
+		if m.picker.list.FilterState() == list.Filtering {
+			hint = "Press Enter to apply search • Esc to clear search"
 		}
 		page = overlay.Picker(
 			m.width,
@@ -131,6 +135,12 @@ func (m Model) renderFooter() string {
 	w := m.width
 	if w <= 0 {
 		w = 80
+	}
+	if m.renaming {
+		return "Enter save | Esc cancel"
+	}
+	if m.focus == focusSearch {
+		return "Enter apply | Esc cancel"
 	}
 	h := m.help
 	h.SetWidth(w)
