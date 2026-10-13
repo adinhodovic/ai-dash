@@ -78,6 +78,11 @@
       "default": "",
       "description": "Terminal emulator to use when opening sessions (e.g. ghostty, kitty, alacritty)",
       "type": "string"
+    },
+    "tmux_background": {
+      "default": true,
+      "description": "Open tmux windows in the background (new-window -d) so ai-dash stays focused. Set false to switch to the new window.",
+      "type": "boolean"
     }
   },
   "title": "ai-dash configuration",

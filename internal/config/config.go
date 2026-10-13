@@ -12,6 +12,7 @@ import (
 type Config struct {
 	Terminal         string   `mapstructure:"terminal"           json:"terminal"`
 	Multiplexer      string   `mapstructure:"multiplexer"        json:"multiplexer,omitempty"`
+	TmuxBackground   bool     `mapstructure:"tmux_background"    json:"tmux_background"`
 	PollInterval     string   `mapstructure:"poll_interval"      json:"poll_interval"`
 	DefaultAgeFilter string   `mapstructure:"default_age_filter" json:"default_age_filter,omitempty"`
 	AgePresets       []string `mapstructure:"age_presets"        json:"age_presets"`
@@ -32,6 +33,7 @@ func Init() {
 
 	viper.SetDefault("terminal", "")
 	viper.SetDefault("multiplexer", "auto")
+	viper.SetDefault("tmux_background", true)
 	viper.SetDefault("poll_interval", "5s")
 	viper.SetDefault("default_age_filter", "14d")
 	viper.SetDefault("default_tool", "")
@@ -139,6 +141,11 @@ func GenerateSchema() string {
 				"description": "Terminal multiplexer used to open sessions when ai-dash runs inside one. 'auto' detects tmux/zellij from $TMUX/$ZELLIJ; 'tmux' or 'zellij' force a specific one; 'off' disables multiplexer use.",
 				"enum":        []string{"auto", "tmux", "zellij", "off"},
 				"default":     "auto",
+			},
+			"tmux_background": map[string]any{
+				"type":        "boolean",
+				"description": "Open tmux windows in the background (new-window -d) so ai-dash stays focused. Set false to switch to the new window.",
+				"default":     true,
 			},
 			"poll_interval": map[string]any{
 				"type":        "string",

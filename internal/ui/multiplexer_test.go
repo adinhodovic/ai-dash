@@ -61,6 +61,7 @@ func TestMultiplexerCommandTmux(t *testing.T) {
 	name, args := multiplexerCommand(
 		multiplexerTmux,
 		[]string{"cd", "'/p'", "&&", "claude", "-c", "'abc'"},
+		false,
 	)
 	if name != "tmux" {
 		t.Fatalf("name = %q, want tmux", name)
@@ -69,10 +70,16 @@ func TestMultiplexerCommandTmux(t *testing.T) {
 	assertStringSlice(t, args, want)
 }
 
+func TestMultiplexerCommandTmuxBackground(t *testing.T) {
+	_, args := multiplexerCommand(multiplexerTmux, []string{"claude"}, true)
+	assertStringSlice(t, args, []string{"new-window", "-d", "claude"})
+}
+
 func TestMultiplexerCommandZellij(t *testing.T) {
 	name, args := multiplexerCommand(
 		multiplexerZellij,
 		[]string{"cd", "'/p'", "&&", "opencode", "-s", "'abc'"},
+		true,
 	)
 	if name != "zellij" {
 		t.Fatalf("name = %q, want zellij", name)
@@ -82,14 +89,14 @@ func TestMultiplexerCommandZellij(t *testing.T) {
 }
 
 func TestMultiplexerCommandNone(t *testing.T) {
-	name, args := multiplexerCommand(multiplexerNone, []string{"opencode"})
+	name, args := multiplexerCommand(multiplexerNone, []string{"opencode"}, false)
 	if name != "" || args != nil {
 		t.Fatalf("got (%q, %v), want empty", name, args)
 	}
 }
 
 func TestMultiplexerCommandEmptyArgs(t *testing.T) {
-	name, args := multiplexerCommand(multiplexerTmux, nil)
+	name, args := multiplexerCommand(multiplexerTmux, nil, false)
 	if name != "" || args != nil {
 		t.Fatalf("got (%q, %v), want empty", name, args)
 	}

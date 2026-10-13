@@ -69,6 +69,7 @@ Sessions are discovered from default paths. Override them if needed:
   "$schema": "https://raw.githubusercontent.com/adinhodovic/ai-dash/main/config.schema.json",
   "terminal": "ghostty",
   "multiplexer": "auto",
+  "tmux_background": true,
   "poll_interval": "10s",
   "default_age_filter": "14d",
   "default_tool": "claude",
@@ -82,6 +83,7 @@ Sessions are discovered from default paths. Override them if needed:
 |--------|-------------|---------|
 | `terminal` | Terminal emulator used to open/resume sessions (e.g. `ghostty`, `kitty`) | `$TERMINAL` |
 | `multiplexer` | Open sessions in tmux/zellij when ai-dash runs inside one. `auto` detects via `$TMUX`/`$ZELLIJ`; `tmux`/`zellij` force one; `off` disables. Falls back to `terminal` when no multiplexer is active. | `auto` |
+| `tmux_background` | Open tmux windows in the background (`new-window -d`) so ai-dash stays focused. Set `false` to jump to the new window. | `true` |
 | `poll_interval` | How often sessions reload | `10s` |
 | `default_age_filter` | Default age filter used on load and when clearing filters | `14d` |
 | `default_tool` | Pre-selected tool when pressing `n` | none |
@@ -89,7 +91,7 @@ Sessions are discovered from default paths. Override them if needed:
 | `nerd_font` | Force Nerd Font on/off, `null` auto-detects | auto |
 | `age_presets` | Options when cycling with `D` | `1h,1d,3d,7d,14d,30d` |
 
-Inside tmux a new session opens via `tmux new-window`; inside zellij it opens
+Inside tmux a new session opens in a background window via `tmux new-window -d`; inside zellij it opens
 as a new pane via `zellij run`. Set `multiplexer: "off"` to always spawn a
 fresh terminal emulator instead.
 

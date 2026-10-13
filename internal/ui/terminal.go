@@ -44,7 +44,7 @@ func sessionCommand(s session.Session, cfg config.Config) *exec.Cmd {
 // launching a fresh terminal emulator. Returns nil when neither is available.
 func spawnSession(cfg config.Config, args []string) *exec.Cmd {
 	if kind := detectMultiplexer(cfg.Multiplexer, nil); kind != multiplexerNone {
-		if name, argv := multiplexerCommand(kind, args); name != "" {
+		if name, argv := multiplexerCommand(kind, args, cfg.TmuxBackground); name != "" {
 			return exec.Command(name, argv...)
 		}
 	}

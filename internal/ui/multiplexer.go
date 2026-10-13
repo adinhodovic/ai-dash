@@ -47,7 +47,12 @@ func detectMultiplexer(pref string, env envLookup) multiplexerKind {
 
 // multiplexerCommand builds the (name, argv) pair to spawn a session inside
 // the given multiplexer. Returns ("", nil) when no multiplexer is selected.
-func multiplexerCommand(kind multiplexerKind, args []string) (string, []string) {
+// background keeps focus on ai-dash; only tmux supports it.
+func multiplexerCommand(
+	kind multiplexerKind,
+	args []string,
+	background bool,
+) (string, []string) {
 	if kind == multiplexerNone || len(args) == 0 {
 		return "", nil
 	}
@@ -55,6 +60,9 @@ func multiplexerCommand(kind multiplexerKind, args []string) (string, []string) 
 	switch kind {
 	case multiplexerTmux:
 		// tmux runs the argument through /bin/sh -c.
+		if background {
+			return "tmux", []string{"new-window", "-d", shell}
+		}
 		return "tmux", []string{"new-window", shell}
 	case multiplexerZellij:
 		// zellij run executes the argv directly, so wrap in sh -c to honor
