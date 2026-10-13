@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"os/exec"
 	"testing"
 
 	"github.com/adinhodovic/ai-dash/internal/config"
@@ -85,5 +86,18 @@ func assertStringSlice(t *testing.T, got, want []string) {
 		if got[i] != want[i] {
 			t.Fatalf("arg[%d] = %q, want %q", i, got[i], want[i])
 		}
+	}
+}
+
+func TestStartSessionReportsTarget(t *testing.T) {
+	target, err := startSession(exec.Command("echo", "-P", "dash:3"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if target != "-P dash:3" {
+		t.Fatalf("target = %q", target)
+	}
+	if got := openedMessage("claude", "dash:3"); got != "Opened claude session in tmux window dash:3" {
+		t.Fatalf("openedMessage = %q", got)
 	}
 }

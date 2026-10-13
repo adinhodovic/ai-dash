@@ -72,7 +72,9 @@ func TestMultiplexerCommandTmux(t *testing.T) {
 
 func TestMultiplexerCommandTmuxBackground(t *testing.T) {
 	_, args := multiplexerCommand(multiplexerTmux, []string{"claude"}, true)
-	assertStringSlice(t, args, []string{"new-window", "-d", "claude"})
+	assertStringSlice(t, args, []string{
+		"new-window", "-d", "-P", "-F", "#{session_name}:#{window_index}", "claude",
+	})
 }
 
 func TestMultiplexerCommandZellij(t *testing.T) {

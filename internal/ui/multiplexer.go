@@ -61,7 +61,10 @@ func multiplexerCommand(
 	case multiplexerTmux:
 		// tmux runs the argument through /bin/sh -c.
 		if background {
-			return "tmux", []string{"new-window", "-d", shell}
+			// -P prints the new window's target so the status bar can name it.
+			return "tmux", []string{
+				"new-window", "-d", "-P", "-F", "#{session_name}:#{window_index}", shell,
+			}
 		}
 		return "tmux", []string{"new-window", shell}
 	case multiplexerZellij:
