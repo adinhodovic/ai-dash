@@ -33,7 +33,7 @@ func Init() {
 
 	viper.SetDefault("terminal", "")
 	viper.SetDefault("multiplexer", "auto")
-	viper.SetDefault("tmux_mode", "window")
+	viper.SetDefault("tmux_mode", "terminal")
 	viper.SetDefault("poll_interval", "5s")
 	viper.SetDefault("default_age_filter", "14d")
 	viper.SetDefault("default_tool", "")
@@ -145,8 +145,8 @@ func GenerateSchema() string {
 			"tmux_mode": map[string]any{
 				"type":        "string",
 				"description": "How sessions open under tmux. 'window' opens a new window and switches to it; 'background' opens a new window without switching; 'terminal' opens a new terminal emulator window running the session in its own tmux session.",
-				"enum":        []string{"window", "background", "terminal"},
-				"default":     "window",
+				"enum":        []string{"terminal", "window", "background"},
+				"default":     "terminal",
 			},
 			"poll_interval": map[string]any{
 				"type":        "string",

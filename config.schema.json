@@ -80,12 +80,12 @@
       "type": "string"
     },
     "tmux_mode": {
-      "default": "window",
+      "default": "terminal",
       "description": "How sessions open under tmux. 'window' opens a new window and switches to it; 'background' opens a new window without switching; 'terminal' opens a new terminal emulator window running the session in its own tmux session.",
       "enum": [
+        "terminal",
         "window",
-        "background",
-        "terminal"
+        "background"
       ],
       "type": "string"
     }
