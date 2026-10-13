@@ -27,6 +27,7 @@ build-all:
 	GOOS=darwin GOARCH=amd64 $(GO) build -ldflags '$(AI_DASH_LDFLAGS)' -o ai-dash-darwin-amd64 ./cmd/ai-dash
 	@echo "Building darwin/arm64..."
 	GOOS=darwin GOARCH=arm64 $(GO) build -ldflags '$(AI_DASH_LDFLAGS)' -o ai-dash-darwin-arm64 ./cmd/ai-dash
+	sha256sum ai-dash-linux-amd64 ai-dash-linux-arm64 ai-dash-darwin-amd64 ai-dash-darwin-arm64 > checksums.txt
 
 .PHONY: test
 test:
