@@ -81,7 +81,7 @@ Sessions are discovered from default paths. Override them if needed:
 
 | Option | What it does | Default |
 |--------|-------------|---------|
-| `terminal` | Terminal emulator used to open/resume sessions (e.g. `ghostty`, `kitty`) | `$TERMINAL` |
+| `terminal` | Terminal emulator used to open/resume sessions (e.g. `ghostty`, `kitty`, `alacritty`, `wezterm`, `foot`) | `$TERMINAL`, else the first of ghostty, kitty, alacritty, wezterm, foot, gnome-terminal, konsole, xfce4-terminal, x-terminal-emulator, xterm found on `PATH` |
 | `multiplexer` | Open sessions in tmux/zellij when ai-dash runs inside one. `auto` detects via `$TMUX`/`$ZELLIJ`; `tmux`/`zellij` force one; `off` disables. Falls back to `terminal` when no multiplexer is active. | `auto` |
 | `tmux_mode` | How sessions open under tmux: `terminal` opens a new `terminal` window running the session in its own tmux session (falls back to `window` when `terminal` is unset), `window` opens a new tmux window and switches to it, `background` opens one without switching. | `terminal` |
 | `poll_interval` | How often sessions reload | `10s` |

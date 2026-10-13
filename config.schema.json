@@ -76,7 +76,7 @@
     },
     "terminal": {
       "default": "",
-      "description": "Terminal emulator to use when opening sessions (e.g. ghostty, kitty, alacritty)",
+      "description": "Terminal emulator to use when opening sessions (e.g. ghostty, kitty, alacritty, wezterm, foot). Defaults to $TERMINAL, then the first known terminal found on PATH.",
       "type": "string"
     },
     "tmux_mode": {
