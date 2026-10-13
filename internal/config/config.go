@@ -12,6 +12,7 @@ import (
 type Config struct {
 	Terminal         string   `mapstructure:"terminal"           json:"terminal"`
 	Multiplexer      string   `mapstructure:"multiplexer"        json:"multiplexer,omitempty"`
+	TmuxMode         string   `mapstructure:"tmux_mode"          json:"tmux_mode,omitempty"`
 	PollInterval     string   `mapstructure:"poll_interval"      json:"poll_interval"`
 	DefaultAgeFilter string   `mapstructure:"default_age_filter" json:"default_age_filter,omitempty"`
 	AgePresets       []string `mapstructure:"age_presets"        json:"age_presets"`
@@ -32,6 +33,7 @@ func Init() {
 
 	viper.SetDefault("terminal", "")
 	viper.SetDefault("multiplexer", "auto")
+	viper.SetDefault("tmux_mode", "terminal")
 	viper.SetDefault("poll_interval", "5s")
 	viper.SetDefault("default_age_filter", "14d")
 	viper.SetDefault("default_tool", "")
@@ -139,6 +141,12 @@ func GenerateSchema() string {
 				"description": "Terminal multiplexer used to open sessions when ai-dash runs inside one. 'auto' detects tmux/zellij from $TMUX/$ZELLIJ; 'tmux' or 'zellij' force a specific one; 'off' disables multiplexer use.",
 				"enum":        []string{"auto", "tmux", "zellij", "off"},
 				"default":     "auto",
+			},
+			"tmux_mode": map[string]any{
+				"type":        "string",
+				"description": "How sessions open under tmux. 'window' opens a new window and switches to it; 'background' opens a new window without switching; 'terminal' opens a new terminal emulator window running the session in its own tmux session.",
+				"enum":        []string{"terminal", "window", "background"},
+				"default":     "terminal",
 			},
 			"poll_interval": map[string]any{
 				"type":        "string",

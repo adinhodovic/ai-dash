@@ -61,6 +61,7 @@ func TestMultiplexerCommandTmux(t *testing.T) {
 	name, args := multiplexerCommand(
 		multiplexerTmux,
 		[]string{"cd", "'/p'", "&&", "claude", "-c", "'abc'"},
+		tmuxModeWindow,
 	)
 	if name != "tmux" {
 		t.Fatalf("name = %q, want tmux", name)
@@ -69,10 +70,18 @@ func TestMultiplexerCommandTmux(t *testing.T) {
 	assertStringSlice(t, args, want)
 }
 
+func TestMultiplexerCommandTmuxBackground(t *testing.T) {
+	_, args := multiplexerCommand(multiplexerTmux, []string{"claude"}, tmuxModeBackground)
+	assertStringSlice(t, args, []string{
+		"new-window", "-d", "-P", "-F", "#{session_name}:#{window_index}", "claude",
+	})
+}
+
 func TestMultiplexerCommandZellij(t *testing.T) {
 	name, args := multiplexerCommand(
 		multiplexerZellij,
 		[]string{"cd", "'/p'", "&&", "opencode", "-s", "'abc'"},
+		tmuxModeBackground,
 	)
 	if name != "zellij" {
 		t.Fatalf("name = %q, want zellij", name)
@@ -82,15 +91,29 @@ func TestMultiplexerCommandZellij(t *testing.T) {
 }
 
 func TestMultiplexerCommandNone(t *testing.T) {
-	name, args := multiplexerCommand(multiplexerNone, []string{"opencode"})
+	name, args := multiplexerCommand(multiplexerNone, []string{"opencode"}, "")
 	if name != "" || args != nil {
 		t.Fatalf("got (%q, %v), want empty", name, args)
 	}
 }
 
 func TestMultiplexerCommandEmptyArgs(t *testing.T) {
-	name, args := multiplexerCommand(multiplexerTmux, nil)
+	name, args := multiplexerCommand(multiplexerTmux, nil, "")
 	if name != "" || args != nil {
 		t.Fatalf("got (%q, %v), want empty", name, args)
 	}
+}
+
+func TestTmuxTerminalCommand(t *testing.T) {
+	name, args := tmuxTerminalCommand("ghostty", []string{"cd", "'/p'", "&&", "claude"})
+	if name != "ghostty" {
+		t.Fatalf("name = %q, want ghostty", name)
+	}
+	want := []string{"-e", "sh", "-c", `tmux new-session 'cd '\''/p'\'' && claude'`}
+	assertStringSlice(t, args, want)
+}
+
+func TestWithoutTmuxEnv(t *testing.T) {
+	got := withoutTmuxEnv([]string{"HOME=/h", "TMUX=/tmp/x,1,0", "TMUX_PANE=%1", "TMUXP=1"})
+	assertStringSlice(t, got, []string{"HOME=/h", "TMUXP=1"})
 }

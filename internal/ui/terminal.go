@@ -2,7 +2,9 @@ package ui
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -43,8 +45,15 @@ func sessionCommand(s session.Session, cfg config.Config) *exec.Cmd {
 // spawnSession picks a multiplexer if one is detected, otherwise falls back to
 // launching a fresh terminal emulator. Returns nil when neither is available.
 func spawnSession(cfg config.Config, args []string) *exec.Cmd {
-	if kind := detectMultiplexer(cfg.Multiplexer, nil); kind != multiplexerNone {
-		if name, argv := multiplexerCommand(kind, args); name != "" {
+	kind := detectMultiplexer(cfg.Multiplexer, nil)
+	if kind == multiplexerTmux && cfg.TmuxMode == tmuxModeTerminal && cfg.Terminal != "" {
+		name, argv := tmuxTerminalCommand(cfg.Terminal, args)
+		cmd := exec.Command(name, argv...)
+		cmd.Env = withoutTmuxEnv(os.Environ())
+		return cmd
+	}
+	if kind != multiplexerNone {
+		if name, argv := multiplexerCommand(kind, args, cfg.TmuxMode); name != "" {
 			return exec.Command(name, argv...)
 		}
 	}
@@ -53,6 +62,24 @@ func spawnSession(cfg config.Config, args []string) *exec.Cmd {
 		return nil
 	}
 	return exec.Command(name, argv...)
+}
+
+// startSession launches cmd and returns the tmux window it opened in, if the
+// command reports one. Commands that print a target exit immediately, so their
+// output is awaited; terminal emulators are started without waiting.
+func startSession(cmd *exec.Cmd) (string, error) {
+	if !slices.Contains(cmd.Args, "-P") {
+		return "", cmd.Start()
+	}
+	out, err := cmd.Output()
+	return strings.TrimSpace(string(out)), err
+}
+
+func openedMessage(label, target string) string {
+	if target != "" {
+		return fmt.Sprintf("Opened %s session in tmux window %s", label, target)
+	}
+	return fmt.Sprintf("Opened %s session", label)
 }
 
 func terminalCommand(terminal string, args []string) (string, []string) {
@@ -97,10 +124,11 @@ func (m *Model) openNewSession(tool string) tea.Cmd {
 		"Opening new %s session in %s...", tool, uiutil.CleanProjectName(projectDir),
 	)
 	return func() tea.Msg {
-		if err := cmd.Start(); err != nil {
+		target, err := startSession(cmd)
+		if err != nil {
 			return statusMsg{message: fmt.Sprintf("Failed to open terminal: %v", err)}
 		}
-		return statusMsg{message: fmt.Sprintf("Opened new %s session", tool)}
+		return statusMsg{message: openedMessage("new "+tool, target)}
 	}
 }
 
@@ -129,14 +157,15 @@ func (m *Model) openSelectedExternally(filtered []session.Session) tea.Cmd {
 		m.statusMessage = "Set $TERMINAL or run inside tmux/zellij to open sessions"
 		return nil
 	}
-	m.statusMessage = fmt.Sprintf("Opening %s session in new terminal...", s.Tool)
+	m.statusMessage = fmt.Sprintf("Opening %s session...", s.Tool)
 	if redirectedFromSubagent {
 		m.statusMessage = "Subagents can't be resumed directly — " + m.statusMessage
 	}
 	return func() tea.Msg {
-		if err := cmd.Start(); err != nil {
+		target, err := startSession(cmd)
+		if err != nil {
 			return statusMsg{message: fmt.Sprintf("Failed to open terminal: %v", err)}
 		}
-		return statusMsg{message: fmt.Sprintf("Opened %s session in new terminal", s.Tool)}
+		return statusMsg{message: openedMessage(s.Tool, target)}
 	}
 }

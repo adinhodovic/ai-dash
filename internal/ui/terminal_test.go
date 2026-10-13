@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/adinhodovic/ai-dash/internal/config"
@@ -53,6 +55,22 @@ func TestSpawnSessionNoTerminalNoMultiplexer(t *testing.T) {
 	}
 }
 
+func TestSpawnSessionTmuxTerminalMode(t *testing.T) {
+	t.Setenv("TMUX", "/tmp/tmux-1000/default,1,0")
+	cfg := config.Config{Terminal: "ghostty", TmuxMode: tmuxModeTerminal}
+	cmd := spawnSession(cfg, []string{"claude"})
+	if cmd == nil {
+		t.Fatal("spawnSession returned nil")
+	}
+	want := []string{"ghostty", "-e", "sh", "-c", "tmux new-session 'claude'"}
+	assertStringSlice(t, cmd.Args, want)
+	for _, kv := range cmd.Env {
+		if strings.HasPrefix(kv, "TMUX=") {
+			t.Fatalf("TMUX leaked into env: %q", kv)
+		}
+	}
+}
+
 func endsWith(s, suffix string) bool {
 	return len(s) >= len(suffix) && s[len(s)-len(suffix):] == suffix
 }
@@ -85,5 +103,19 @@ func assertStringSlice(t *testing.T, got, want []string) {
 		if got[i] != want[i] {
 			t.Fatalf("arg[%d] = %q, want %q", i, got[i], want[i])
 		}
+	}
+}
+
+func TestStartSessionReportsTarget(t *testing.T) {
+	target, err := startSession(exec.Command("echo", "-P", "dash:3"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if target != "-P dash:3" {
+		t.Fatalf("target = %q", target)
+	}
+	want := "Opened claude session in tmux window dash:3"
+	if got := openedMessage("claude", "dash:3"); got != want {
+		t.Fatalf("openedMessage = %q, want %q", got, want)
 	}
 }
