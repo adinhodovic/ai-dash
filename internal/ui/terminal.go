@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"slices"
 	"strings"
@@ -44,8 +45,15 @@ func sessionCommand(s session.Session, cfg config.Config) *exec.Cmd {
 // spawnSession picks a multiplexer if one is detected, otherwise falls back to
 // launching a fresh terminal emulator. Returns nil when neither is available.
 func spawnSession(cfg config.Config, args []string) *exec.Cmd {
-	if kind := detectMultiplexer(cfg.Multiplexer, nil); kind != multiplexerNone {
-		if name, argv := multiplexerCommand(kind, args, cfg.TmuxBackground); name != "" {
+	kind := detectMultiplexer(cfg.Multiplexer, nil)
+	if kind == multiplexerTmux && cfg.TmuxMode == tmuxModeTerminal && cfg.Terminal != "" {
+		name, argv := tmuxTerminalCommand(cfg.Terminal, args)
+		cmd := exec.Command(name, argv...)
+		cmd.Env = withoutTmuxEnv(os.Environ())
+		return cmd
+	}
+	if kind != multiplexerNone {
+		if name, argv := multiplexerCommand(kind, args, cfg.TmuxMode); name != "" {
 			return exec.Command(name, argv...)
 		}
 	}

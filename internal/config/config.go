@@ -12,7 +12,7 @@ import (
 type Config struct {
 	Terminal         string   `mapstructure:"terminal"           json:"terminal"`
 	Multiplexer      string   `mapstructure:"multiplexer"        json:"multiplexer,omitempty"`
-	TmuxBackground   bool     `mapstructure:"tmux_background"    json:"tmux_background"`
+	TmuxMode         string   `mapstructure:"tmux_mode"          json:"tmux_mode,omitempty"`
 	PollInterval     string   `mapstructure:"poll_interval"      json:"poll_interval"`
 	DefaultAgeFilter string   `mapstructure:"default_age_filter" json:"default_age_filter,omitempty"`
 	AgePresets       []string `mapstructure:"age_presets"        json:"age_presets"`
@@ -33,7 +33,7 @@ func Init() {
 
 	viper.SetDefault("terminal", "")
 	viper.SetDefault("multiplexer", "auto")
-	viper.SetDefault("tmux_background", false)
+	viper.SetDefault("tmux_mode", "window")
 	viper.SetDefault("poll_interval", "5s")
 	viper.SetDefault("default_age_filter", "14d")
 	viper.SetDefault("default_tool", "")
@@ -142,10 +142,11 @@ func GenerateSchema() string {
 				"enum":        []string{"auto", "tmux", "zellij", "off"},
 				"default":     "auto",
 			},
-			"tmux_background": map[string]any{
-				"type":        "boolean",
-				"description": "Open tmux windows in the background (new-window -d) so ai-dash stays focused instead of switching to the new window.",
-				"default":     false,
+			"tmux_mode": map[string]any{
+				"type":        "string",
+				"description": "How sessions open under tmux. 'window' opens a new window and switches to it; 'background' opens a new window without switching; 'terminal' opens a new terminal emulator window running the session in its own tmux session.",
+				"enum":        []string{"window", "background", "terminal"},
+				"default":     "window",
 			},
 			"poll_interval": map[string]any{
 				"type":        "string",

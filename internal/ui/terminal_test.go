@@ -2,6 +2,7 @@ package ui
 
 import (
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/adinhodovic/ai-dash/internal/config"
@@ -51,6 +52,22 @@ func TestSpawnSessionNoTerminalNoMultiplexer(t *testing.T) {
 	cfg := config.Config{}
 	if cmd := spawnSession(cfg, []string{"opencode"}); cmd != nil {
 		t.Fatalf("expected nil, got %v", cmd)
+	}
+}
+
+func TestSpawnSessionTmuxTerminalMode(t *testing.T) {
+	t.Setenv("TMUX", "/tmp/tmux-1000/default,1,0")
+	cfg := config.Config{Terminal: "ghostty", TmuxMode: tmuxModeTerminal}
+	cmd := spawnSession(cfg, []string{"claude"})
+	if cmd == nil {
+		t.Fatal("spawnSession returned nil")
+	}
+	want := []string{"ghostty", "-e", "sh", "-c", "tmux new-session 'claude'"}
+	assertStringSlice(t, cmd.Args, want)
+	for _, kv := range cmd.Env {
+		if strings.HasPrefix(kv, "TMUX=") {
+			t.Fatalf("TMUX leaked into env: %q", kv)
+		}
 	}
 }
 

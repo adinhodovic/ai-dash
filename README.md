@@ -69,7 +69,7 @@ Sessions are discovered from default paths. Override them if needed:
   "$schema": "https://raw.githubusercontent.com/adinhodovic/ai-dash/main/config.schema.json",
   "terminal": "ghostty",
   "multiplexer": "auto",
-  "tmux_background": false,
+  "tmux_mode": "window",
   "poll_interval": "10s",
   "default_age_filter": "14d",
   "default_tool": "claude",
@@ -83,7 +83,7 @@ Sessions are discovered from default paths. Override them if needed:
 |--------|-------------|---------|
 | `terminal` | Terminal emulator used to open/resume sessions (e.g. `ghostty`, `kitty`) | `$TERMINAL` |
 | `multiplexer` | Open sessions in tmux/zellij when ai-dash runs inside one. `auto` detects via `$TMUX`/`$ZELLIJ`; `tmux`/`zellij` force one; `off` disables. Falls back to `terminal` when no multiplexer is active. | `auto` |
-| `tmux_background` | Open tmux windows in the background (`new-window -d`) so ai-dash stays focused instead of switching to the new window. | `false` |
+| `tmux_mode` | How sessions open under tmux: `window` opens a new window and switches to it, `background` opens one without switching, `terminal` opens a new `terminal` window running the session in its own tmux session. | `window` |
 | `poll_interval` | How often sessions reload | `10s` |
 | `default_age_filter` | Default age filter used on load and when clearing filters | `14d` |
 | `default_tool` | Pre-selected tool when pressing `n` | none |
