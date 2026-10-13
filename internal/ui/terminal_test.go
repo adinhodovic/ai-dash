@@ -2,6 +2,7 @@ package ui
 
 import (
 	"os/exec"
+	"slices"
 	"strings"
 	"testing"
 
@@ -47,6 +48,7 @@ func TestSpawnSessionMultiplexerOff(t *testing.T) {
 }
 
 func TestSpawnSessionNoTerminalNoMultiplexer(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
 	t.Setenv("TMUX", "")
 	t.Setenv("ZELLIJ", "")
 	cfg := config.Config{}
@@ -117,5 +119,54 @@ func TestStartSessionReportsTarget(t *testing.T) {
 	want := "Opened claude session in tmux window dash:3"
 	if got := openedMessage("claude", "dash:3"); got != want {
 		t.Fatalf("openedMessage = %q, want %q", got, want)
+	}
+}
+
+func TestResolveTerminal(t *testing.T) {
+	found := func(names ...string) func(string) (string, error) {
+		return func(name string) (string, error) {
+			if slices.Contains(names, name) {
+				return "/usr/bin/" + name, nil
+			}
+			return "", exec.ErrNotFound
+		}
+	}
+	tests := []struct {
+		name       string
+		configured string
+		lookPath   func(string) (string, error)
+		want       string
+	}{
+		{"configured wins", "wezterm", found("ghostty"), "wezterm"},
+		{"detects first candidate", "", found("xterm", "alacritty"), "alacritty"},
+		{"nothing found", "", found(), ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := resolveTerminal(tt.configured, tt.lookPath); got != tt.want {
+				t.Fatalf("resolveTerminal = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTerminalExecArgs(t *testing.T) {
+	argv := []string{"sh", "-c", "claude"}
+	tests := []struct {
+		terminal string
+		want     []string
+	}{
+		{"alacritty", []string{"-e", "sh", "-c", "claude"}},
+		{"/usr/bin/ghostty", []string{"-e", "sh", "-c", "claude"}},
+		{"kitty", []string{"sh", "-c", "claude"}},
+		{"foot", []string{"sh", "-c", "claude"}},
+		{"wezterm", []string{"start", "--", "sh", "-c", "claude"}},
+		{"gnome-terminal", []string{"--", "sh", "-c", "claude"}},
+		{"xfce4-terminal", []string{"-x", "sh", "-c", "claude"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.terminal, func(t *testing.T) {
+			assertStringSlice(t, terminalExecArgs(tt.terminal, argv), tt.want)
+		})
 	}
 }

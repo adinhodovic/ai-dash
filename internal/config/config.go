@@ -133,7 +133,7 @@ func GenerateSchema() string {
 		"properties": map[string]any{
 			"terminal": map[string]any{
 				"type":        "string",
-				"description": "Terminal emulator to use when opening sessions (e.g. ghostty, kitty, alacritty)",
+				"description": "Terminal emulator to use when opening sessions (e.g. ghostty, kitty, alacritty, wezterm, foot). Defaults to $TERMINAL, then the first known terminal found on PATH.",
 				"default":     "",
 			},
 			"multiplexer": map[string]any{

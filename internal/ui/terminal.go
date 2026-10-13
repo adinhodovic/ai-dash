@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -45,9 +46,10 @@ func sessionCommand(s session.Session, cfg config.Config) *exec.Cmd {
 // spawnSession picks a multiplexer if one is detected, otherwise falls back to
 // launching a fresh terminal emulator. Returns nil when neither is available.
 func spawnSession(cfg config.Config, args []string) *exec.Cmd {
+	terminal := resolveTerminal(cfg.Terminal, exec.LookPath)
 	kind := detectMultiplexer(cfg.Multiplexer, nil)
-	if kind == multiplexerTmux && cfg.TmuxMode == tmuxModeTerminal && cfg.Terminal != "" {
-		name, argv := tmuxTerminalCommand(cfg.Terminal, args)
+	if kind == multiplexerTmux && cfg.TmuxMode == tmuxModeTerminal && terminal != "" {
+		name, argv := tmuxTerminalCommand(terminal, args)
 		cmd := exec.Command(name, argv...)
 		cmd.Env = withoutTmuxEnv(os.Environ())
 		return cmd
@@ -57,7 +59,7 @@ func spawnSession(cfg config.Config, args []string) *exec.Cmd {
 			return exec.Command(name, argv...)
 		}
 	}
-	name, argv := terminalCommand(cfg.Terminal, args)
+	name, argv := terminalCommand(terminal, args)
 	if name == "" {
 		return nil
 	}
@@ -82,12 +84,57 @@ func openedMessage(label, target string) string {
 	return fmt.Sprintf("Opened %s session", label)
 }
 
+// terminalCandidates is the detection order used when no terminal is
+// configured.
+var terminalCandidates = []string{
+	"ghostty",
+	"kitty",
+	"alacritty",
+	"wezterm",
+	"foot",
+	"gnome-terminal",
+	"konsole",
+	"xfce4-terminal",
+	"x-terminal-emulator",
+	"xterm",
+}
+
+// resolveTerminal returns the configured terminal, or the first known terminal
+// emulator found on PATH.
+func resolveTerminal(configured string, lookPath func(string) (string, error)) string {
+	if configured != "" {
+		return configured
+	}
+	for _, name := range terminalCandidates {
+		if _, err := lookPath(name); err == nil {
+			return name
+		}
+	}
+	return ""
+}
+
+// terminalExecArgs returns the arguments that make terminal run argv, since
+// emulators disagree on how a command is passed.
+func terminalExecArgs(terminal string, argv []string) []string {
+	switch filepath.Base(terminal) {
+	case "kitty", "foot":
+		return argv
+	case "wezterm":
+		return append([]string{"start", "--"}, argv...)
+	case "gnome-terminal":
+		return append([]string{"--"}, argv...)
+	case "xfce4-terminal":
+		return append([]string{"-x"}, argv...)
+	}
+	return append([]string{"-e"}, argv...)
+}
+
 func terminalCommand(terminal string, args []string) (string, []string) {
 	if terminal == "" {
 		return "", nil
 	}
 	shell := strings.Join(args, " ")
-	return terminal, []string{"-e", "sh", "-c", shell}
+	return terminal, terminalExecArgs(terminal, []string{"sh", "-c", shell})
 }
 
 func (m *Model) openNewSession(tool string) tea.Cmd {
