@@ -33,7 +33,7 @@ func Init() {
 
 	viper.SetDefault("terminal", "")
 	viper.SetDefault("multiplexer", "auto")
-	viper.SetDefault("tmux_background", true)
+	viper.SetDefault("tmux_background", false)
 	viper.SetDefault("poll_interval", "5s")
 	viper.SetDefault("default_age_filter", "14d")
 	viper.SetDefault("default_tool", "")
@@ -144,8 +144,8 @@ func GenerateSchema() string {
 			},
 			"tmux_background": map[string]any{
 				"type":        "boolean",
-				"description": "Open tmux windows in the background (new-window -d) so ai-dash stays focused. Set false to switch to the new window.",
-				"default":     true,
+				"description": "Open tmux windows in the background (new-window -d) so ai-dash stays focused instead of switching to the new window.",
+				"default":     false,
 			},
 			"poll_interval": map[string]any{
 				"type":        "string",

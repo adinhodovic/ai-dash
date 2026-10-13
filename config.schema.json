@@ -80,8 +80,8 @@
       "type": "string"
     },
     "tmux_background": {
-      "default": true,
-      "description": "Open tmux windows in the background (new-window -d) so ai-dash stays focused. Set false to switch to the new window.",
+      "default": false,
+      "description": "Open tmux windows in the background (new-window -d) so ai-dash stays focused instead of switching to the new window.",
       "type": "boolean"
     }
   },
