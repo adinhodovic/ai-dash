@@ -106,4 +106,5 @@ jobs:
             ai-dash-linux-arm64 \
             ai-dash-darwin-amd64 \
             ai-dash-darwin-arm64 \
+            checksums.txt \
             --clobber
