@@ -114,7 +114,8 @@ func TestStartSessionReportsTarget(t *testing.T) {
 	if target != "-P dash:3" {
 		t.Fatalf("target = %q", target)
 	}
-	if got := openedMessage("claude", "dash:3"); got != "Opened claude session in tmux window dash:3" {
-		t.Fatalf("openedMessage = %q", got)
+	want := "Opened claude session in tmux window dash:3"
+	if got := openedMessage("claude", "dash:3"); got != want {
+		t.Fatalf("openedMessage = %q, want %q", got, want)
 	}
 }
