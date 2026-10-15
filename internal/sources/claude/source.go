@@ -16,6 +16,7 @@ import (
 
 type Source struct {
 	pathOverride string
+	cache        *shared.Cache
 }
 
 var (
@@ -25,6 +26,11 @@ var (
 
 func New(cfg config.Config) Source {
 	return Source{pathOverride: cfg.SourcePath("claude", "")}
+}
+
+func (s Source) WithCache(cache *shared.Cache) Source {
+	s.cache = cache
+	return s
 }
 
 func (Source) Name() string { return "claude" }
@@ -48,7 +54,7 @@ func (s Source) Discover() (shared.Result, error) {
 
 	transcripts, err := discoverTranscripts(projectsPath)
 	result.Transcripts = transcripts
-	result.Sessions = importTranscriptSessions(transcripts)
+	result.Sessions = importTranscriptSessionsCached(s.cache, transcripts)
 	return result, err
 }
 
@@ -98,6 +104,7 @@ func discoverTranscripts(root string) ([]shared.TranscriptFile, error) {
 			Path:    path,
 			Project: projectNameFromPath(root, path),
 			ModTime: info.ModTime(),
+			Size:    info.Size(),
 		})
 		return nil
 	})
@@ -161,16 +168,44 @@ type claudeLine struct {
 }
 
 func importTranscriptSessions(transcripts []shared.TranscriptFile) []session.Session {
-	sessions := make([]session.Session, 0, len(transcripts))
+	return importTranscriptSessionsCached(nil, transcripts)
+}
+
+func importTranscriptSessionsCached(
+	cache *shared.Cache,
+	transcripts []shared.TranscriptFile,
+) []session.Session {
+	files := make([]shared.FileStat, len(transcripts))
+	byPath := make(map[string]shared.TranscriptFile, len(transcripts))
+	for i, transcript := range transcripts {
+		files[i] = shared.FileStat{
+			Path:    transcript.Path,
+			Size:    transcript.Size,
+			ModTime: transcript.ModTime,
+		}
+		byPath[transcript.Path] = transcript
+	}
 	gitRootCache := map[string]string{}
-	for _, transcript := range transcripts {
-		s := parseClaudeTranscript(transcript)
+	return cache.Sessions("claude", files, func(f shared.FileStat) (session.Session, bool) {
+		s := parseClaudeTranscript(byPath[f.Path])
 		if s.Repo != "" {
 			s.Project = resolveProjectRoot(s.Repo, gitRootCache)
 		}
-		sessions = append(sessions, s)
+		return s, true
+	}, refreshClaudeStatus)
+}
+
+func refreshClaudeStatus(s *session.Session, modTime time.Time) {
+	stop := ""
+	if s.Meta != nil {
+		stop = s.Meta["stop_reason"]
 	}
-	return sessions
+	if s.Meta == nil {
+		s.Meta = map[string]string{}
+	}
+	s.Status, s.CurrentState = claudeCurrentState(stop, modTime)
+	s.Meta["current_state_source"] = claudeCurrentStateSource(stop, modTime)
+	s.CurrentState = session.StatusLabel(*s)
 }
 
 // resolveProjectRoot returns the git repo root containing dir, or dir itself

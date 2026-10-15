@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/adinhodovic/ai-dash/internal/config"
+	"github.com/adinhodovic/ai-dash/internal/session"
 )
 
 func TestParsePiSessionStop(t *testing.T) {
@@ -217,5 +218,26 @@ func TestDiscoverReadsSessionsDirectory(t *testing.T) {
 	}
 	if result.Sessions[0].Project != "/home/user/projects/myapp" {
 		t.Fatalf("unexpected project: %#v", result.Sessions[0])
+	}
+}
+
+func TestRefreshPiStatusFlipsRecency(t *testing.T) {
+	s := session.Session{
+		EndedAt: time.Now().Add(-time.Hour),
+		Meta:    map[string]string{"current_state_source": "leaf=user message (recent)"},
+	}
+	refreshPiStatus(&s, time.Time{})
+	if s.Status != "completed" || s.CurrentState != "done" {
+		t.Fatalf("stale = (%q, %q)", s.Status, s.CurrentState)
+	}
+	if s.Meta["current_state_source"] != "leaf=user message (stale)" {
+		t.Fatalf("source = %q", s.Meta["current_state_source"])
+	}
+
+	s.Meta["current_state_source"] = "stopReason=stop"
+	s.Status = "active"
+	refreshPiStatus(&s, time.Time{})
+	if s.Status != "active" {
+		t.Fatalf("stable stop reason changed to %q", s.Status)
 	}
 }

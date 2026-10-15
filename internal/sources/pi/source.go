@@ -17,12 +17,18 @@ import (
 
 type Source struct {
 	pathOverride string
+	cache        *shared.Cache
 }
 
 var _ shared.SessionProvider = Source{}
 
 func New(cfg config.Config) Source {
 	return Source{pathOverride: cfg.SourcePath("pi", "")}
+}
+
+func (s Source) WithCache(cache *shared.Cache) Source {
+	s.cache = cache
+	return s
 }
 
 func (Source) Name() string { return "pi" }
@@ -47,7 +53,7 @@ func (s Source) Discover() (shared.Result, error) {
 		Sources: []shared.Source{
 			shared.NewSource("pi", "jsonl", sessionsPath, "pi agent sessions"),
 		},
-		Sessions: importPiSessions(paths),
+		Sessions: importPiSessionsCached(s.cache, paths),
 	}, nil
 }
 
@@ -138,20 +144,53 @@ type treeEntry struct {
 }
 
 func importPiSessions(paths []string) []session.Session {
-	out := make([]session.Session, 0, len(paths))
-	gitRootCache := map[string]string{}
+	return importPiSessionsCached(nil, paths)
+}
+
+func importPiSessionsCached(cache *shared.Cache, paths []string) []session.Session {
+	files := make([]shared.FileStat, 0, len(paths))
 	for _, path := range paths {
-		parsed, ok := parsePiSession(path)
-		if !ok {
+		info, err := os.Stat(path)
+		if err != nil {
 			continue
+		}
+		files = append(files, shared.FileStat{
+			Path:    path,
+			Size:    info.Size(),
+			ModTime: info.ModTime(),
+		})
+	}
+	gitRootCache := map[string]string{}
+	out := cache.Sessions("pi", files, func(f shared.FileStat) (session.Session, bool) {
+		parsed, ok := parsePiSession(f.Path)
+		if !ok {
+			return session.Session{}, false
 		}
 		if parsed.Repo != "" {
 			parsed.Project = resolveProjectRoot(parsed.Repo, gitRootCache)
 		}
-		out = append(out, parsed)
-	}
+		return parsed, true
+	}, refreshPiStatus)
 	session.Sort(out)
 	return out
+}
+
+func refreshPiStatus(s *session.Session, _ time.Time) {
+	if s.Meta == nil {
+		return
+	}
+	src := s.Meta["current_state_source"]
+	label, ok := strings.CutSuffix(src, " (recent)")
+	if !ok {
+		label, ok = strings.CutSuffix(src, " (stale)")
+	}
+	if !ok {
+		return
+	}
+	status, state, source := recencyState(s.EndedAt, label)
+	s.Status = status
+	s.CurrentState = state
+	s.Meta["current_state_source"] = source
 }
 
 func parsePiSession(path string) (session.Session, bool) {

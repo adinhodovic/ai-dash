@@ -62,6 +62,8 @@ Sessions are discovered from default paths. Override them if needed:
 | Claude Code | `~/.claude/projects/` | `claude_path` |
 | pi | `~/.pi/agent/sessions/` | `pi_path` |
 
+Parsed session metadata is cached in `~/.config/ai-dash/cache.db`. A transcript is reread only when its size or mtime changes. Delete the file to force a full rescan.
+
 ### Options
 
 ```json

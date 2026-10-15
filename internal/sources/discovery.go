@@ -19,11 +19,15 @@ type (
 )
 
 func providers(cfg config.Config) []shared.SessionProvider {
+	return providersWithCache(cfg, nil)
+}
+
+func providersWithCache(cfg config.Config, cache *shared.Cache) []shared.SessionProvider {
 	return []shared.SessionProvider{
 		opencode.New(cfg),
-		codex.New(cfg),
-		claude.New(cfg),
-		pi.New(cfg),
+		codex.New(cfg).WithCache(cache),
+		claude.New(cfg).WithCache(cache),
+		pi.New(cfg).WithCache(cache),
 	}
 }
 
@@ -46,7 +50,15 @@ func ResumeArgs(cfg config.Config, tool, sessionID, projectDir string) []string 
 }
 
 func Discover(cfg config.Config) (Discovery, error) {
-	providers := providers(cfg)
+	// A cache that cannot be opened falls back to parsing every file.
+	// The dashboard still has to start.
+	cache, err := shared.Open(shared.DefaultPath())
+	if err != nil {
+		cache = nil
+	} else {
+		defer func() { _ = cache.Close() }()
+	}
+	providers := providersWithCache(cfg, cache)
 	discovery := Discovery{}
 	for _, provider := range providers {
 		result, err := provider.Discover()

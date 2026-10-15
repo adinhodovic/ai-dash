@@ -13,6 +13,7 @@ import (
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	filtered := m.filteredSessions()
+	var extra tea.Cmd
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -288,14 +289,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case statusMsg:
 		m.statusMessage = msg.message
 	case triggerReloadMsg:
-		return m, tea.Batch(tickReload(), func() tea.Msg {
+		// Schedule the next poll after this one finishes. Starting it here
+		// overlaps scans when a reload takes longer than the interval.
+		return m, func() tea.Msg {
 			discovery, _ := sources.Discover(m.meta.Config)
 			sessions := append([]session.Session(nil), discovery.Sessions...)
 			session.ApplyRenames(sessions, m.meta.Renames)
 			session.Sort(sessions)
 			var err error
 			return reloadMsg{sessions: sessions, discovery: discovery, err: err}
-		})
+		}
 	case reloadMsg:
 		if msg.err == nil && len(msg.sessions) > 0 {
 			prev := len(m.sessions)
@@ -314,19 +317,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			filtered = m.filteredSessions()
 			m.syncAllTables(filtered)
 		}
+		extra = tickReload()
 	}
 
 	// Forward non-key messages to the picker list (e.g. FilterMatchesMsg).
 	if m.picker.active {
 		var cmd tea.Cmd
 		m.picker.list, cmd = m.picker.list.Update(msg)
-		return m, cmd
+		return m, tea.Batch(extra, cmd)
 	}
 
 	if m.focus != focusSearch {
 		m.syncAfterChange(filtered)
 	}
-	return m, nil
+	return m, extra
 }
 
 func (m *Model) syncAfterChange(filtered []session.Session) {
