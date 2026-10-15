@@ -17,12 +17,13 @@ import (
 
 type Source struct {
 	pathOverride string
+	cache        *shared.Cache
 }
 
 var _ shared.SessionProvider = Source{}
 
-func New(cfg config.Config) Source {
-	return Source{pathOverride: cfg.SourcePath("pi", "")}
+func New(cfg config.Config, cache *shared.Cache) Source {
+	return Source{pathOverride: cfg.SourcePath("pi", ""), cache: cache}
 }
 
 func (Source) Name() string { return "pi" }
@@ -47,7 +48,7 @@ func (s Source) Discover() (shared.Result, error) {
 		Sources: []shared.Source{
 			shared.NewSource("pi", "jsonl", sessionsPath, "pi agent sessions"),
 		},
-		Sessions: importPiSessions(paths),
+		Sessions: importPiSessions(s.cache, paths),
 	}, nil
 }
 
@@ -137,21 +138,43 @@ type treeEntry struct {
 	name      string // session_info title, if this entry is a session_info
 }
 
-func importPiSessions(paths []string) []session.Session {
-	out := make([]session.Session, 0, len(paths))
-	gitRootCache := map[string]string{}
+func importPiSessions(cache *shared.Cache, paths []string) []session.Session {
+	files := make([]shared.TranscriptFile, 0, len(paths))
 	for _, path := range paths {
-		parsed, ok := parsePiSession(path)
-		if !ok {
+		info, err := os.Stat(path)
+		if err != nil {
 			continue
+		}
+		files = append(files, shared.TranscriptFile{
+			Path:    path,
+			Size:    info.Size(),
+			ModTime: info.ModTime(),
+		})
+	}
+	gitRootCache := map[string]string{}
+	out := cache.Sessions("pi", files, func(f shared.TranscriptFile) (session.Session, bool) {
+		parsed, ok := parsePiSession(f.Path)
+		if !ok {
+			return session.Session{}, false
 		}
 		if parsed.Repo != "" {
 			parsed.Project = resolveProjectRoot(parsed.Repo, gitRootCache)
 		}
-		out = append(out, parsed)
-	}
+		return parsed, true
+	}, refreshPiStatus)
 	session.Sort(out)
 	return out
+}
+
+func refreshPiStatus(s *session.Session, _ time.Time) {
+	label := s.Meta["state_label"]
+	if label == "" {
+		return
+	}
+	status, state, source := recencyState(s.EndedAt, label)
+	s.Status = status
+	s.CurrentState = state
+	s.Meta["current_state_source"] = source
 }
 
 func parsePiSession(path string) (session.Session, bool) {
@@ -266,10 +289,13 @@ func parsePiSession(path string) (session.Session, bool) {
 	if len(activePath) > 0 {
 		leaf = &activePath[len(activePath)-1]
 	}
-	status, currentState, stateSource := classifyLeaf(leaf, endedAt)
+	status, currentState, stateSource, stateLabel := classifyLeaf(leaf, endedAt)
 
 	metaMap := map[string]string{
 		"current_state_source": stateSource,
+	}
+	if stateLabel != "" {
+		metaMap["state_label"] = stateLabel
 	}
 	if lastAssistant != nil && lastAssistant.ErrorMessage != "" {
 		metaMap["error"] = lastAssistant.ErrorMessage
@@ -337,51 +363,44 @@ func walkActivePath(order []string, entries map[string]treeEntry) []treeEntry {
 	return activePath
 }
 
-func classifyLeaf(leaf *treeEntry, endedAt time.Time) (status, currentState, source string) {
+func classifyLeaf(
+	leaf *treeEntry,
+	endedAt time.Time,
+) (status, currentState, source, label string) {
+	active, aborted := string(session.StatusActive), string(session.StatusAborted)
 	if leaf != nil && leaf.entryType == "message" && leaf.message != nil {
 		switch leaf.message.Role {
 		case "assistant":
 			switch leaf.message.StopReason {
 			case "stop":
-				return string(session.StatusActive), string(session.StateWaiting), "stopReason=stop"
+				return active, string(session.StateWaiting), "stopReason=stop", ""
 			case "length":
-				return string(
-						session.StatusActive,
-					), string(
-						session.StateMaxTokens,
-					), "stopReason=length"
+				return active, string(session.StateMaxTokens), "stopReason=length", ""
 			case "toolUse":
-				return string(
-						session.StatusActive,
-					), string(
-						session.StateToolCall,
-					), "stopReason=toolUse"
+				return active, string(session.StateToolCall), "stopReason=toolUse", ""
 			case "error":
-				return string(
-						session.StatusAborted,
-					), string(
-						session.StateAborted,
-					), "stopReason=error"
+				return aborted, string(session.StateAborted), "stopReason=error", ""
 			case "aborted":
-				return string(
-						session.StatusAborted,
-					), string(
-						session.StateAborted,
-					), "stopReason=aborted"
+				return aborted, string(session.StateAborted), "stopReason=aborted", ""
 			}
 		case "toolResult":
-			return string(session.StatusActive), string(session.StateRunning), "leaf=toolResult"
+			return active, string(session.StateRunning), "leaf=toolResult", ""
 		case "bashExecution":
-			return string(session.StatusActive), string(session.StateRunning), "leaf=bashExecution"
+			return active, string(session.StateRunning), "leaf=bashExecution", ""
 		case "user":
-			return recencyState(endedAt, "leaf=user message")
+			return labeledRecencyState(endedAt, "leaf=user message")
 		}
 	}
-	label := "leaf=none"
-	if leaf != nil {
-		label = "leaf=" + leaf.entryType
+	if leaf == nil {
+		return labeledRecencyState(endedAt, "leaf=none")
 	}
-	return recencyState(endedAt, label)
+	return labeledRecencyState(endedAt, "leaf="+leaf.entryType)
+}
+
+// labeledRecencyState also returns the label so a cache hit can recompute recency later.
+func labeledRecencyState(endedAt time.Time, label string) (string, string, string, string) {
+	status, currentState, source := recencyState(endedAt, label)
+	return status, currentState, source, label
 }
 
 func recencyState(endedAt time.Time, label string) (status, currentState, source string) {

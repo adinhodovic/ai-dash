@@ -94,6 +94,7 @@ Guidance for agents working in `ai-dash`.
 - Codex: JSONL parser with `session_meta`, `turn_context`, `response_item`, `event_msg` types.
 - `Session.Meta` (`map[string]string`) stores tool-specific metadata displayed in the detail pane.
 - `Session.Project` should be the real path (not slug-encoded). Claude uses `cwd` from transcript.
+- JSONL providers cache parsed sessions in `~/.cache/ai-dash/sessions.db` (size + mtime). Do not store transcript bodies. Time-derived status is refreshed on read, not stored as final. Bump `cacheVersion` when parser output changes; unchanged files are not reread.
 
 ## Configuration
 

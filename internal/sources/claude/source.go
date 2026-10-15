@@ -16,6 +16,7 @@ import (
 
 type Source struct {
 	pathOverride string
+	cache        *shared.Cache
 }
 
 var (
@@ -23,8 +24,8 @@ var (
 	_ shared.SubagentClassifier = Source{}
 )
 
-func New(cfg config.Config) Source {
-	return Source{pathOverride: cfg.SourcePath("claude", "")}
+func New(cfg config.Config, cache *shared.Cache) Source {
+	return Source{pathOverride: cfg.SourcePath("claude", ""), cache: cache}
 }
 
 func (Source) Name() string { return "claude" }
@@ -48,7 +49,7 @@ func (s Source) Discover() (shared.Result, error) {
 
 	transcripts, err := discoverTranscripts(projectsPath)
 	result.Transcripts = transcripts
-	result.Sessions = importTranscriptSessions(transcripts)
+	result.Sessions = importTranscriptSessions(s.cache, transcripts)
 	return result, err
 }
 
@@ -98,6 +99,7 @@ func discoverTranscripts(root string) ([]shared.TranscriptFile, error) {
 			Path:    path,
 			Project: projectNameFromPath(root, path),
 			ModTime: info.ModTime(),
+			Size:    info.Size(),
 		})
 		return nil
 	})
@@ -160,17 +162,32 @@ type claudeLine struct {
 	} `json:"message"`
 }
 
-func importTranscriptSessions(transcripts []shared.TranscriptFile) []session.Session {
-	sessions := make([]session.Session, 0, len(transcripts))
+func importTranscriptSessions(
+	cache *shared.Cache,
+	transcripts []shared.TranscriptFile,
+) []session.Session {
 	gitRootCache := map[string]string{}
-	for _, transcript := range transcripts {
-		s := parseClaudeTranscript(transcript)
-		if s.Repo != "" {
-			s.Project = resolveProjectRoot(s.Repo, gitRootCache)
-		}
-		sessions = append(sessions, s)
-	}
-	return sessions
+	return cache.Sessions(
+		"claude",
+		transcripts,
+		func(f shared.TranscriptFile) (session.Session, bool) {
+			s := parseClaudeTranscript(f)
+			if s.Repo != "" {
+				s.Project = resolveProjectRoot(s.Repo, gitRootCache)
+			}
+			return s, true
+		}, refreshClaudeStatus)
+}
+
+// refreshClaudeStatus needs no nil check: parseClaudeTranscript always sets Meta["current_state_source"], so Meta survives the cache's JSON round-trip.
+func refreshClaudeStatus(s *session.Session, modTime time.Time) {
+	applyClaudeStatus(s, s.Meta["stop_reason"], modTime)
+}
+
+func applyClaudeStatus(s *session.Session, stop string, modTime time.Time) {
+	s.Status, s.CurrentState = claudeCurrentState(stop, modTime)
+	s.Meta["current_state_source"] = claudeCurrentStateSource(stop, modTime)
+	s.CurrentState = session.StatusLabel(*s)
 }
 
 // resolveProjectRoot returns the git repo root containing dir, or dir itself
@@ -327,9 +344,7 @@ func parseClaudeTranscript(transcript shared.TranscriptFile) session.Session {
 		s.Meta["branch"] = s.Branch
 	}
 
-	s.Status, s.CurrentState = claudeCurrentState(lastStopReason, transcript.ModTime)
-	s.Meta["current_state_source"] = claudeCurrentStateSource(lastStopReason, transcript.ModTime)
-	s.CurrentState = session.StatusLabel(s)
+	applyClaudeStatus(&s, lastStopReason, transcript.ModTime)
 
 	return s
 }
