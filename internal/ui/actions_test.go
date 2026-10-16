@@ -161,17 +161,3 @@ func TestHelpListsActionsByScope(t *testing.T) {
 		t.Error("generic actions should come first, then each tool")
 	}
 }
-
-func TestFooterListsSelectedSessionActions(t *testing.T) {
-	m := resize(testModel(), 200, 50)
-	s := m.filteredSessions()[m.sessionCursor]
-	m.meta.Config.Actions = map[string][]config.Action{
-		s.Tool: {{Label: "tool only", Prompt: "hi"}},
-	}
-	view := m.View().Content
-	for _, want := range []string{s.Tool + " actions", "ctrl+r", "continue", "tool only"} {
-		if !strings.Contains(view, want) {
-			t.Errorf("footer is missing %q", want)
-		}
-	}
-}

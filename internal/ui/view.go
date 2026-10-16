@@ -28,17 +28,13 @@ func (m Model) View() tea.View {
 
 	filtered := m.filteredSessions()
 
-	// Layout budget: top area(5) + content(variable) + footer(2) = m.height
+	// Layout budget: searchBox(4) + content(variable) + footer(1) = m.height
 	contentH := uilayout.ContentHeight(m.height)
 	// The search box is a fixed-height bordered box (see TopBar), so it's
 	// always exactly 4 lines regardless of how long its content is —
 	// overflow is truncated per-line inside TopBar itself.
 	top := m.renderTopBar(filtered)
-	footer := lipgloss.JoinVertical(
-		lipgloss.Left,
-		" "+m.renderFooter(),
-		" "+m.renderActionFooter(filtered),
-	)
+	footer := " " + m.renderFooter()
 
 	if len(m.sessions) == 0 {
 		body := uiviews.EmptySessions(m.styles, m.width, contentH, "No sessions loaded.")
@@ -157,30 +153,6 @@ func (m Model) renderFooter() string {
 		line = line[:i]
 	}
 	return line
-}
-
-// renderActionFooter lists what the selected session's actions are bound to.
-// It stays blank while typing so the hint above it is the only instruction.
-func (m Model) renderActionFooter(filtered []session.Session) string {
-	if m.renaming || m.pending != nil || m.focus == focusSearch {
-		return ""
-	}
-	s, ok := selectedSession(filtered, m.sessionCursor)
-	if !ok {
-		return ""
-	}
-	bindings := m.actionBindings(m.sessionActions(s))
-	if len(bindings) == 0 {
-		return ""
-	}
-	label := m.styles.Highlight.MarginRight(1).Render(s.Tool + " actions")
-	h := m.help
-	h.SetWidth(max(0, m.width-lipgloss.Width(label)-1))
-	line := h.ShortHelpView(bindings)
-	if i := strings.Index(line, "\n"); i >= 0 {
-		line = line[:i]
-	}
-	return label + line
 }
 
 func (m Model) renderSessionPane() string {
@@ -401,12 +373,25 @@ func (m Model) renderHelpBody() string {
 		return strings.Join(blocks, "\n\n")
 	}
 	gap := lipgloss.NewStyle().MarginRight(4)
-	rendered := []string{gap.Render(renderColumn(columns[0])), renderColumn(columns[1])}
-	if len(actions) > 0 {
-		rendered[1] = gap.Render(rendered[1])
-		rendered = append(rendered, renderColumn(actions))
+	builtin := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		gap.Render(renderColumn(columns[0])),
+		renderColumn(columns[1]),
+	)
+	if len(actions) == 0 {
+		return builtin
 	}
-	return lipgloss.JoinHorizontal(lipgloss.Top, rendered...)
+	// Actions sit on their own row: generic first, then one column per tool.
+	row := make([]string, len(actions))
+	for i, sec := range actions {
+		row[i] = gap.Render(renderColumn([]helpSection{sec}))
+	}
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		builtin,
+		"",
+		lipgloss.JoinHorizontal(lipgloss.Top, row...),
+	)
 }
 
 func (m Model) sortLabel() string {

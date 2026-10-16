@@ -4,15 +4,12 @@ package layout
 // text never sits flush against the border.
 const PanePadding = 2
 
-// FooterHeight is the key hint line plus the selected session's actions.
-const FooterHeight = 2
-
 // ContentHeight returns the available height for panes (total minus the top
 // area and the footer). The top area is: TopStrip (one line, no border) + a
 // margin line + TopBar (border(2), Search and Filters sharing one line, so
-// 3 total) = 1 + 1 + 3 = 5, plus the footer(2) = 7.
+// 3 total) = 1 + 1 + 3 = 5, plus the footer(1) = 6.
 func ContentHeight(termHeight int) int {
-	return max(4, termHeight-5-FooterHeight)
+	return max(4, termHeight-6)
 }
 
 // BottomPaneHeight is the height available to the Sessions/Details row.
