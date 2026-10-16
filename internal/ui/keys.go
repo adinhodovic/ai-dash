@@ -22,6 +22,7 @@ type keyMap struct {
 	ToggleDetails     key.Binding
 	ToggleDetailExtra key.Binding
 	NewSession        key.Binding
+	Actions           key.Binding
 	AgeRange          key.Binding
 	ToggleAgents      key.Binding
 	ToggleAttention   key.Binding
@@ -61,6 +62,7 @@ func defaultKeyMap() keyMap {
 			key.WithHelp("i", "more info"),
 		),
 		NewSession:   key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "new session")),
+		Actions:      key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "actions")),
 		AgeRange:     key.NewBinding(key.WithKeys("D"), key.WithHelp("D", "age range")),
 		ToggleAgents: key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "agents")),
 		ToggleAttention: key.NewBinding(
@@ -81,7 +83,7 @@ func (k keyMap) shortHelpForFocus(focus focusArea) []key.Binding {
 	base := []key.Binding{k.Up, k.Down, k.Help}
 	switch focus {
 	case focusList:
-		base = append(base, k.ResumeSession, k.RenameSession, k.NewSession)
+		base = append(base, k.ResumeSession, k.RenameSession, k.NewSession, k.Actions)
 	}
 	return append(base, k.Quit)
 }
@@ -102,7 +104,7 @@ func (k keyMap) helpColumns() [2][]helpSection {
 		{
 			{"Navigate", []key.Binding{k.Up, k.Down, k.GoTop, k.PageUp, k.PageDown}},
 			{"Session", []key.Binding{
-				k.ResumeSession, k.RenameSession, k.NewSession,
+				k.ResumeSession, k.RenameSession, k.NewSession, k.Actions,
 				k.ToggleDetails, k.ToggleDetailExtra,
 			}},
 			{"General", []key.Binding{k.Help, k.Sources, k.Quit}},
@@ -115,4 +117,23 @@ func (k keyMap) helpColumns() [2][]helpSection {
 			{"Sort", []key.Binding{k.Sort, k.SortNext, k.SortToggle}},
 		},
 	}
+}
+
+// boundKeys is every key ai-dash handles itself. Custom actions can't take
+// these over.
+func (k keyMap) boundKeys() map[string]bool {
+	bindings := []key.Binding{
+		k.Up, k.Down, k.GoTop, k.GoBottom, k.PageUp, k.PageDown, k.Help, k.Search,
+		k.SortNext, k.SortPrev, k.SortToggle, k.Tool, k.Sort, k.Project,
+		k.ResumeSession, k.RenameSession, k.ToggleDetails, k.ToggleDetailExtra,
+		k.NewSession, k.Actions, k.AgeRange, k.ToggleAgents, k.ToggleAttention,
+		k.ToggleActiveOnly, k.Sources, k.Clear, k.Quit,
+	}
+	bound := map[string]bool{"esc": true, "enter": true}
+	for _, b := range bindings {
+		for _, key := range b.Keys() {
+			bound[key] = true
+		}
+	}
+	return bound
 }

@@ -139,6 +139,9 @@ func (m Model) renderFooter() string {
 	if m.renaming {
 		return "Enter save | Esc cancel"
 	}
+	if m.pending != nil {
+		return "Enter run | Esc cancel"
+	}
 	if m.focus == focusSearch {
 		return "Enter apply | Esc cancel"
 	}
@@ -231,6 +234,16 @@ func (m Model) renderTopBar(filtered []session.Session) string {
 			Bold(true).
 			Render("Rename ") +
 			m.renameInput.View()
+	case m.pending != nil:
+		label := m.pending.action.InputLabel
+		if label == "" {
+			label = uiutil.Capitalize(m.pending.action.Label)
+		}
+		searchPart = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(theme.Nord13)).
+			Bold(true).
+			Render(label+" ") +
+			m.actionInput.View()
 	case m.focus == focusSearch:
 		searchPart = lipgloss.NewStyle().
 			Foreground(lipgloss.Color(theme.Nord13)).
@@ -350,6 +363,9 @@ func (m Model) renderHelpBody() string {
 		return strings.Join(blocks, "\n\n")
 	}
 	columns := m.keys.helpColumns()
+	if bindings := m.actionBindings(m.filteredSessions()); len(bindings) > 0 {
+		columns[1] = append(columns[1], helpSection{"Actions", bindings})
+	}
 	left := lipgloss.NewStyle().MarginRight(4).Render(renderColumn(columns[0][:]))
 	right := renderColumn(columns[1][:])
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)

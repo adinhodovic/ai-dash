@@ -65,6 +65,10 @@ func (Source) NewSessionArgs(projectDir string) []string {
 	return []string{"cd", q(projectDir), "&&", "pi"}
 }
 
+func (Source) PromptArgs(prompt string) []string {
+	return []string{shared.ShellQuote(prompt)}
+}
+
 func discoverSessionFiles(root string) ([]string, error) {
 	info, err := os.Stat(root)
 	if err != nil {

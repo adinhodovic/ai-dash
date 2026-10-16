@@ -83,6 +83,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						return m, cmd
 					}
 				}
+				if m.picker.label == "action" {
+					m.picker.active = false
+					if a, ok := m.pickedAction(item); ok {
+						return m, m.startAction(a, filtered)
+					}
+					return m, cmd
+				}
 				m.picker.active = false
 				filtered = m.filteredSessions()
 				m.syncAllTables(filtered)
@@ -101,8 +108,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.renaming {
 			return m.updateRename(msg)
 		}
+		if m.pending != nil {
+			return m.updateActionInput(msg)
+		}
 		if m.focus == focusSearch {
 			return m.updateSearch(msg)
+		}
+		if a, ok := m.actionForKey(msg.String(), filtered); ok {
+			return m, m.startAction(a, filtered)
 		}
 
 		switch msg.String() {
@@ -122,6 +135,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.focus == focusList {
 				m.startRename(filtered)
 			}
+		case "x":
+			m.openActionPicker(filtered)
 		case "n":
 			if m.meta.Config.AutoSelectTool && m.meta.Config.DefaultTool != "" {
 				if cmd := m.openNewSession(m.meta.Config.DefaultTool); cmd != nil {

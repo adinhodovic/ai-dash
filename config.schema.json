@@ -1,8 +1,96 @@
 {
+  "$defs": {
+    "action": {
+      "additionalProperties": false,
+      "properties": {
+        "disabled": {
+          "default": false,
+          "description": "Remove the built-in action with the same label",
+          "type": "boolean"
+        },
+        "input_label": {
+          "description": "Label shown while asking for {{.Input}}",
+          "type": "string"
+        },
+        "input_optional": {
+          "default": false,
+          "description": "Run even when the input is left empty",
+          "type": "boolean"
+        },
+        "key": {
+          "description": "Key that runs the action directly (e.g. ctrl+r). Optional; every action is also listed under x. Keys used by ai-dash itself are ignored.",
+          "type": "string"
+        },
+        "label": {
+          "description": "Name shown in the action picker. A configured action replaces the built-in action with the same label.",
+          "type": "string"
+        },
+        "mode": {
+          "default": "resume",
+          "description": "'resume' sends the prompt to the selected session; 'new' starts a new session in its project.",
+          "enum": [
+            "resume",
+            "new"
+          ],
+          "type": "string"
+        },
+        "prompt": {
+          "description": "Prompt template. Fields: {{.Input}}, {{.Project}}, {{.SessionID}}, {{.Tool}}, {{.Summary}}, {{.Model}}. Using {{.Input}} asks for text first.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "type": "object"
+    }
+  },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Configuration for the ai-dash TUI",
   "properties": {
+    "actions": {
+      "additionalProperties": false,
+      "description": "Prompts to run against the selected session, from the x picker or their own key. Tool actions take precedence over generic ones.",
+      "properties": {
+        "claude": {
+          "description": "Actions for claude sessions",
+          "items": {
+            "$ref": "#/$defs/action"
+          },
+          "type": "array"
+        },
+        "codex": {
+          "description": "Actions for codex sessions",
+          "items": {
+            "$ref": "#/$defs/action"
+          },
+          "type": "array"
+        },
+        "generic": {
+          "description": "Actions for every tool",
+          "items": {
+            "$ref": "#/$defs/action"
+          },
+          "type": "array"
+        },
+        "opencode": {
+          "description": "Actions for opencode sessions",
+          "items": {
+            "$ref": "#/$defs/action"
+          },
+          "type": "array"
+        },
+        "pi": {
+          "description": "Actions for pi sessions",
+          "items": {
+            "$ref": "#/$defs/action"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "age_presets": {
       "default": [
         "15m",

@@ -170,12 +170,18 @@ func (m *Model) openNewSession(tool string) tea.Cmd {
 	m.statusMessage = fmt.Sprintf(
 		"Opening new %s session in %s...", tool, uiutil.CleanProjectName(projectDir),
 	)
+	return launchSession(cmd, "new "+tool)
+}
+
+// launchSession starts cmd in the background and reports the outcome in the
+// status bar.
+func launchSession(cmd *exec.Cmd, label string) tea.Cmd {
 	return func() tea.Msg {
 		target, err := startSession(cmd)
 		if err != nil {
 			return statusMsg{message: fmt.Sprintf("Failed to open terminal: %v", err)}
 		}
-		return statusMsg{message: openedMessage("new "+tool, target)}
+		return statusMsg{message: openedMessage(label, target)}
 	}
 }
 
@@ -184,20 +190,9 @@ func (m *Model) openSelectedExternally(filtered []session.Session) tea.Cmd {
 	if len(filtered) == 0 || sel < 0 || sel >= len(filtered) {
 		return nil
 	}
-	s := filtered[sel]
-	redirectedFromSubagent := false
-	if s.ParentID != "" {
-		// A subagent's ID is an internal transcript for a Task-tool
-		// invocation, not a standalone session the tool's own CLI can
-		// --resume — resume the parent instead, since that's almost always
-		// what's actually wanted.
-		parent, ok := findSessionByID(m.sessions, s.ParentID)
-		if !ok {
-			m.statusMessage = "Subagent sessions can't be resumed directly, and the parent session wasn't found"
-			return nil
-		}
-		s = parent
-		redirectedFromSubagent = true
+	s, redirectedFromSubagent, ok := m.resumeTarget(filtered[sel])
+	if !ok {
+		return nil
 	}
 	cmd := sessionCommand(s, m.meta.Config)
 	if cmd == nil {
@@ -208,11 +203,21 @@ func (m *Model) openSelectedExternally(filtered []session.Session) tea.Cmd {
 	if redirectedFromSubagent {
 		m.statusMessage = "Subagents can't be resumed directly — " + m.statusMessage
 	}
-	return func() tea.Msg {
-		target, err := startSession(cmd)
-		if err != nil {
-			return statusMsg{message: fmt.Sprintf("Failed to open terminal: %v", err)}
-		}
-		return statusMsg{message: openedMessage(s.Tool, target)}
+	return launchSession(cmd, s.Tool)
+}
+
+// resumeTarget returns the session to resume for s. A subagent's ID is an
+// internal transcript for a Task-tool invocation, not a standalone session
+// the tool's own CLI can --resume, so its parent is resumed instead. ok is
+// false, with the reason in the status bar, when the parent is missing.
+func (m *Model) resumeTarget(s session.Session) (session.Session, bool, bool) {
+	if s.ParentID == "" {
+		return s, false, true
 	}
+	parent, ok := findSessionByID(m.sessions, s.ParentID)
+	if !ok {
+		m.statusMessage = "Subagent sessions can't be resumed directly, and the parent session wasn't found"
+		return session.Session{}, false, false
+	}
+	return parent, true, true
 }

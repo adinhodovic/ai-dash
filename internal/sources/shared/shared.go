@@ -47,6 +47,9 @@ type SessionProvider interface {
 	DiscoveryProvider
 	ResumeArgs(sessionID, projectDir string) []string
 	NewSessionArgs(projectDir string) []string
+	// PromptArgs is appended to ResumeArgs or NewSessionArgs to start the
+	// interactive session with prompt already submitted.
+	PromptArgs(prompt string) []string
 }
 
 // SubagentClassifier is optionally implemented by sources that can identify

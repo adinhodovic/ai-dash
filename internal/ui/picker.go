@@ -12,7 +12,7 @@ import (
 
 type filterPicker struct {
 	active bool
-	label  string // "tool", "project", "new-session"
+	label  string // "tool", "project", "new-session", "action"
 	multi  bool   // toggle-in-place checkboxes vs. pick-one-and-close
 	list   list.Model
 }
@@ -70,6 +70,13 @@ func newPicker(
 			pickerItem{value: opt, display: display, checkbox: multi, checked: selectedSet[opt]},
 		)
 	}
+	l := newPickerList(fmt.Sprintf("Filter: %s", label), items, searchable)
+	l.Select(cursorIdx)
+	return filterPicker{active: true, label: label, multi: multi, list: l}
+}
+
+// newPickerList builds the Nord-styled list shared by every picker overlay.
+func newPickerList(title string, items []list.Item, searchable bool) list.Model {
 	delegate := list.NewDefaultDelegate()
 	delegate.ShowDescription = false
 	delegate.SetHeight(1)
@@ -93,7 +100,7 @@ func newPicker(
 	}
 	height := max(10, min(len(items)+6, maxH))
 	l := list.New(items, delegate, 50, height)
-	l.Title = fmt.Sprintf("Filter: %s", label)
+	l.Title = title
 	l.Styles.TitleBar = lipgloss.NewStyle().Padding(0, 0, 1, 2)
 	l.Styles.Title = lipgloss.NewStyle().
 		Foreground(lipgloss.Color(theme.ColorHeaderFg)).
@@ -111,8 +118,7 @@ func newPicker(
 	l.SetFilteringEnabled(searchable)
 	l.SetShowFilter(searchable)
 	l.DisableQuitKeybindings()
-	l.Select(cursorIdx)
-	return filterPicker{active: true, label: label, multi: multi, list: l}
+	return l
 }
 
 // toggleFilterValue adds or removes value from the tool/project filter set,

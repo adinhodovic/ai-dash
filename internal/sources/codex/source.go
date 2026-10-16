@@ -103,6 +103,10 @@ func (Source) NewSessionArgs(projectDir string) []string {
 	return []string{"cd", q(projectDir), "&&", "codex"}
 }
 
+func (Source) PromptArgs(prompt string) []string {
+	return []string{shared.ShellQuote(prompt)}
+}
+
 func discoverCandidates(roots []string) ([]string, error) {
 	var all []string
 	for _, root := range roots {

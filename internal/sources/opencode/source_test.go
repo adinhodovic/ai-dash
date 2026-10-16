@@ -338,3 +338,11 @@ func TestDefaultDBPathsReturnsTwo(t *testing.T) {
 		t.Fatalf("paths should differ, got %q twice", paths[0])
 	}
 }
+
+func TestPromptArgs(t *testing.T) {
+	args := New(config.Config{}).PromptArgs("it's done")
+	want := []string{"--prompt", `'it'"'"'s done'`}
+	if len(args) != 2 || args[0] != want[0] || args[1] != want[1] {
+		t.Errorf("PromptArgs = %v, want %v", args, want)
+	}
+}
