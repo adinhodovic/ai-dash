@@ -339,7 +339,22 @@ func (m Model) filterChips() string {
 // stock FullHelpView — an unlabeled grid of key/description pairs that
 // doesn't say what any group of keys is actually for.
 func (m Model) renderHelpBody() string {
-	const helpKeyWidth = 8
+	columns := m.keys.helpColumns()
+	filtered := m.filteredSessions()
+	if bindings := m.actionBindings(filtered); len(bindings) > 0 {
+		s, _ := selectedSession(filtered, m.sessionCursor)
+		title := fmt.Sprintf("Actions (%s)", s.Tool)
+		columns[1] = append(columns[1], helpSection{title, bindings})
+	}
+	// Action keys are user-defined and can be longer than the built-in ones.
+	helpKeyWidth := 8
+	for _, column := range columns {
+		for _, sec := range column {
+			for _, b := range sec.bindings {
+				helpKeyWidth = max(helpKeyWidth, len(b.Help().Key)+2)
+			}
+		}
+	}
 	renderColumn := func(sections []helpSection) string {
 		var blocks []string
 		for _, sec := range sections {
@@ -361,10 +376,6 @@ func (m Model) renderHelpBody() string {
 			blocks = append(blocks, lipgloss.JoinVertical(lipgloss.Left, lines...))
 		}
 		return strings.Join(blocks, "\n\n")
-	}
-	columns := m.keys.helpColumns()
-	if bindings := m.actionBindings(m.filteredSessions()); len(bindings) > 0 {
-		columns[1] = append(columns[1], helpSection{"Actions", bindings})
 	}
 	left := lipgloss.NewStyle().MarginRight(4).Render(renderColumn(columns[0][:]))
 	right := renderColumn(columns[1][:])

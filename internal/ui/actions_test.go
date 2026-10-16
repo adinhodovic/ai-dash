@@ -133,3 +133,18 @@ func TestActionPicker(t *testing.T) {
 		t.Error("picker title should name the tool")
 	}
 }
+
+func TestHelpListsActionKeys(t *testing.T) {
+	m := resize(testModel(), 200, 60)
+	m.meta.Config.Actions = map[string][]config.Action{
+		config.GenericActions: {{Label: "long key", Key: "ctrl+shift+r", Prompt: "hi"}},
+	}
+	m = sendKey(m, "?")
+	tool := m.filteredSessions()[m.sessionCursor].Tool
+	view := m.View().Content
+	for _, want := range []string{"Actions (" + tool + ")", "ctrl+r", "continue", "ctrl+shift+r"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("help overlay is missing %q", want)
+		}
+	}
+}
