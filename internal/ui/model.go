@@ -64,6 +64,9 @@ type Model struct {
 	renameInput           textinput.Model
 	renaming              bool
 	renamingKey           string
+	actionInput           textinput.Model
+	pending               *pendingAction
+	pickerActions         []config.Action
 	sessionViewport       viewport.Model
 	sessionCursor         int
 	sourceTable           table.Model
@@ -105,6 +108,10 @@ func NewModel(opts Options) Model {
 	renameInput.CharLimit = 200
 	renameInput.Prompt = ""
 	renameInput.Blur()
+	actionInput := textinput.New()
+	actionInput.CharLimit = 2000
+	actionInput.Prompt = ""
+	actionInput.Blur()
 	renames := opts.Renames
 	if renames == nil {
 		renames = map[string]string{}
@@ -126,6 +133,7 @@ func NewModel(opts Options) Model {
 		meta:            opts,
 		searchInput:     input,
 		renameInput:     renameInput,
+		actionInput:     actionInput,
 		sessionViewport: viewport.New(),
 		sourceTable:     newSourceTable(),
 		detailTable:     newTable([]table.Column{{Title: "", Width: 10}, {Title: "", Width: 30}}),

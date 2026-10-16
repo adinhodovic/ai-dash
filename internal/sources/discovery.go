@@ -36,6 +36,15 @@ func NewSessionArgs(cfg config.Config, tool, projectDir string) []string {
 	return nil
 }
 
+func PromptArgs(cfg config.Config, tool, prompt string) []string {
+	for _, p := range providers(cfg, nil) {
+		if p.Name() == tool {
+			return p.PromptArgs(prompt)
+		}
+	}
+	return nil
+}
+
 func ResumeArgs(cfg config.Config, tool, sessionID, projectDir string) []string {
 	for _, p := range providers(cfg, nil) {
 		if p.Name() == tool {

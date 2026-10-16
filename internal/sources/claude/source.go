@@ -66,6 +66,10 @@ func (Source) NewSessionArgs(projectDir string) []string {
 	return []string{"cd", q(projectDir), "&&", "claude"}
 }
 
+func (Source) PromptArgs(prompt string) []string {
+	return []string{shared.ShellQuote(prompt)}
+}
+
 func (Source) ParentSessionID(s session.Session) string {
 	return subagentParentID(s.TranscriptPath)
 }

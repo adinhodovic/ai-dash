@@ -23,6 +23,8 @@ type Config struct {
 	CodexPath        string   `mapstructure:"codex_path"         json:"codex_path"`
 	ClaudePath       string   `mapstructure:"claude_path"        json:"claude_path"`
 	PiPath           string   `mapstructure:"pi_path"            json:"pi_path"`
+
+	Actions map[string][]Action `mapstructure:"actions" json:"actions,omitempty"`
 }
 
 func Init() {
@@ -198,9 +200,74 @@ func GenerateSchema() string {
 				"items":       map[string]any{"type": "string"},
 				"default":     []string{"15m", "1h", "1d", "3d", "7d", "14d", "30d"},
 			},
+			"actions": actionsSchema(),
 		},
+		"$defs":                map[string]any{"action": actionSchema()},
 		"additionalProperties": false,
 	}
 	data, _ := json.MarshalIndent(schema, "", "  ")
 	return string(data)
+}
+
+func actionSchema() map[string]any {
+	return map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"key": map[string]any{
+				"type":        "string",
+				"description": "Key that runs the action directly (e.g. ctrl+r). Optional; every action is also listed under x. Keys used by ai-dash itself are ignored.",
+			},
+			"label": map[string]any{
+				"type":        "string",
+				"description": "Name shown in the action picker. A configured action replaces the built-in action with the same label.",
+			},
+			"mode": map[string]any{
+				"type":        "string",
+				"description": "'resume' sends the prompt to the selected session; 'new' starts a new session in its project.",
+				"enum":        []string{ActionModeResume, ActionModeNew},
+				"default":     ActionModeResume,
+			},
+			"prompt": map[string]any{
+				"type":        "string",
+				"description": "Prompt template. Fields: {{.Input}}, {{.Project}}, {{.SessionID}}, {{.Tool}}, {{.Summary}}, {{.Model}}. Using {{.Input}} asks for text first.",
+			},
+			"input_label": map[string]any{
+				"type":        "string",
+				"description": "Label shown while asking for {{.Input}}",
+			},
+			"input_optional": map[string]any{
+				"type":        "boolean",
+				"description": "Run even when the input is left empty",
+				"default":     false,
+			},
+			"disabled": map[string]any{
+				"type":        "boolean",
+				"description": "Remove the built-in action with the same label",
+				"default":     false,
+			},
+		},
+		"required":             []string{"label"},
+		"additionalProperties": false,
+	}
+}
+
+func actionsSchema() map[string]any {
+	scopes := map[string]any{}
+	for _, scope := range ActionScopes {
+		desc := "Actions for " + scope + " sessions"
+		if scope == GenericActions {
+			desc = "Actions for every tool"
+		}
+		scopes[scope] = map[string]any{
+			"type":        "array",
+			"description": desc,
+			"items":       map[string]any{"$ref": "#/$defs/action"},
+		}
+	}
+	return map[string]any{
+		"type":                 "object",
+		"description":          "Prompts to run against the selected session, from the x picker or their own key. Tool actions take precedence over generic ones.",
+		"properties":           scopes,
+		"additionalProperties": false,
+	}
 }

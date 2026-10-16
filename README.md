@@ -101,6 +101,45 @@ Add the `$schema` line to get autocompletion in your editor. You can also run `a
 
 On macOS, `terminal` should be a CLI terminal binary like `ghostty` or `kitty`.
 
+### Actions
+
+Actions open the selected session's tool with a prompt already submitted. Press `x` to pick one, or bind it to a key. `generic` actions apply to every tool; `claude`, `codex`, `opencode` and `pi` actions apply to that tool only and take precedence over a generic action with the same key or label.
+
+```json
+{
+  "actions": {
+    "generic": [
+      { "key": "ctrl+r", "label": "continue", "prompt": "continue" },
+      { "key": "ctrl+t", "label": "test", "prompt": "Run the tests and fix any failures" }
+    ],
+    "codex": [
+      { "key": "ctrl+o", "label": "review", "mode": "new", "prompt": "Review the uncommitted changes in {{.Project}}" }
+    ]
+  }
+}
+```
+
+| Field | What it does |
+|-------|-------------|
+| `label` | Name in the `x` picker. Reusing a built-in label replaces that action. |
+| `key` | Optional direct key. Keys ai-dash already uses are ignored. |
+| `mode` | `resume` (default) sends the prompt to the selected session; `new` starts a session in its project. |
+| `prompt` | Go template with `{{.Input}}`, `{{.Project}}`, `{{.SessionID}}`, `{{.Tool}}`, `{{.Summary}}`, `{{.Model}}`. |
+| `input_label` | A prompt that uses `{{.Input}}` asks for text first; this labels the field. |
+| `input_optional` | Run even when the input is left empty. |
+| `disabled` | Remove the built-in action with the same label. |
+
+`?` lists the generic actions, then each tool's own. Actions without a key are listed under `x`.
+
+Built-in actions:
+
+| Scope | Key | Label | Prompt |
+|-------|-----|-------|--------|
+| generic | `ctrl+r` | continue | `continue` |
+| generic | `ctrl+e` | message | asks for a message and sends it |
+| generic | `ctrl+n` | new with prompt | asks for a prompt and starts a new session |
+| claude | | artifact | asks what to summarize and creates an artifact of it |
+
 ## Keys
 
 | Key | Action |
@@ -111,6 +150,8 @@ On macOS, `terminal` should be a CLI terminal binary like `ghostty` or `kitty`.
 | `r` | Resume session |
 | `R` | Rename session |
 | `n` | New session |
+| `x` | Run an action on the session |
+| `ctrl+r` / `ctrl+e` / `ctrl+n` | Continue / send a message / new session with a prompt (see [Actions](#actions)) |
 | `v` | Toggle detail pane |
 | `i` | Toggle IDs & metadata |
 | `/` | Search |

@@ -28,6 +28,7 @@ Guidance for agents working in `ai-dash`.
   - `stats.go` — Overview stats rendering, project aggregation, project sort keys
   - `sort.go` — Sort cycling, direction toggle, slice rotation helpers
   - `terminal.go` — Terminal spawning, resume/new session commands
+  - `actions.go` — Configured prompt actions: `x` picker, direct keys, `{{.Input}}` prompt
   - `picker.go` — Filter picker overlay (bubbles list with fuzzy search), Nord-styled
   - `keys.go` — Keybindings (keyMap), context-aware shorthelp
   - `tables.go` — Table constructors, detailItem type
@@ -38,7 +39,7 @@ Guidance for agents working in `ai-dash`.
 - Native parsers for each tool — no heuristic/generic importers for known formats.
 - Only official tool provider files are supported. Do not add generic/custom session JSON loaders.
 - Each provider implements `SessionProvider` and optionally `SubagentClassifier`.
-- Each provider implements `NewSessionArgs(projectDir)` and `ResumeArgs(sessionID)`.
+- Each provider implements `NewSessionArgs(projectDir)`, `ResumeArgs(sessionID, projectDir)` and `PromptArgs(prompt)`. Actions append `PromptArgs` to the other two.
 - Source paths configurable via `config.json`, no legacy env var overrides.
 - Prefer OSS Bubble Tea v2 ecosystem components over hand-rolled widgets.
 - Local-first and terminal-first. No cloud, no HTTP API.
@@ -85,7 +86,7 @@ Guidance for agents working in `ai-dash`.
 
 ## Source Import Rules
 
-- Each provider implements `SessionProvider`: `Name()`, `Discover()`, `ResumeArgs()`, `NewSessionArgs()`.
+- Each provider implements `SessionProvider`: `Name()`, `Discover()`, `ResumeArgs()`, `NewSessionArgs()`, `PromptArgs()`.
 - Add compile-time check: `var _ shared.SessionProvider = Source{}`.
 - Optional `SubagentClassifier` interface for parent-child detection. Discovery layer calls it after collecting sessions.
 - Source constructors take `config.Config` for configurable paths.
@@ -104,7 +105,8 @@ Guidance for agents working in `ai-dash`.
 - `default_age_filter` supports day shorthand (`14d`) and Go durations (`336h`)
 - `age_presets` configures the `D` key cycle options
 - `nerd_font: null` means auto-detect; set `false` to opt out
-- `./ai-dash schema` generates JSON Schema for editor autocompletion
+- `./ai-dash schema` generates JSON Schema for editor autocompletion; regenerate `config.schema.json` when config changes
+- `actions` holds `generic` and per-tool prompt actions; built-in defaults live in `internal/config/actions.go`
 
 ## Fixture Anonymization
 

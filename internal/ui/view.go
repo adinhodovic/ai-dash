@@ -139,6 +139,9 @@ func (m Model) renderFooter() string {
 	if m.renaming {
 		return "Enter save | Esc cancel"
 	}
+	if m.pending != nil {
+		return "Enter run | Esc cancel"
+	}
 	if m.focus == focusSearch {
 		return "Enter apply | Esc cancel"
 	}
@@ -231,6 +234,16 @@ func (m Model) renderTopBar(filtered []session.Session) string {
 			Bold(true).
 			Render("Rename ") +
 			m.renameInput.View()
+	case m.pending != nil:
+		label := m.pending.action.InputLabel
+		if label == "" {
+			label = uiutil.Capitalize(m.pending.action.Label)
+		}
+		searchPart = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(theme.Nord13)).
+			Bold(true).
+			Render(label+" ") +
+			m.actionInput.View()
 	case m.focus == focusSearch:
 		searchPart = lipgloss.NewStyle().
 			Foreground(lipgloss.Color(theme.Nord13)).
@@ -326,7 +339,17 @@ func (m Model) filterChips() string {
 // stock FullHelpView — an unlabeled grid of key/description pairs that
 // doesn't say what any group of keys is actually for.
 func (m Model) renderHelpBody() string {
-	const helpKeyWidth = 8
+	columns := m.keys.helpColumns()
+	actions := m.actionHelpSections()
+	// Action keys are user-defined and can be longer than the built-in ones.
+	helpKeyWidth := 8
+	for _, column := range append(columns[:], actions) {
+		for _, sec := range column {
+			for _, b := range sec.bindings {
+				helpKeyWidth = max(helpKeyWidth, len(b.Help().Key)+2)
+			}
+		}
+	}
 	renderColumn := func(sections []helpSection) string {
 		var blocks []string
 		for _, sec := range sections {
@@ -349,10 +372,32 @@ func (m Model) renderHelpBody() string {
 		}
 		return strings.Join(blocks, "\n\n")
 	}
-	columns := m.keys.helpColumns()
-	left := lipgloss.NewStyle().MarginRight(4).Render(renderColumn(columns[0][:]))
-	right := renderColumn(columns[1][:])
-	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
+	gap := lipgloss.NewStyle().MarginRight(4)
+	builtin := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		gap.Render(renderColumn(columns[0])),
+		renderColumn(columns[1]),
+	)
+	if len(actions) == 0 {
+		return builtin
+	}
+	// Actions sit on their own row: generic first, then one column per tool.
+	row := make([]string, len(actions))
+	for i, sec := range actions {
+		row[i] = gap.Render(renderColumn([]helpSection{sec}))
+	}
+	note := m.styles.Muted.Render(
+		"Actions run on the selected session; tool actions only on that tool's.\n" +
+			"x picks from all of them, including those without a key.",
+	)
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		builtin,
+		"",
+		lipgloss.JoinHorizontal(lipgloss.Top, row...),
+		"",
+		note,
+	)
 }
 
 func (m Model) sortLabel() string {

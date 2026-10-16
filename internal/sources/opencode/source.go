@@ -50,6 +50,10 @@ func (Source) NewSessionArgs(projectDir string) []string {
 	return []string{"cd", q(projectDir), "&&", "opencode"}
 }
 
+func (Source) PromptArgs(prompt string) []string {
+	return []string{"--prompt", shared.ShellQuote(prompt)}
+}
+
 func (s Source) dbPath() string {
 	if s.pathOverride != "" {
 		return s.pathOverride
