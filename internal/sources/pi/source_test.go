@@ -36,7 +36,7 @@ func TestParsePiSessionStop(t *testing.T) {
 	if parsed.Summary != "Fix the flaky test in the auth suite" {
 		t.Fatalf("unexpected summary: %#v", parsed)
 	}
-	if parsed.TokensIn != 1200 || parsed.TokensOut != 430 {
+	if parsed.TokensIn != 1200+5000+800 || parsed.TokensOut != 430 {
 		t.Fatalf("unexpected token counts: %#v", parsed)
 	}
 	if parsed.CostUSD != 0.009 {

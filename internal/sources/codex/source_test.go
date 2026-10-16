@@ -65,6 +65,16 @@ func TestParseCodexSessionFromFixture(t *testing.T) {
 	}
 }
 
+func TestParseCodexSessionUsesCumulativeTokenCount(t *testing.T) {
+	parsed, ok := parseCodexSession("testdata/session.jsonl")
+	if !ok {
+		t.Fatal("expected fixture to parse")
+	}
+	if parsed.TokensIn != 9000 || parsed.TokensOut != 300 {
+		t.Fatalf("tokens = %d/%d, want 9000/300", parsed.TokensIn, parsed.TokensOut)
+	}
+}
+
 func TestDiscoverReadsSessionsDirectory(t *testing.T) {
 	root := t.TempDir()
 	configPath := filepath.Join(root, "config.toml")

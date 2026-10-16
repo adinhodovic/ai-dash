@@ -106,7 +106,8 @@ func createTestDB(t *testing.T) string {
 		"ses_test123",
 		now-1000,
 		now,
-		`{"role":"assistant","finish":"stop","time":{"created":1,"completed":2}}`,
+		`{"role":"assistant","finish":"stop","time":{"created":1,"completed":2},`+
+			`"tokens":{"input":400,"output":90,"reasoning":30,"cache":{"read":5000,"write":700}}}`,
 	)
 	if err != nil {
 		t.Fatalf("insert assistant message: %v", err)
@@ -144,6 +145,9 @@ func TestLoadFromDB(t *testing.T) {
 	}
 	if s.CurrentState != "waiting" {
 		t.Errorf("CurrentState = %q, want waiting", s.CurrentState)
+	}
+	if s.TokensIn != 400+5000+700 || s.TokensOut != 90+30 {
+		t.Errorf("tokens = %d/%d, want 6100/120", s.TokensIn, s.TokensOut)
 	}
 }
 

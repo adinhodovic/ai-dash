@@ -158,7 +158,22 @@ func loadFromDB(path string) []session.Session {
 		               ORDER BY m.time_created DESC LIMIT 1
 		           )
 		           ORDER BY p.time_created DESC LIMIT 1
-		       ), '')
+		       ), ''),
+		       COALESCE((
+		           SELECT SUM(
+		               COALESCE(json_extract(m.data, '$.tokens.input'), 0) +
+		               COALESCE(json_extract(m.data, '$.tokens.cache.read'), 0) +
+		               COALESCE(json_extract(m.data, '$.tokens.cache.write'), 0)
+		           )
+		           FROM message m WHERE m.session_id = s.id
+		       ), 0),
+		       COALESCE((
+		           SELECT SUM(
+		               COALESCE(json_extract(m.data, '$.tokens.output'), 0) +
+		               COALESCE(json_extract(m.data, '$.tokens.reasoning'), 0)
+		           )
+		           FROM message m WHERE m.session_id = s.id
+		       ), 0)
 		FROM session s
 		ORDER BY s.time_updated DESC
 	`)
@@ -175,6 +190,7 @@ func loadFromDB(path string) []session.Session {
 			lastCompletedFinish                              string
 			latestPartType, latestPartStatus                 string
 			additions, deletions, files                      int
+			tokensIn, tokensOut                              int
 			created, updated, latestCompleted                int64
 		)
 		if err := rows.Scan(
@@ -183,6 +199,7 @@ func loadFromDB(path string) []session.Session {
 			&created, &updated, &modelID,
 			&latestRole, &latestFinish, &latestCompleted, &latestError, &lastCompletedFinish,
 			&latestPartType, &latestPartStatus,
+			&tokensIn, &tokensOut,
 		); err != nil {
 			continue
 		}
@@ -235,6 +252,8 @@ func loadFromDB(path string) []session.Session {
 			EndedAt:      endedAt,
 			Model:        model,
 			Summary:      title,
+			TokensIn:     tokensIn,
+			TokensOut:    tokensOut,
 			Tags:         []string{"opencode"},
 			Meta:         meta,
 		})

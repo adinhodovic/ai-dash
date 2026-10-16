@@ -46,6 +46,16 @@ type eventPayload struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
 	Reason  string `json:"reason"`
+	Info    *struct {
+		TotalTokenUsage tokenUsage `json:"total_token_usage"`
+	} `json:"info"`
+}
+
+// tokenUsage follows the OpenAI convention: input_tokens already includes
+// cached_input_tokens and output_tokens includes reasoning.
+type tokenUsage struct {
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
 }
 
 type logLine struct {
@@ -156,6 +166,7 @@ func parseCodexSession(path string) (session.Session, bool) {
 		seenMeta    bool
 		seenContext bool
 		lastEvent   string
+		usage       tokenUsage
 	)
 
 	scanner := bufio.NewScanner(file)
@@ -217,6 +228,11 @@ func parseCodexSession(path string) (session.Session, bool) {
 					if userPrompt == "" {
 						userPrompt = sanitizeUserText(payload.Message)
 					}
+				case "token_count":
+					// Totals are cumulative for the session.
+					if payload.Info != nil {
+						usage = payload.Info.TotalTokenUsage
+					}
 				}
 			}
 		}
@@ -262,6 +278,8 @@ func parseCodexSession(path string) (session.Session, bool) {
 		EndedAt:        endedAt,
 		Model:          model,
 		Summary:        summary,
+		TokensIn:       usage.InputTokens,
+		TokensOut:      usage.OutputTokens,
 		TranscriptPath: path,
 		Tags:           tags,
 		Meta:           meta2,

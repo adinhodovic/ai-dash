@@ -114,9 +114,11 @@ type usageCost struct {
 }
 
 type usagePayload struct {
-	Input  int       `json:"input"`
-	Output int       `json:"output"`
-	Cost   usageCost `json:"cost"`
+	Input      int       `json:"input"`
+	Output     int       `json:"output"`
+	CacheRead  int       `json:"cacheRead"`
+	CacheWrite int       `json:"cacheWrite"`
+	Cost       usageCost `json:"cost"`
 }
 
 // messagePayload loosely covers every AgentMessage role. Fields that don't
@@ -269,9 +271,10 @@ func parsePiSession(path string) (session.Session, bool) {
 			case "assistant":
 				lastAssistant = e.message
 				if e.message.Usage != nil {
-					tokensIn += e.message.Usage.Input
-					tokensOut += e.message.Usage.Output
-					costTotal += e.message.Usage.Cost.Total
+					u := e.message.Usage
+					tokensIn += u.Input + u.CacheRead + u.CacheWrite
+					tokensOut += u.Output
+					costTotal += u.Cost.Total
 				}
 			}
 		}
