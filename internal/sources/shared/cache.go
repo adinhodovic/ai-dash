@@ -15,7 +15,7 @@ import (
 
 // cacheVersion is the stored parser output, not just the struct shape.
 // Cached files are not reread unless their size or mtime changes, so bump this when a parser starts producing different sessions; OpenCache drops the table.
-const cacheVersion = 1
+const cacheVersion = 2
 
 // Cache is a derived index of parsed sessions. Transcript bodies stay in the
 // files Claude, pi, and Codex already write. The database is disposable:

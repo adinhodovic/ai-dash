@@ -103,13 +103,29 @@ func TestParseClaudeTranscriptFromFixture(t *testing.T) {
 	if s.TokensOut == 0 {
 		t.Error("expected non-zero TokensOut")
 	}
-	expectedIn := 1200 + 2400
+	expectedIn := (1200 + 3500 + 800) + (2400 + 4500)
 	expectedOut := 150 + 280
 	if s.TokensIn != expectedIn {
 		t.Errorf("TokensIn = %d, want %d", s.TokensIn, expectedIn)
 	}
 	if s.TokensOut != expectedOut {
 		t.Errorf("TokensOut = %d, want %d", s.TokensOut, expectedOut)
+	}
+}
+
+func TestParseClaudeTranscriptCountsSplitMessageUsageOnce(t *testing.T) {
+	s := parseClaudeTranscript(shared.TranscriptFile{
+		Tool:    "claude",
+		Path:    filepath.Join("testdata", "split_message_session.jsonl"),
+		ModTime: time.Now(),
+	})
+	wantIn := (10 + 2000 + 5000) + (5 + 300 + 7000)
+	wantOut := 120 + 40
+	if s.TokensIn != wantIn {
+		t.Errorf("TokensIn = %d, want %d", s.TokensIn, wantIn)
+	}
+	if s.TokensOut != wantOut {
+		t.Errorf("TokensOut = %d, want %d", s.TokensOut, wantOut)
 	}
 }
 

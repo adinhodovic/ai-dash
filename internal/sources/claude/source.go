@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -155,15 +156,26 @@ type claudeLine struct {
 	GitBranch string `json:"gitBranch"`
 	Timestamp string `json:"timestamp"`
 	Message   *struct {
-		Role       string `json:"role"`
-		Model      string `json:"model"`
-		Content    any    `json:"content"`
-		StopReason string `json:"stop_reason"`
-		Usage      *struct {
-			InputTokens  int `json:"input_tokens"`
-			OutputTokens int `json:"output_tokens"`
-		} `json:"usage"`
+		ID         string       `json:"id"`
+		Role       string       `json:"role"`
+		Model      string       `json:"model"`
+		Content    any          `json:"content"`
+		StopReason string       `json:"stop_reason"`
+		Usage      *claudeUsage `json:"usage"`
 	} `json:"message"`
+}
+
+type claudeUsage struct {
+	InputTokens              int `json:"input_tokens"`
+	CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
+	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
+	OutputTokens             int `json:"output_tokens"`
+}
+
+// totalInput counts cached prompt tokens too; with prompt caching,
+// input_tokens alone is only the uncached tail of each request.
+func (u claudeUsage) totalInput() int {
+	return u.InputTokens + u.CacheCreationInputTokens + u.CacheReadInputTokens
 }
 
 func importTranscriptSessions(
@@ -263,8 +275,10 @@ func parseClaudeTranscript(transcript shared.TranscriptFile) session.Session {
 		startedAt      time.Time
 		endedAt        time.Time
 		lastStopReason string
-		tokensIn       int
-		tokensOut      int
+		// One API response is split into a line per content block, each
+		// repeating the same usage, so usage is keyed by message ID.
+		usageByMsg = map[string]claudeUsage{}
+		usageOrder []string
 	)
 
 	for scanner.Scan() {
@@ -311,8 +325,14 @@ func parseClaudeTranscript(transcript shared.TranscriptFile) session.Session {
 				lastStopReason = line.Message.StopReason
 			}
 			if line.Message.Usage != nil {
-				tokensIn += line.Message.Usage.InputTokens
-				tokensOut += line.Message.Usage.OutputTokens
+				id := line.Message.ID
+				if id == "" {
+					id = strconv.Itoa(len(usageOrder))
+				}
+				if _, seen := usageByMsg[id]; !seen {
+					usageOrder = append(usageOrder, id)
+				}
+				usageByMsg[id] = *line.Message.Usage
 			}
 		}
 	}
@@ -323,8 +343,11 @@ func parseClaudeTranscript(transcript shared.TranscriptFile) session.Session {
 	if !endedAt.IsZero() {
 		s.EndedAt = endedAt
 	}
-	s.TokensIn = tokensIn
-	s.TokensOut = tokensOut
+	for _, id := range usageOrder {
+		u := usageByMsg[id]
+		s.TokensIn += u.totalInput()
+		s.TokensOut += u.OutputTokens
+	}
 
 	// Use cwd for project name — it's the actual path, not slug-encoded.
 	if s.Repo != "" {
