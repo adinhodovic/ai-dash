@@ -146,6 +146,7 @@ func TestHelpListsActionsByScope(t *testing.T) {
 		"Generic actions", "ctrl+r", "continue", "ctrl+shift+r",
 		"Claude actions", "artifact",
 		"Codex actions", "review",
+		"x picks from all of them",
 	} {
 		if !strings.Contains(view, want) {
 			t.Errorf("help overlay is missing %q", want)

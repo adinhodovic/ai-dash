@@ -386,11 +386,17 @@ func (m Model) renderHelpBody() string {
 	for i, sec := range actions {
 		row[i] = gap.Render(renderColumn([]helpSection{sec}))
 	}
+	note := m.styles.Muted.Render(
+		"Actions run on the selected session; tool actions only on that tool's.\n" +
+			"x picks from all of them, including those without a key.",
+	)
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		builtin,
 		"",
 		lipgloss.JoinHorizontal(lipgloss.Top, row...),
+		"",
+		note,
 	)
 }
 
