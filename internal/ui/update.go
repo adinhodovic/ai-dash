@@ -288,14 +288,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case statusMsg:
 		m.statusMessage = msg.message
 	case triggerReloadMsg:
-		return m, tea.Batch(tickReload(), func() tea.Msg {
-			discovery, _ := sources.Discover(m.meta.Config)
-			sessions := append([]session.Session(nil), discovery.Sessions...)
-			session.ApplyRenames(sessions, m.meta.Renames)
-			session.Sort(sessions)
-			var err error
-			return reloadMsg{sessions: sessions, discovery: discovery, err: err}
-		})
+		return m, tea.Sequence(m.reloadSessions, tickReload())
 	case reloadMsg:
 		if msg.err == nil && len(msg.sessions) > 0 {
 			prev := len(m.sessions)
@@ -327,6 +320,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.syncAfterChange(filtered)
 	}
 	return m, nil
+}
+
+func (m Model) reloadSessions() tea.Msg {
+	discovery, _ := sources.Discover(m.meta.Config)
+	sessions := append([]session.Session(nil), discovery.Sessions...)
+	session.ApplyRenames(sessions, m.meta.Renames)
+	session.Sort(sessions)
+	return reloadMsg{sessions: sessions, discovery: discovery}
 }
 
 func (m *Model) syncAfterChange(filtered []session.Session) {

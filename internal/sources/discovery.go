@@ -18,17 +18,17 @@ type (
 	TranscriptFile = shared.TranscriptFile
 )
 
-func providers(cfg config.Config) []shared.SessionProvider {
+func providers(cfg config.Config, cache *shared.Cache) []shared.SessionProvider {
 	return []shared.SessionProvider{
 		opencode.New(cfg),
-		codex.New(cfg),
-		claude.New(cfg),
-		pi.New(cfg),
+		codex.New(cfg, cache),
+		claude.New(cfg, cache),
+		pi.New(cfg, cache),
 	}
 }
 
 func NewSessionArgs(cfg config.Config, tool, projectDir string) []string {
-	for _, p := range providers(cfg) {
+	for _, p := range providers(cfg, nil) {
 		if p.Name() == tool {
 			return p.NewSessionArgs(projectDir)
 		}
@@ -37,7 +37,7 @@ func NewSessionArgs(cfg config.Config, tool, projectDir string) []string {
 }
 
 func ResumeArgs(cfg config.Config, tool, sessionID, projectDir string) []string {
-	for _, p := range providers(cfg) {
+	for _, p := range providers(cfg, nil) {
 		if p.Name() == tool {
 			return p.ResumeArgs(sessionID, projectDir)
 		}
@@ -46,7 +46,15 @@ func ResumeArgs(cfg config.Config, tool, sessionID, projectDir string) []string 
 }
 
 func Discover(cfg config.Config) (Discovery, error) {
-	providers := providers(cfg)
+	// A cache that cannot be opened falls back to parsing every file.
+	// The dashboard still has to start.
+	cache, err := shared.OpenCache(shared.DefaultCachePath())
+	if err != nil {
+		cache = nil
+	} else {
+		defer func() { _ = cache.Close() }()
+	}
+	providers := providers(cfg, cache)
 	discovery := Discovery{}
 	for _, provider := range providers {
 		result, err := provider.Discover()

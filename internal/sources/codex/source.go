@@ -16,6 +16,7 @@ import (
 
 type Source struct {
 	pathOverride string
+	cache        *shared.Cache
 }
 
 type sessionMetaPayload struct {
@@ -55,8 +56,8 @@ type logLine struct {
 
 var _ shared.SessionProvider = Source{}
 
-func New(cfg config.Config) Source {
-	return Source{pathOverride: cfg.SourcePath("codex", "")}
+func New(cfg config.Config, cache *shared.Cache) Source {
+	return Source{pathOverride: cfg.SourcePath("codex", ""), cache: cache}
 }
 
 func (Source) Name() string { return "codex" }
@@ -79,7 +80,7 @@ func (s Source) Discover() (shared.Result, error) {
 	if err != nil {
 		return shared.Result{}, err
 	}
-	parsed := importCodexSessions(candidates)
+	parsed := importCodexSessions(s.cache, candidates)
 
 	return shared.Result{
 		Sources: []shared.Source{
@@ -114,14 +115,22 @@ func discoverCandidates(roots []string) ([]string, error) {
 	return uniquePaths(all...), nil
 }
 
-func importCodexSessions(paths []string) []session.Session {
-	out := make([]session.Session, 0, len(paths))
+func importCodexSessions(cache *shared.Cache, paths []string) []session.Session {
+	files := make([]shared.TranscriptFile, 0, len(paths))
 	for _, path := range paths {
-		parsed, ok := parseCodexSession(path)
-		if ok {
-			out = append(out, parsed)
+		info, err := os.Stat(path)
+		if err != nil {
+			continue
 		}
+		files = append(files, shared.TranscriptFile{
+			Path:    path,
+			Size:    info.Size(),
+			ModTime: info.ModTime(),
+		})
 	}
+	out := cache.Sessions("codex", files, func(f shared.TranscriptFile) (session.Session, bool) {
+		return parseCodexSession(f.Path)
+	}, nil)
 	session.Sort(out)
 	return out
 }

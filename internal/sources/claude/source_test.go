@@ -21,7 +21,7 @@ func TestDiscoverFindsTranscriptSessions(t *testing.T) {
 	if err := os.WriteFile(transcriptPath, []byte("{}\n"), 0o644); err != nil {
 		t.Fatalf("write transcript: %v", err)
 	}
-	result, err := New(config.Config{ClaudePath: root}).Discover()
+	result, err := New(config.Config{ClaudePath: root}, nil).Discover()
 	if err != nil {
 		t.Fatalf("discover: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestImportTranscriptSessionsBuildsDiscoveredSession(t *testing.T) {
 		ModTime: modTime,
 	}}
 
-	sessions := importTranscriptSessions(transcripts)
+	sessions := importTranscriptSessions(nil, transcripts)
 	if len(sessions) != 1 {
 		t.Fatalf("expected 1 session, got %d", len(sessions))
 	}
@@ -133,6 +133,71 @@ func TestParseClaudeTranscriptMarksToolUseAsToolCall(t *testing.T) {
 	}
 }
 
+func TestRefreshClaudeStatusUsesModtimeOnCacheHit(t *testing.T) {
+	s := session.Session{Meta: map[string]string{}}
+	refreshClaudeStatus(&s, time.Now())
+	if s.Status != "active" || s.CurrentState != "running" {
+		t.Fatalf("recent = (%q, %q)", s.Status, s.CurrentState)
+	}
+	refreshClaudeStatus(&s, time.Now().Add(-time.Hour))
+	if s.Status != "completed" || s.CurrentState != "done" {
+		t.Fatalf("stale = (%q, %q)", s.Status, s.CurrentState)
+	}
+	s.Meta["stop_reason"] = "tool_use"
+	refreshClaudeStatus(&s, time.Now().Add(-time.Hour))
+	if s.Status != "active" || s.CurrentState != "tool call" {
+		t.Fatalf("stop_reason = (%q, %q)", s.Status, s.CurrentState)
+	}
+}
+
+func TestDiscoverUsesCacheUntilTranscriptChanges(t *testing.T) {
+	root := t.TempDir()
+	project := filepath.Join(root, "app")
+	if err := os.MkdirAll(project, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(project, "session.jsonl")
+	write := func(prompt string) {
+		t.Helper()
+		body := "{\"type\":\"user\",\"timestamp\":\"2026-04-01T00:00:00Z\"," +
+			"\"sessionId\":\"s1\",\"cwd\":\"/tmp/app\",\"message\":{" +
+			"\"role\":\"user\",\"content\":\"" + prompt + "\"}}\n"
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("first prompt")
+	cache, err := shared.OpenCache(filepath.Join(t.TempDir(), "sessions.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = cache.Close() }()
+	src := New(config.Config{ClaudePath: root}, cache)
+
+	first, err := src.Discover()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first.Sessions) != 1 || first.Sessions[0].Summary != "first prompt" {
+		t.Fatalf("first = %#v", first.Sessions)
+	}
+	second, err := src.Discover()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.Sessions[0].Summary != "first prompt" {
+		t.Fatalf("cached summary = %q", second.Sessions[0].Summary)
+	}
+	write("second prompt is longer")
+	third, err := src.Discover()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if third.Sessions[0].Summary != "second prompt is longer" {
+		t.Fatalf("updated summary = %q", third.Sessions[0].Summary)
+	}
+}
+
 func TestParseClaudeTranscriptUsesModtimeHeuristicOnlyWithoutStopReason(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, "session.jsonl")
@@ -157,7 +222,7 @@ func TestParseClaudeTranscriptUsesModtimeHeuristicOnlyWithoutStopReason(t *testi
 }
 
 func TestParentSessionIDClassifiesSubagents(t *testing.T) {
-	src := New(config.Config{})
+	src := New(config.Config{}, nil)
 
 	parent := session.Session{
 		TranscriptPath: "/home/user/.claude/projects/repo-a/abc-123.jsonl",
@@ -252,7 +317,7 @@ func TestImportConsolidatesSubdirSessionsIntoGitRoot(t *testing.T) {
 		t.Fatalf("write nested transcript: %v", err)
 	}
 
-	sessions := importTranscriptSessions([]shared.TranscriptFile{
+	sessions := importTranscriptSessions(nil, []shared.TranscriptFile{
 		{Tool: "claude", Path: rootTranscript, Project: "bucket-root", ModTime: time.Now()},
 		{Tool: "claude", Path: nestedTranscript, Project: "bucket-nested", ModTime: time.Now()},
 	})
@@ -281,7 +346,7 @@ func TestDiscoverIncludesSubagentTranscripts(t *testing.T) {
 	if err := os.WriteFile(agentPath, []byte("{}\n"), 0o644); err != nil {
 		t.Fatalf("write subagent transcript: %v", err)
 	}
-	result, err := New(config.Config{ClaudePath: root}).Discover()
+	result, err := New(config.Config{ClaudePath: root}, nil).Discover()
 	if err != nil {
 		t.Fatalf("discover: %v", err)
 	}

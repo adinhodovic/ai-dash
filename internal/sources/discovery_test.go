@@ -8,6 +8,19 @@ import (
 	"github.com/adinhodovic/ai-dash/internal/config"
 )
 
+func TestMain(m *testing.M) {
+	dir, err := os.MkdirTemp("", "ai-dash-cache")
+	if err != nil {
+		panic(err)
+	}
+	if err := os.Setenv("XDG_CACHE_HOME", dir); err != nil {
+		panic(err)
+	}
+	code := m.Run()
+	_ = os.RemoveAll(dir)
+	os.Exit(code)
+}
+
 func TestDiscoverUsesEnvOverrides(t *testing.T) {
 	root := t.TempDir()
 	configPath := filepath.Join(root, "custom-config.toml")

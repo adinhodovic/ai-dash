@@ -23,6 +23,7 @@ type TranscriptFile struct {
 	Path    string
 	Project string
 	ModTime time.Time
+	Size    int64
 }
 
 type Result struct {

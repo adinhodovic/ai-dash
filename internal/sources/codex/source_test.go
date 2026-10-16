@@ -18,7 +18,7 @@ func TestDiscoverUsesEnvOverrides(t *testing.T) {
 	if err := os.WriteFile(configPath, []byte("model = \"gpt-5.4\"\n"), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
-	result, err := New(config.Config{CodexPath: configPath}).Discover()
+	result, err := New(config.Config{CodexPath: configPath}, nil).Discover()
 	if err != nil {
 		t.Fatalf("discover: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestDiscoverReadsSessionsDirectory(t *testing.T) {
 	if err := os.WriteFile(rollout, fixture, 0o644); err != nil {
 		t.Fatalf("write session fixture: %v", err)
 	}
-	result, err := New(config.Config{CodexPath: configPath}).Discover()
+	result, err := New(config.Config{CodexPath: configPath}, nil).Discover()
 	if err != nil {
 		t.Fatalf("discover: %v", err)
 	}

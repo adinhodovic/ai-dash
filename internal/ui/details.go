@@ -149,7 +149,12 @@ func (m Model) detailItems(s session.Session) []detailItem {
 	items = append(items, detailItem{theme.ID + " ID", s.ID})
 
 	// Metadata
-	skip := map[string]bool{"model": true, "branch": true, "version": true}
+	skip := map[string]bool{
+		"model":       true,
+		"branch":      true,
+		"version":     true,
+		"state_label": true,
+	}
 	var metaItems []detailItem
 	metaKeys := make([]string, 0, len(s.Meta))
 	for k := range s.Meta {
