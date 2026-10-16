@@ -62,8 +62,8 @@ var defaultActions = map[string][]Action{
 // label in the same scope, and disabled removes it. A tool action hides a
 // generic action with the same key or label.
 func (c Config) ActionsFor(tool string) []Action {
-	own := mergeActions(defaultActions[tool], c.Actions[tool])
-	generic := mergeActions(defaultActions[GenericActions], c.Actions[GenericActions])
+	own := c.ScopeActions(tool)
+	generic := c.ScopeActions(GenericActions)
 	out := own
 	for _, g := range generic {
 		hidden := false
@@ -78,6 +78,12 @@ func (c Config) ActionsFor(tool string) []Action {
 		}
 	}
 	return out
+}
+
+// ScopeActions returns the actions defined for one scope: GenericActions or a
+// tool name. Unlike ActionsFor, a tool scope does not include generic actions.
+func (c Config) ScopeActions(scope string) []Action {
+	return mergeActions(defaultActions[scope], c.Actions[scope])
 }
 
 func mergeActions(defaults, configured []Action) []Action {

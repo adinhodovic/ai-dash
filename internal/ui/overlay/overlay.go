@@ -36,8 +36,6 @@ func Help(
 	overlayStyle, headerStyle, mutedStyle lipgloss.Style,
 	helpView string,
 ) string {
-	overlayW := max(30, min(60, width-4))
-	overlayH := min(20, height-6)
 	title := headerStyle.MarginBottom(1).Render("Keyboard Shortcuts")
 	helpText := lipgloss.NewStyle().MarginBottom(1).Render(helpView)
 	body := lipgloss.JoinVertical(
@@ -46,6 +44,11 @@ func Help(
 		helpText,
 		mutedStyle.Render("Press ? to close"),
 	)
-	box := overlayStyle.Width(overlayW).Height(overlayH).Render(body)
+	// Grow with the content, since configured actions add a column.
+	overlayW := lipgloss.Width(body) + overlayStyle.GetHorizontalFrameSize()
+	overlayH := lipgloss.Height(body) + overlayStyle.GetVerticalFrameSize()
+	overlayW = max(30, min(max(60, overlayW), width-4))
+	overlayH = max(4, min(max(20, overlayH), height-2))
+	box := overlayStyle.Width(overlayW).Height(overlayH).MaxHeight(overlayH).Render(body)
 	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, box)
 }

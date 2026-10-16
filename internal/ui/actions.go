@@ -82,21 +82,33 @@ func (m Model) actionForKey(k string, filtered []session.Session) (config.Action
 	return config.Action{}, false
 }
 
-// actionBindings lists the selected session's direct action keys for the
-// help overlay.
-func (m Model) actionBindings(filtered []session.Session) []key.Binding {
-	s, ok := selectedSession(filtered, m.sessionCursor)
-	if !ok {
-		return nil
-	}
-	var bindings []key.Binding
-	for _, a := range m.sessionActions(s) {
-		if a.Key != "" {
-			b := key.NewBinding(key.WithKeys(a.Key), key.WithHelp(a.Key, a.Label))
-			bindings = append(bindings, b)
+// actionBindings turns actions into help entries. An action without a
+// usable key is listed under x, which is how it is reached.
+func (m Model) actionBindings(actions []config.Action) []key.Binding {
+	reserved := m.keys.boundKeys()
+	bindings := make([]key.Binding, 0, len(actions))
+	for _, a := range actions {
+		k := a.Key
+		if k == "" || reserved[k] {
+			k = "x"
 		}
+		bindings = append(bindings, key.NewBinding(key.WithKeys(k), key.WithHelp(k, a.Label)))
 	}
 	return bindings
+}
+
+// actionHelpSections lists the generic actions, then each tool's own.
+func (m Model) actionHelpSections() []helpSection {
+	var sections []helpSection
+	for _, scope := range config.ActionScopes {
+		actions := m.meta.Config.ScopeActions(scope)
+		if len(actions) == 0 {
+			continue
+		}
+		title := uiutil.Capitalize(scope) + " actions"
+		sections = append(sections, helpSection{title, m.actionBindings(actions)})
+	}
+	return sections
 }
 
 func (m *Model) openActionPicker(filtered []session.Session) {

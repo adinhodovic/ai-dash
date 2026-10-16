@@ -134,17 +134,44 @@ func TestActionPicker(t *testing.T) {
 	}
 }
 
-func TestHelpListsActionKeys(t *testing.T) {
-	m := resize(testModel(), 200, 60)
+func TestHelpListsActionsByScope(t *testing.T) {
+	m := resize(testModel(), 220, 60)
 	m.meta.Config.Actions = map[string][]config.Action{
 		config.GenericActions: {{Label: "long key", Key: "ctrl+shift+r", Prompt: "hi"}},
+		"codex":               {{Label: "review", Key: "r", Prompt: "review"}},
 	}
 	m = sendKey(m, "?")
-	tool := m.filteredSessions()[m.sessionCursor].Tool
 	view := m.View().Content
-	for _, want := range []string{"Actions (" + tool + ")", "ctrl+r", "continue", "ctrl+shift+r"} {
+	for _, want := range []string{
+		"Generic actions", "ctrl+r", "continue", "ctrl+shift+r",
+		"Claude actions", "artifact",
+		"Codex actions", "review",
+	} {
 		if !strings.Contains(view, want) {
 			t.Errorf("help overlay is missing %q", want)
+		}
+	}
+	if strings.Contains(view, "Opencode actions") {
+		t.Error("tools without their own actions should not get a section")
+	}
+	generic := strings.Index(view, "Generic actions")
+	claude := strings.Index(view, "Claude actions")
+	codex := strings.Index(view, "Codex actions")
+	if generic > claude || claude > codex {
+		t.Error("generic actions should come first, then each tool")
+	}
+}
+
+func TestFooterListsSelectedSessionActions(t *testing.T) {
+	m := resize(testModel(), 200, 50)
+	s := m.filteredSessions()[m.sessionCursor]
+	m.meta.Config.Actions = map[string][]config.Action{
+		s.Tool: {{Label: "tool only", Prompt: "hi"}},
+	}
+	view := m.View().Content
+	for _, want := range []string{s.Tool + " actions", "ctrl+r", "continue", "tool only"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("footer is missing %q", want)
 		}
 	}
 }

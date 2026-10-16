@@ -129,6 +129,8 @@ Actions open the selected session's tool with a prompt already submitted. Press 
 | `input_optional` | Run even when the input is left empty. |
 | `disabled` | Remove the built-in action with the same label. |
 
+The second footer line shows the actions for the selected session's tool. `?` lists the generic actions, then each tool's own. Actions without a key are listed under `x`.
+
 Built-in actions:
 
 | Scope | Key | Label | Prompt |
