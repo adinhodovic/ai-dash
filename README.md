@@ -47,6 +47,17 @@ chmod +x ai-dash
 
 For other architectures, see all binaries on the [releases page](https://github.com/adinhodovic/ai-dash/releases).
 
+### Updating
+
+Release binaries can update themselves:
+
+```bash
+ai-dash update          # download and install the latest release
+ai-dash update --check  # only report whether an update is available
+```
+
+The download is verified against the release's `checksums.txt`. Builds from source print the `go install` command to use instead; pass `--force` to replace them with the release binary.
+
 ## Configuration
 
 Config file: `~/.config/ai-dash/config.json`
