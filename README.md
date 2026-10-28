@@ -92,6 +92,7 @@ Parsed session metadata is cached in `~/.cache/ai-dash/sessions.db` (`~/Library/
 | `auto_select_tool` | Skip the tool picker for new sessions | `false` |
 | `nerd_font` | Force Nerd Font on/off, `null` auto-detects | auto |
 | `age_presets` | Options when cycling with `D` | `1h,1d,3d,7d,14d,30d` |
+| `rename_agent` | Agent that writes titles for [auto rename](#auto-rename): `claude`, `codex` or `pi` | first of those on `PATH` |
 
 Inside tmux a new session opens in a new terminal window running its own tmux session (see `tmux_mode`); inside zellij it opens
 as a new pane via `zellij run`. Set `multiplexer: "off"` to always spawn a
@@ -140,6 +141,18 @@ Built-in actions:
 | generic | `ctrl+n` | new with prompt | asks for a prompt and starts a new session |
 | claude | | artifact | asks what to summarize and creates an artifact of it |
 
+### Auto rename
+
+Sessions are named after their first message, which is often a pasted log or "hello". Auto rename asks an agent CLI to title a session from everything you typed in it. Press `T` to title the selected session, or title the most recent ones in bulk:
+
+```bash
+ai-dash autorename              # 30 most recent sessions you haven't renamed
+ai-dash autorename -n 10 --dry-run
+ai-dash autorename --force      # also retitle sessions you renamed yourself
+```
+
+The agent is `rename_agent`, else the first of `claude`, `codex` and `pi` on `PATH`. It runs one-shot without saving a session: Claude Code uses haiku with no tools. OpenCode can't title sessions because `opencode run` always saves one, and OpenCode already titles its own sessions. Titles are saved alongside manual renames in `~/.config/ai-dash/session-renames.json`, and a running dashboard picks them up on its next reload.
+
 ## Keys
 
 | Key | Action |
@@ -149,6 +162,7 @@ Built-in actions:
 | `pgup`/`pgdn` | Page up / down |
 | `r` | Resume session |
 | `R` | Rename session |
+| `T` | Auto rename session with an agent |
 | `n` | New session |
 | `x` | Run an action on the session |
 | `ctrl+r` / `ctrl+e` / `ctrl+n` | Continue / send a message / new session with a prompt (see [Actions](#actions)) |

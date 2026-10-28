@@ -64,7 +64,11 @@ type logLine struct {
 	Payload   json.RawMessage `json:"payload"`
 }
 
-var _ shared.SessionProvider = Source{}
+var (
+	_ shared.SessionProvider = Source{}
+	_ shared.PromptReader    = Source{}
+	_ shared.HeadlessRunner  = Source{}
+)
 
 func New(cfg config.Config, cache *shared.Cache) Source {
 	return Source{pathOverride: cfg.SourcePath("codex", ""), cache: cache}
@@ -115,6 +119,41 @@ func (Source) NewSessionArgs(projectDir string) []string {
 
 func (Source) PromptArgs(prompt string) []string {
 	return []string{shared.ShellQuote(prompt)}
+}
+
+// HeadlessArgs runs outside the project (no git repo), so the repo check is skipped.
+func (Source) HeadlessArgs(prompt string) []string {
+	return []string{
+		"codex", "exec", "--ephemeral", "--skip-git-repo-check", "--sandbox", "read-only", prompt,
+	}
+}
+
+// UserPrompts returns the user_message events, which hold exactly what the user typed.
+func (Source) UserPrompts(s session.Session) ([]string, error) {
+	file, err := os.Open(s.TranscriptPath)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+
+	scanner := bufio.NewScanner(file)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 2*1024*1024)
+	var prompts []string
+	for scanner.Scan() {
+		var line logLine
+		if err := json.Unmarshal(scanner.Bytes(), &line); err != nil || line.Type != "event_msg" {
+			continue
+		}
+		var payload eventPayload
+		if json.Unmarshal(line.Payload, &payload) != nil || payload.Type != "user_message" {
+			continue
+		}
+		if text := sanitizeUserText(payload.Message); text != "" {
+			prompts = append(prompts, text)
+		}
+	}
+	return prompts, scanner.Err()
 }
 
 func discoverCandidates(roots []string) ([]string, error) {

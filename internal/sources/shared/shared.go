@@ -60,6 +60,19 @@ type SubagentClassifier interface {
 	ParentSessionID(s session.Session) string
 }
 
+// PromptReader is optionally implemented by sources that can read back what
+// the user typed in a session. Autorename titles sessions from these prompts.
+type PromptReader interface {
+	UserPrompts(s session.Session) ([]string, error)
+}
+
+// HeadlessRunner is optionally implemented by sources whose CLI can answer a
+// one-off prompt on stdout without saving a session. It returns an argv, not a
+// shell string.
+type HeadlessRunner interface {
+	HeadlessArgs(prompt string) []string
+}
+
 func (d Discovery) ExistingSources() int {
 	count := 0
 	for _, source := range d.Sources {

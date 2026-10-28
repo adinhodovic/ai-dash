@@ -19,6 +19,7 @@ type keyMap struct {
 	Project           key.Binding
 	ResumeSession     key.Binding
 	RenameSession     key.Binding
+	AutoRename        key.Binding
 	ToggleDetails     key.Binding
 	ToggleDetailExtra key.Binding
 	NewSession        key.Binding
@@ -56,6 +57,7 @@ func defaultKeyMap() keyMap {
 		Project:       key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "project")),
 		ResumeSession: key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "resume")),
 		RenameSession: key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "rename")),
+		AutoRename:    key.NewBinding(key.WithKeys("T"), key.WithHelp("T", "auto rename")),
 		ToggleDetails: key.NewBinding(key.WithKeys("v"), key.WithHelp("v", "details")),
 		ToggleDetailExtra: key.NewBinding(
 			key.WithKeys("i"),
@@ -104,7 +106,7 @@ func (k keyMap) helpColumns() [2][]helpSection {
 		{
 			{"Navigate", []key.Binding{k.Up, k.Down, k.GoTop, k.PageUp, k.PageDown}},
 			{"Session", []key.Binding{
-				k.ResumeSession, k.RenameSession, k.NewSession, k.Actions,
+				k.ResumeSession, k.RenameSession, k.AutoRename, k.NewSession, k.Actions,
 				k.ToggleDetails, k.ToggleDetailExtra,
 			}},
 			{"General", []key.Binding{k.Help, k.Sources, k.Quit}},
@@ -125,7 +127,7 @@ func (k keyMap) boundKeys() map[string]bool {
 	bindings := []key.Binding{
 		k.Up, k.Down, k.GoTop, k.GoBottom, k.PageUp, k.PageDown, k.Help, k.Search,
 		k.SortNext, k.SortPrev, k.SortToggle, k.Tool, k.Sort, k.Project,
-		k.ResumeSession, k.RenameSession, k.ToggleDetails, k.ToggleDetailExtra,
+		k.ResumeSession, k.RenameSession, k.AutoRename, k.ToggleDetails, k.ToggleDetailExtra,
 		k.NewSession, k.Actions, k.AgeRange, k.ToggleAgents, k.ToggleAttention,
 		k.ToggleActiveOnly, k.Sources, k.Clear, k.Quit,
 	}

@@ -259,6 +259,7 @@ type statusMsg struct{ message string }
 type reloadMsg struct {
 	sessions  []session.Session
 	discovery sources.Discovery
+	renames   map[string]string
 	err       error
 }
 

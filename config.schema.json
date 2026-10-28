@@ -162,6 +162,15 @@
       "description": "How often to reload sessions (Go duration, e.g. 5s, 30s, 1m)",
       "type": "string"
     },
+    "rename_agent": {
+      "description": "Agent that writes titles for autorename (T key, `ai-dash autorename`). Omit to use the first of claude, codex, pi found on PATH.",
+      "enum": [
+        "claude",
+        "codex",
+        "pi"
+      ],
+      "type": "string"
+    },
     "terminal": {
       "default": "",
       "description": "Terminal emulator to use when opening sessions (e.g. ghostty, kitty, alacritty, wezterm, foot). Defaults to $TERMINAL, then the first known terminal found on PATH.",

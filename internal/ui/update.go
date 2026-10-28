@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -134,6 +135,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "R":
 			if m.focus == focusList {
 				m.startRename(filtered)
+			}
+		case "T":
+			if m.focus == focusList {
+				return m, m.startAutoRename(filtered)
 			}
 		case "x":
 			m.openActionPicker(filtered)
@@ -302,6 +307,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case statusMsg:
 		m.statusMessage = msg.message
+	case autoRenameMsg:
+		if msg.err != nil {
+			m.statusMessage = fmt.Sprintf("Auto rename failed: %v", msg.err)
+			break
+		}
+		if err := m.saveRename(msg.key, msg.title); err != nil {
+			m.statusMessage = fmt.Sprintf("Rename not saved: %v", err)
+			break
+		}
+		m.statusMessage = fmt.Sprintf("Renamed to %q", msg.title)
+		m.syncAllTables(m.filteredSessions())
 	case triggerReloadMsg:
 		return m, tea.Sequence(m.reloadSessions, tickReload())
 	case reloadMsg:
@@ -309,6 +325,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			prev := len(m.sessions)
 			m.sessions = msg.sessions
 			m.meta.Discovery = msg.discovery
+			m.meta.Renames = msg.renames
 			current := attentionKeys(m.sessions)
 			for key := range current {
 				current[key] = m.seenAttention[key]
@@ -340,9 +357,61 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) reloadSessions() tea.Msg {
 	discovery, _ := sources.Discover(m.meta.Config)
 	sessions := append([]session.Session(nil), discovery.Sessions...)
-	session.ApplyRenames(sessions, m.meta.Renames)
+	// Re-read renames so ones saved by `ai-dash autorename` show up live.
+	renames, err := session.LoadRenames(m.meta.RenamesPath)
+	if err != nil {
+		renames = m.meta.Renames
+	}
+	session.ApplyRenames(sessions, renames)
 	session.Sort(sessions)
-	return reloadMsg{sessions: sessions, discovery: discovery}
+	return reloadMsg{sessions: sessions, discovery: discovery, renames: renames}
+}
+
+type autoRenameMsg struct {
+	key   string
+	title string
+	err   error
+}
+
+// startAutoRename titles the selected session with an agent in the background.
+func (m *Model) startAutoRename(filtered []session.Session) tea.Cmd {
+	sel := m.sessionCursor
+	if len(filtered) == 0 || sel < 0 || sel >= len(filtered) {
+		m.statusMessage = "No session selected"
+		return nil
+	}
+	s := filtered[sel]
+	cfg := m.meta.Config
+	if !sources.CanTitle(cfg, s) {
+		m.statusMessage = fmt.Sprintf("Can't auto rename this %s session", s.Tool)
+		return nil
+	}
+	agent, err := sources.TitleAgent(cfg)
+	if err != nil {
+		m.statusMessage = err.Error()
+		return nil
+	}
+	m.statusMessage = fmt.Sprintf("Asking %s for a title...", agent)
+	return func() tea.Msg {
+		title, err := sources.Title(context.Background(), cfg, agent, s)
+		return autoRenameMsg{key: session.RenameKey(s), title: title, err: err}
+	}
+}
+
+// saveRename persists a rename and applies it to the loaded sessions.
+func (m *Model) saveRename(key, summary string) error {
+	renames, err := session.SetRename(m.meta.RenamesPath, key, summary)
+	if err != nil {
+		return err
+	}
+	m.meta.Renames = renames
+	for i := range m.sessions {
+		if session.RenameKey(m.sessions[i]) == key {
+			m.sessions[i].Summary = summary
+			break
+		}
+	}
+	return nil
 }
 
 func (m *Model) syncAfterChange(filtered []session.Session) {
@@ -418,25 +487,9 @@ func (m Model) updateRename(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.statusMessage = "Rename cannot be empty"
 			return m, nil
 		}
-		if m.meta.Renames == nil {
-			m.meta.Renames = map[string]string{}
-		}
-		previous, hadPrevious := m.meta.Renames[m.renamingKey]
-		m.meta.Renames[m.renamingKey] = newSummary
-		if err := session.SaveRenames(m.meta.RenamesPath, m.meta.Renames); err != nil {
-			if hadPrevious {
-				m.meta.Renames[m.renamingKey] = previous
-			} else {
-				delete(m.meta.Renames, m.renamingKey)
-			}
+		if err := m.saveRename(m.renamingKey, newSummary); err != nil {
 			m.statusMessage = fmt.Sprintf("Rename not saved: %v", err)
 			return m, nil
-		}
-		for i := range m.sessions {
-			if session.RenameKey(m.sessions[i]) == m.renamingKey {
-				m.sessions[i].Summary = newSummary
-				break
-			}
 		}
 		m.statusMessage = "Renamed session"
 		m.renaming = false
