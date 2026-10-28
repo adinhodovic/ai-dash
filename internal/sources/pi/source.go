@@ -20,7 +20,11 @@ type Source struct {
 	cache        *shared.Cache
 }
 
-var _ shared.SessionProvider = Source{}
+var (
+	_ shared.SessionProvider = Source{}
+	_ shared.PromptReader    = Source{}
+	_ shared.HeadlessRunner  = Source{}
+)
 
 func New(cfg config.Config, cache *shared.Cache) Source {
 	return Source{pathOverride: cfg.SourcePath("pi", ""), cache: cache}
@@ -67,6 +71,40 @@ func (Source) NewSessionArgs(projectDir string) []string {
 
 func (Source) PromptArgs(prompt string) []string {
 	return []string{shared.ShellQuote(prompt)}
+}
+
+// HeadlessArgs uses the default model with no tools, skills or extensions.
+func (Source) HeadlessArgs(prompt string) []string {
+	return []string{
+		"pi", "-p", "--no-session", "--no-tools", "--no-skills", "--no-extensions", prompt,
+	}
+}
+
+// UserPrompts returns user messages in file order, across every branch of the session tree.
+func (Source) UserPrompts(s session.Session) ([]string, error) {
+	file, err := os.Open(s.TranscriptPath)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+
+	scanner := bufio.NewScanner(file)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 2*1024*1024)
+	var prompts []string
+	for scanner.Scan() {
+		var raw rawEntry
+		if err := json.Unmarshal(scanner.Bytes(), &raw); err != nil {
+			continue
+		}
+		if raw.Type != "message" || raw.Message == nil || raw.Message.Role != "user" {
+			continue
+		}
+		if text := sanitizeText(extractText(raw.Message.Content)); text != "" {
+			prompts = append(prompts, text)
+		}
+	}
+	return prompts, scanner.Err()
 }
 
 func discoverSessionFiles(root string) ([]string, error) {

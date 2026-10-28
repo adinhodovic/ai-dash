@@ -23,6 +23,8 @@ type Source struct {
 var (
 	_ shared.SessionProvider    = Source{}
 	_ shared.SubagentClassifier = Source{}
+	_ shared.PromptReader       = Source{}
+	_ shared.HeadlessRunner     = Source{}
 )
 
 func New(cfg config.Config, cache *shared.Cache) Source {
@@ -73,6 +75,44 @@ func (Source) PromptArgs(prompt string) []string {
 
 func (Source) ParentSessionID(s session.Session) string {
 	return subagentParentID(s.TranscriptPath)
+}
+
+// HeadlessArgs uses haiku with no tools: titling needs neither, and it's fast.
+func (Source) HeadlessArgs(prompt string) []string {
+	return []string{
+		"claude", "-p", "--no-session-persistence", "--model", "haiku", "--tools=", prompt,
+	}
+}
+
+// UserPrompts returns the user's typed messages, skipping tool results and
+// harness-injected messages (slash command output, reminders, notifications).
+func (Source) UserPrompts(s session.Session) ([]string, error) {
+	file, err := os.Open(s.TranscriptPath)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+
+	scanner := bufio.NewScanner(file)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 2*1024*1024)
+	var prompts []string
+	for scanner.Scan() {
+		var line claudeLine
+		if err := json.Unmarshal(scanner.Bytes(), &line); err != nil {
+			continue
+		}
+		if line.Type != "user" || line.IsMeta || line.Message == nil ||
+			line.Message.Role != "user" {
+			continue
+		}
+		text := extractTextContent(line.Message.Content)
+		if text == "" || strings.HasPrefix(text, "<") || strings.HasPrefix(text, "Caveat:") {
+			continue
+		}
+		prompts = append(prompts, text)
+	}
+	return prompts, scanner.Err()
 }
 
 func discoverTranscripts(root string) ([]shared.TranscriptFile, error) {
@@ -149,6 +189,7 @@ func sanitizeProjectName(value string) string {
 // claudeLine represents a single JSONL entry in a Claude Code transcript.
 type claudeLine struct {
 	Type      string `json:"type"`
+	IsMeta    bool   `json:"isMeta"`
 	SessionID string `json:"sessionId"`
 	Slug      string `json:"slug"`
 	Version   string `json:"version"`

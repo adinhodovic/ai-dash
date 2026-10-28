@@ -51,7 +51,7 @@ func main() {
 		},
 	}
 
-	root.AddCommand(schema)
+	root.AddCommand(schema, autorenameCommand())
 	root.CompletionOptions.HiddenDefaultCmd = true
 
 	if err := root.Execute(); err != nil {

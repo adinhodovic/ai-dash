@@ -89,6 +89,7 @@ Guidance for agents working in `ai-dash`.
 - Each provider implements `SessionProvider`: `Name()`, `Discover()`, `ResumeArgs()`, `NewSessionArgs()`, `PromptArgs()`.
 - Add compile-time check: `var _ shared.SessionProvider = Source{}`.
 - Optional `SubagentClassifier` interface for parent-child detection. Discovery layer calls it after collecting sessions.
+- Optional `PromptReader` (read back the user's typed messages) and `HeadlessRunner` (one-shot argv that prints an answer without saving a session) power auto rename in `internal/sources/autorename.go`.
 - Source constructors take `config.Config` for configurable paths.
 - Claude: native JSONL parser extracts first user message as summary, model from assistant messages, tokens from usage, status from `stop_reason`.
 - OpenCode: SQLite with model extracted from `message.data` JSON via `json_extract`. Includes `summary_additions/deletions/files`.

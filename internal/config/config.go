@@ -23,6 +23,7 @@ type Config struct {
 	CodexPath        string   `mapstructure:"codex_path"         json:"codex_path"`
 	ClaudePath       string   `mapstructure:"claude_path"        json:"claude_path"`
 	PiPath           string   `mapstructure:"pi_path"            json:"pi_path"`
+	RenameAgent      string   `mapstructure:"rename_agent"       json:"rename_agent,omitempty"`
 
 	Actions map[string][]Action `mapstructure:"actions" json:"actions,omitempty"`
 }
@@ -44,6 +45,7 @@ func Init() {
 	viper.SetDefault("codex_path", "")
 	viper.SetDefault("claude_path", "")
 	viper.SetDefault("pi_path", "")
+	viper.SetDefault("rename_agent", "")
 
 	viper.SetEnvPrefix("AIDASH")
 	viper.AutomaticEnv()
@@ -189,6 +191,11 @@ func GenerateSchema() string {
 				"type":        "string",
 				"description": "Path to pi agent sessions directory (default: ~/.pi/agent/sessions)",
 				"default":     "",
+			},
+			"rename_agent": map[string]any{
+				"type":        "string",
+				"description": "Agent that writes titles for autorename (T key, `ai-dash autorename`). Omit to use the first of claude, codex, pi found on PATH.",
+				"enum":        []string{"claude", "codex", "pi"},
 			},
 			"nerd_font": map[string]any{
 				"type":        "boolean",

@@ -182,6 +182,20 @@ func SaveRenames(path string, renames map[string]string) error {
 	return os.WriteFile(path, data, 0o644)
 }
 
+// SetRename saves one rename on top of the file's current contents, so other
+// processes writing renames (autorename, another dashboard) aren't clobbered.
+func SetRename(path, key, summary string) (map[string]string, error) {
+	renames, err := LoadRenames(path)
+	if err != nil {
+		return nil, err
+	}
+	renames[key] = summary
+	if err := SaveRenames(path, renames); err != nil {
+		return nil, err
+	}
+	return renames, nil
+}
+
 func ApplyRenames(sessions []Session, renames map[string]string) {
 	for i := range sessions {
 		if summary := strings.TrimSpace(renames[RenameKey(sessions[i])]); summary != "" {
